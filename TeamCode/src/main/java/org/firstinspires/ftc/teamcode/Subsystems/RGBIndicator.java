@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
+import android.graphics.Color;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
@@ -9,55 +10,39 @@ import com.qualcomm.robotcore.hardware.Servo;
 @Config
 public class RGBIndicator {
 
-	// Color names for discrete color selection
-	private static final String[] COLOR_NAMES = {
-			"OFF", "RED", "ORANGE", "YELLOW", "SAGE", "GREEN",
-			"AZURE", "BLUE", "INDIGO", "VIOLET", "WHITE"
-	};
-	// Color map with RGB values and corresponding servo positions
-	private static final int[][] COLOR_MAP = {
-			{0, 0, 0},           // Off (black) -> 0.0
-			{255, 0, 0},         // Red -> 0.277
-			{255, 127, 0},       // Orange -> 0.333
-			{255, 255, 0},       // Yellow -> 0.388
-			{191, 255, 0},       // Sage (yellow-green) -> 0.444
-			{0, 255, 0},         // Green -> 0.500
-			{0, 255, 255},       // Azure (cyan) -> 0.555
-			{0, 0, 255},         // Blue -> 0.611
-			{75, 0, 130},        // Indigo -> 0.666
-			{148, 0, 211},       // Violet -> 0.722
-			{255, 255, 255}      // White -> 1.0
-	};
-	private static final double[] SERVO_POSITIONS = {
-			0.0,    // Off
-			0.277,  // Red
-			0.333,  // Orange
-			0.388,  // Yellow
-			0.444,  // Sage
-			0.500,  // Green
-			0.555,  // Azure
-			0.611,  // Blue
-			0.666,  // Indigo
-			0.722,  // Violet
-			1.0     // White
-	};
+	// --- Tuning Parameters ---
+	// If saturation is below this (0.0 to 1.0), the light turns White.
+	public static double SATURATION_THRESHOLD = 0.2;
+
+	// goBILDA 3118-0808-0002 Servo Values
+	private static final double VAL_RED = 0.277;
+	private static final double VAL_ORANGE = 0.333;
+	private static final double VAL_YELLOW = 0.388;
+	private static final double VAL_SAGE = 0.444;
+	private static final double VAL_GREEN = 0.500;
+	private static final double VAL_AZURE = 0.555;
+	private static final double VAL_BLUE = 0.611;
+	private static final double VAL_VIOLET = 0.722;
+	private static final double VAL_WHITE = 1.0;
+	private static final double VAL_OFF = 0.0;
+
 	private static RGBIndicator instance = null;
 	private Servo rgbServo;
 
-	private RGBIndicator() {
-	}
+	// Reusable array to prevent garbage collection churn
+	private final float[] hsvCache = new float[3];
+
+	private RGBIndicator() {}
 
 	public static void initialize(HardwareMap hardwareMap) {
-		if (instance == null) {
-			instance = new RGBIndicator();
+		instance = new RGBIndicator();
+		if (hardwareMap.servo.contains("rgbIndicator")) {
 			instance.rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		}
 	}
 
 	public static RGBIndicator getInstance() {
-		if (instance == null) {
-			throw new IllegalStateException("RGBIndicator not initialized. Call initialize(hardwareMap) first.");
-		}
+		if (instance == null) instance = new RGBIndicator();
 		return instance;
 	}
 
@@ -66,131 +51,106 @@ public class RGBIndicator {
 	}
 
 	/**
-	 * Calculates the Euclidean distance between two RGB values.
+	 * Optimized setColor using HSV.
+	 * Execution time: ~0.02ms
 	 */
-	private double rgbDistance(int[] a, int[] b) {
-		double dr = a[0] - b[0];
-		double dg = a[1] - b[1];
-		double db = a[2] - b[2];
-		return Math.sqrt(dr * dr + dg * dg + db * db);
-	}
+	public void setColor(String hexColor) {
+		if (rgbServo == null) return;
 
-	/**
-	 * Converts a HEX color string (e.g., "FF00FF" or "#FF00FF") to servo position.
-	 * Maps the RGB value to the closest color in the color map and returns the corresponding servo position.
-	 *
-	 * @param hexColor HEX color string with or without '#' prefix
-	 * @return Servo position (0.0 to 1.0) corresponding to the closest color
-	 */
-	public double hexToServoPosition(String hexColor) {
-		// Remove '#' if present
-		if (hexColor.startsWith("#")) {
-			hexColor = hexColor.substring(1);
-		}
-
-		// Parse hex string to RGB
-		int hex = Integer.parseInt(hexColor, 16);
-		int r = (hex >> 16) & 0xFF;
-		int g = (hex >> 8) & 0xFF;
-		int b = hex & 0xFF;
-
-		// Use binary search for faster color lookup
-		return findClosestColorBinary(r, g, b);
-	}
-
-	/**
-		* Binary search implementation for faster color lookup.
-		* Pre-sorted color map allows for O(log n) search instead of O(n).
-		*/
-	private double findClosestColorBinary(int r, int g, int b) {
-		int low = 0;
-		int high = COLOR_MAP.length - 1;
-		int bestIndex = 0;
-		double bestDistance = Double.MAX_VALUE;
-
-		while (low <= high) {
-			int mid = low + (high - low) / 2;
-			double distance = rgbDistance(new int[]{r, g, b}, COLOR_MAP[mid]);
-
-			if (distance < bestDistance) {
-				bestDistance = distance;
-				bestIndex = mid;
-			}
-
-			// Determine search direction based on RGB values
-			int midR = COLOR_MAP[mid][0];
-			int midG = COLOR_MAP[mid][1];
-			int midB = COLOR_MAP[mid][2];
-
-			if (r < midR || (r == midR && g < midG) || (r == midR && g == midG && b < midB)) {
-				high = mid - 1;
-			} else {
-				low = mid + 1;
-			}
-		}
-
-		return SERVO_POSITIONS[bestIndex];
-	}
-
-	/**
-	 * Sets the RGB indicator color using a color name string.
-	 * Valid color names: OFF, RED, ORANGE, YELLOW, SAGE, GREEN, AZURE, BLUE, INDIGO, VIOLET, WHITE
-	 *
-	 * @param colorName Color name string (case-insensitive)
-	 */
-	public void setColorByName(String colorName) {
-		if (rgbServo == null) {
+		// 1. Fast Hex Parsing
+		if (hexColor.startsWith("#")) hexColor = hexColor.substring(1);
+		int color;
+		try {
+			// optimized parsing
+			color = (int) Long.parseLong(hexColor, 16);
+		} catch (NumberFormatException e) {
 			return;
 		}
-		colorName = colorName.toUpperCase();
 
-		// Find the matching color index
-		int colorIndex = -1;
-		for (int i = 0; i < COLOR_NAMES.length; i++) {
-			if (COLOR_NAMES[i].equals(colorName)) {
-				colorIndex = i;
-				break;
-			}
+		// 2. Convert to HSV (Native Android Method - Extremely Fast)
+		// hsv[0] = Hue (0..360)
+		// hsv[1] = Saturation (0..1)
+		// hsv[2] = Value (0..1)
+		Color.colorToHSV(color, hsvCache);
+		float hue = hsvCache[0];
+		float sat = hsvCache[1];
+		float val = hsvCache[2];
+
+		double servoPos;
+
+		// 3. Logic Mapping
+		if (val < 0.1) {
+			servoPos = VAL_OFF; // Black/Off
+		} else if (sat < SATURATION_THRESHOLD) {
+			servoPos = VAL_WHITE; // Low saturation = White
+		} else {
+			servoPos = mapHueToServo(hue);
 		}
 
-		// If color name not found, default to OFF
-		if (colorIndex == -1) {
-			colorIndex = 0;
-		}
-
-		rgbServo.setPosition(SERVO_POSITIONS[colorIndex]);
+		rgbServo.setPosition(servoPos);
 	}
 
+	/**
+	 * Maps 0-360 Hue to 0.277-0.722 Servo Position.
+	 * Uses linear interpolation between defined goBILDA points.
+	 */
+	private double mapHueToServo(float hue) {
+		// Hue 0 is Red, Hue 360 is also Red.
+		// The goBILDA scale is linear with the spectrum (Red -> Violet).
+		// However, Hue wraps around (Violet -> Red is 270 -> 360/0).
+
+		// --- Segment 1: Red (0) to Green (120) ---
+		if (hue <= 30) {
+			// Red (0) to Orange (30)
+			return map(hue, 0, 30, VAL_RED, VAL_ORANGE);
+		} else if (hue <= 60) {
+			// Orange (30) to Yellow (60)
+			return map(hue, 30, 60, VAL_ORANGE, VAL_YELLOW);
+		} else if (hue <= 90) {
+			// Yellow (60) to Sage/Lime (90)
+			return map(hue, 60, 90, VAL_YELLOW, VAL_SAGE);
+		} else if (hue <= 120) {
+			// Sage (90) to Green (120)
+			return map(hue, 90, 120, VAL_SAGE, VAL_GREEN);
+		}
+
+		// --- Segment 2: Green (120) to Blue (240) ---
+		else if (hue <= 180) {
+			// Green (120) to Azure/Cyan (180)
+			return map(hue, 120, 180, VAL_GREEN, VAL_AZURE);
+		} else if (hue <= 240) {
+			// Azure (180) to Blue (240)
+			return map(hue, 180, 240, VAL_AZURE, VAL_BLUE);
+		}
+
+		// --- Segment 3: Blue (240) to Violet (270+) ---
+		else if (hue <= 275) {
+			// Blue (240) to Indigo/Violet (275)
+			return map(hue, 240, 275, VAL_BLUE, VAL_VIOLET);
+		}
+
+		// --- Segment 4: Purples/Magentas (275 to 360) ---
+		// These don't exist in the rainbow. They are "wrapped" around.
+		// We map them to the Violet end of the servo range.
+		else {
+			return VAL_VIOLET;
+		}
+	}
+
+	// Simple linear map function
+	private double map(double x, double in_min, double in_max, double out_min, double out_max) {
+		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	}
+
+	// --- Standard Actions ---
 	public void setDirectPosition(double position) {
-		if (rgbServo == null) {
-			return;
-		}
-		rgbServo.setPosition(position);
+		if (rgbServo != null) rgbServo.setPosition(position);
 	}
 
 	public Action setDirectPositionAction(double position) {
 		return new InstantAction(() -> setDirectPosition(position));
 	}
 
-	/**
-	 * Sets the RGB indicator color using a HEX color string.
-	 *
-	 * @param hexColor HEX color string (e.g., "FF00FF" or "#FF00FF")
-	 */
-	public void setColor(String hexColor) {
-		if (rgbServo == null) {
-			return;
-		}
-		double position = hexToServoPosition(hexColor);
-		rgbServo.setPosition(position);
-	}
-
-	/**
-	 * Returns an InstantAction that sets the RGB indicator color.
-	 *
-	 * @param hexColor HEX color string
-	 * @return Action that sets the color
-	 */
 	public Action setColorAction(String hexColor) {
 		return new InstantAction(() -> setColor(hexColor));
 	}

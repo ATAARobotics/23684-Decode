@@ -46,31 +46,59 @@ public class ColorDetector {
 	public static double MIN_SATURATION = 0.4;
 
 	private static ColorDetector instance = null;
-	// Public fields to store the last read values
+	
+	// Left sensor values
 	/**
-	 * Average red value from both sensors (0-255)
+	 * Red value from left sensor (0-255)
 	 */
-	public int avgRed;
+	public int leftRed;
 	/**
-	 * Average green value from both sensors (0-255)
+	 * Green value from left sensor (0-255)
 	 */
-	public int avgGreen;
+	public int leftGreen;
 	/**
-	 * Average blue value from both sensors (0-255)
+	 * Blue value from left sensor (0-255)
 	 */
-	public int avgBlue;
+	public int leftBlue;
 	/**
-	 * Average HSV values: [0]=hue (0-360), [1]=saturation (0-1), [2]=value (0-1)
+	 * HSV values for left sensor: [0]=hue (0-360), [1]=saturation (0-1), [2]=value (0-1)
 	 */
-	public float[] avgHSV = new float[3];
+	public float[] leftHSV = new float[3];
 	/**
-	 * True if the last reading detected a green ball
+	 * True if the left sensor detected a green ball
 	 */
-	public boolean isGreen;
+	public boolean leftIsGreen;
 	/**
-	 * True if the last reading detected a purple ball
+	 * True if the left sensor detected a purple ball
 	 */
-	public boolean isPurple;
+	public boolean leftIsPurple;
+	
+	// Right sensor values
+	/**
+	 * Red value from right sensor (0-255)
+	 */
+	public int rightRed;
+	/**
+	 * Green value from right sensor (0-255)
+	 */
+	public int rightGreen;
+	/**
+	 * Blue value from right sensor (0-255)
+	 */
+	public int rightBlue;
+	/**
+	 * HSV values for right sensor: [0]=hue (0-360), [1]=saturation (0-1), [2]=value (0-1)
+	 */
+	public float[] rightHSV = new float[3];
+	/**
+	 * True if the right sensor detected a green ball
+	 */
+	public boolean rightIsGreen;
+	/**
+	 * True if the right sensor detected a purple ball
+	 */
+	public boolean rightIsPurple;
+	
 	private com.qualcomm.robotcore.hardware.ColorSensor colourLeft;
 	private com.qualcomm.robotcore.hardware.ColorSensor colourRight;
 
@@ -78,11 +106,9 @@ public class ColorDetector {
 	}
 
 	public static void initialize(HardwareMap hardwareMap) {
-		if (instance == null) {
-			instance = new ColorDetector();
-			instance.colourLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.ColorSensor.class, "colourLeft");
-			instance.colourRight = hardwareMap.get(com.qualcomm.robotcore.hardware.ColorSensor.class, "colourRight");
-		}
+		instance = new ColorDetector();
+		instance.colourLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.ColorSensor.class, "colourLeft");
+		instance.colourRight = hardwareMap.get(com.qualcomm.robotcore.hardware.ColorSensor.class, "colourRight");
 	}
 
 	public static ColorDetector getInstance() {
@@ -98,26 +124,26 @@ public class ColorDetector {
 
 	/**
 	 * Reads values from both color sensors and updates detection state.
-	 * Averages RGB values from both sensors, converts to HSV, and checks against thresholds.
-	 * Updates the public isGreen and isPurple fields.
+	 * Performs individual calculations for each sensor.
+	 * Converts to HSV and checks against thresholds.
+	 * Updates all public fields for individual sensors and their detection state.
 	 */
 	private void updateValues() {
-		int leftRed = colourLeft.red();
-		int leftGreen = colourLeft.green();
-		int leftBlue = colourLeft.blue();
+		// Read left sensor
+		leftRed = colourLeft.red();
+		leftGreen = colourLeft.green();
+		leftBlue = colourLeft.blue();
+		Color.RGBToHSV(leftRed, leftGreen, leftBlue, leftHSV);
+		leftIsGreen = (leftHSV[1] > MIN_SATURATION && leftHSV[0] > GREEN_HUE_MIN && leftHSV[0] < GREEN_HUE_MAX);
+		leftIsPurple = (leftHSV[1] > MIN_SATURATION && leftHSV[0] > PURPLE_HUE_MIN && leftHSV[0] < PURPLE_HUE_MAX);
 
-		int rightRed = colourRight.red();
-		int rightGreen = colourRight.green();
-		int rightBlue = colourRight.blue();
-
-		avgRed = (leftRed + rightRed) / 2;
-		avgGreen = (leftGreen + rightGreen) / 2;
-		avgBlue = (leftBlue + rightBlue) / 2;
-
-		Color.RGBToHSV(avgRed, avgGreen, avgBlue, avgHSV);
-
-		isGreen = (avgHSV[1] > MIN_SATURATION && avgHSV[0] > GREEN_HUE_MIN && avgHSV[0] < GREEN_HUE_MAX);
-		isPurple = (avgHSV[1] > MIN_SATURATION && avgHSV[0] > PURPLE_HUE_MIN && avgHSV[0] < PURPLE_HUE_MAX);
+		// Read right sensor
+		rightRed = colourRight.red();
+		rightGreen = colourRight.green();
+		rightBlue = colourRight.blue();
+		Color.RGBToHSV(rightRed, rightGreen, rightBlue, rightHSV);
+		rightIsGreen = (rightHSV[1] > MIN_SATURATION && rightHSV[0] > GREEN_HUE_MIN && rightHSV[0] < GREEN_HUE_MAX);
+		rightIsPurple = (rightHSV[1] > MIN_SATURATION && rightHSV[0] > PURPLE_HUE_MIN && rightHSV[0] < PURPLE_HUE_MAX);
 	}
 
 	/**
@@ -132,20 +158,33 @@ public class ColorDetector {
 
 	/**
 	 * Internal Action that performs color sensor updates.
-	 * Updates sensor readings and logs telemetry data.
+	 * Updates sensor readings and logs telemetry data for each sensor separately.
 	 */
 	private class UpdateAction implements Action {
 		@Override
 		public boolean run(@NonNull TelemetryPacket packet) {
 			updateValues();
-			packet.put("Average Red", avgRed);
-			packet.put("Average Green", avgGreen);
-			packet.put("Average Blue", avgBlue);
-			packet.put("Average Hue", avgHSV[0]);
-			packet.put("Average Saturation", avgHSV[1]);
-			packet.put("Average Value", avgHSV[2]);
-			packet.put("Is Green", isGreen);
-			packet.put("Is Purple", isPurple);
+			
+			// Left sensor telemetry
+			packet.put("Left Red", leftRed);
+			packet.put("Left Green", leftGreen);
+			packet.put("Left Blue", leftBlue);
+			packet.put("Left Hue", leftHSV[0]);
+			packet.put("Left Saturation", leftHSV[1]);
+			packet.put("Left Value", leftHSV[2]);
+			packet.put("Left Is Green", leftIsGreen);
+			packet.put("Left Is Purple", leftIsPurple);
+			
+			// Right sensor telemetry
+			packet.put("Right Red", rightRed);
+			packet.put("Right Green", rightGreen);
+			packet.put("Right Blue", rightBlue);
+			packet.put("Right Hue", rightHSV[0]);
+			packet.put("Right Saturation", rightHSV[1]);
+			packet.put("Right Value", rightHSV[2]);
+			packet.put("Right Is Green", rightIsGreen);
+			packet.put("Right Is Purple", rightIsPurple);
+			
 			return false; // Action finishes immediately after one frame
 		}
 	}

@@ -21,10 +21,8 @@ public class Intake {
 	}
 
 	public static void initialize(HardwareMap hardwareMap) {
-		if (instance == null) {
-			instance = new Intake();
-			instance.intake = hardwareMap.get(DcMotor.class, "intake");
-		}
+		instance = new Intake();
+		instance.intake = hardwareMap.get(DcMotor.class, "intake");
 	}
 
 	public static Intake getInstance() {

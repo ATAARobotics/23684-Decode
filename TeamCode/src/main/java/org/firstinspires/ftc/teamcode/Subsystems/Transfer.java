@@ -13,6 +13,7 @@ public class Transfer {
 	public static double FORWARD_POWER = 1.0;
 	public static double BACKWARD_POWER = -1.0;
 	public static double STOP_POWER = 0.0;
+	public static double RIGHT_SERVO_POWER_SCALE = 0.8;
 	private static Transfer instance = null;
 	private CRServo transferLeft;
 	private CRServo transferRight;
@@ -23,16 +24,13 @@ public class Transfer {
 	}
 
 	public static void initialize(HardwareMap hardwareMap) {
-		if (instance == null) {
-			instance = new Transfer();
-			instance.transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
-			instance.transferRight = hardwareMap.get(CRServo.class, "transferRight");
-			instance.intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
-			instance.intakeDoorRight = hardwareMap.get(CRServo.class, "intakeDoorRight");
-
-			instance.setTransferDirections();
-			instance.setIntakeDoorDirections();
-		}
+		instance = new Transfer();
+		instance.transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
+		instance.transferRight = hardwareMap.get(CRServo.class, "transferRight");
+		instance.intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
+		instance.intakeDoorRight = hardwareMap.get(CRServo.class, "intakeDoorRight");
+		instance.setTransferDirections();
+		instance.setIntakeDoorDirections();
 	}
 
 	public static Transfer getInstance() {
@@ -69,7 +67,7 @@ public class Transfer {
 		return new InstantAction(() -> {
 			setTransferDirections();
 			transferLeft.setPower(FORWARD_POWER);
-			transferRight.setPower(FORWARD_POWER * 0.8);
+			transferRight.setPower(FORWARD_POWER * RIGHT_SERVO_POWER_SCALE);
 		});
 	}
 
@@ -83,7 +81,7 @@ public class Transfer {
 		return new InstantAction(() -> {
 			setTransferDirections();
 			transferLeft.setPower(BACKWARD_POWER);
-			transferRight.setPower(BACKWARD_POWER * 0.8);
+			transferRight.setPower(BACKWARD_POWER * RIGHT_SERVO_POWER_SCALE);
 		});
 	}
 

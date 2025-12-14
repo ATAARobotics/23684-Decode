@@ -5,7 +5,7 @@ import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -22,11 +22,8 @@ public class Spindexer {
 	// PID coefficients for position control. Tuned 2025-11-22.
 	public static double P = 0.01, I = 0.0, D = 0.0, F = 0.0;
 	// EMA tuning parameters
-	public static double ALPHA_RESPONSIVE = 0.7;
 	public static double ALPHA_SMOOTH = 0.05;
-	public static double MOTION_THRESHOLD = 0.1;
 	// Hybrid encoder calibration constants
-	public static double MIN_AVERAGE_TIME_SEC = 3.0;
 	public static double TOLERANCE_DEGREES = 3.0;
 	public static double MANUAL_TRIM_STEP_DEGREES = 2.0;
 	private static Spindexer instance = null;
@@ -40,7 +37,7 @@ public class Spindexer {
 	private CRServo spindexerLeft;
 	private CRServo spindexerRight;
 	private AnalogInput spindexerEncoder;
-	private DcMotor quadratureEncoder;
+	private DcMotorEx quadratureEncoder;
 	// EMA filter state variables
 	private double filteredValue = 0.0;
 	private boolean isInitialized = false;
@@ -58,17 +55,14 @@ public class Spindexer {
 	}
 
 	public static void initialize(HardwareMap hardwareMap) {
-		if (instance == null) {
-			instance = new Spindexer();
-			instance.spindexerLeft = hardwareMap.get(CRServo.class, "spindexerLeft");
-			instance.spindexerRight = hardwareMap.get(CRServo.class, "spindexerRight");
-			instance.spindexerEncoder = hardwareMap.get(AnalogInput.class, "spindexerEncoder");
-			instance.quadratureEncoder = hardwareMap.get(DcMotor.class, "frontRight");
-
-			instance.controller = new PIDFController(P, I, D, F);
-		}
+		instance = new Spindexer();
+		instance.spindexerLeft = hardwareMap.get(CRServo.class, "spindexerLeft");
+		instance.spindexerRight = hardwareMap.get(CRServo.class, "spindexerRight");
+		instance.spindexerEncoder = hardwareMap.get(AnalogInput.class, "spindexerEncoder");
+		instance.quadratureEncoder = hardwareMap.get(DcMotorEx.class, "frontRight");
+		instance.controller = new PIDFController(P, I, D, F);
+		instance.controller.setOutputLimits(-1, 1);
 	}
-
 
 	public static Spindexer getInstance() {
 		if (instance == null) {
@@ -105,20 +99,6 @@ public class Spindexer {
 		calibrationSum += absPos;
 		calibrationCount++;
 	}
-
-	// TODO: Deprecate this
-//	/**
-//	 * Finalizes auto calibration by calculating offset and saving to RobotState.
-//	 */
-//	public void finalizeAutoCalibration() {
-//		if (!calibrationActive || calibrationCount == 0) return;
-//		double avgAbs = calibrationSum / calibrationCount;
-//		RobotState state = RobotState.getInstance();
-//		state.absoluteOffset = avgAbs;
-//		state.averageQuality = (System.nanoTime() - calibrationStartTime) / 1e9; // seconds
-//		state.hasValidData = true;
-//		calibrationActive = false;
-//	}
 
 	/**
 	 * Finalizes teleop calibration with validation against existing data.
@@ -158,15 +138,6 @@ public class Spindexer {
 	 */
 	public double getQuadraturePosition() {
 		return (((quadratureEncoder.getCurrentPosition() - quadratureOffest) / 8192.0) * 360.0) + zeroOffset;
-	}
-
-	/**
-	 * Applies manual offset trim.
-	 */
-	public Action applyManualOffsetTrim(double direction) {
-		return new InstantAction(() -> {
-			RobotState.getInstance().absoluteOffset += direction * MANUAL_TRIM_STEP_DEGREES;
-		});
 	}
 
 	/**
@@ -211,7 +182,7 @@ public class Spindexer {
 			// This action is considered "done" when the error is small.
 			// This allows it to be a "blocking" call in a sequence.
 			// Returns true while moving (error >= threshold), false when within tolerance
-			double error = targetPosition - getPosition();
+			double error = targetPosition - getCalibratedPosition();
 			packet.put("Spindexer Error", error);
 			return Math.abs(error) >= 17; // Returns true while moving, false when within tolerance
 		};

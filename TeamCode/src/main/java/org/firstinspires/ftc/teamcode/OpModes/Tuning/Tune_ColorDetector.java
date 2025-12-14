@@ -164,31 +164,27 @@ public class Tune_ColorDetector extends OpMode {
 
 		// === DISPLAY TELEMETRY ===
 
-		// Current sensor readings
-		telemetry.addData("", "=== RAW RGB VALUES ===");
-		telemetry.addData("Average Red", colorDetector.avgRed);
-		telemetry.addData("Average Green", colorDetector.avgGreen);
-		telemetry.addData("Average Blue", colorDetector.avgBlue);
+		// Left sensor readings
+		telemetry.addData("", "=== LEFT SENSOR ===");
+		telemetry.addData("Red", colorDetector.leftRed);
+		telemetry.addData("Green", colorDetector.leftGreen);
+		telemetry.addData("Blue", colorDetector.leftBlue);
+		telemetry.addData("Hue (0-360)", String.format("%.1f", colorDetector.leftHSV[0]));
+		telemetry.addData("Saturation (0-1)", String.format("%.3f", colorDetector.leftHSV[1]));
+		telemetry.addData("Value (0-1)", String.format("%.3f", colorDetector.leftHSV[2]));
+		telemetry.addData("Is Green", colorDetector.leftIsGreen);
+		telemetry.addData("Is Purple", colorDetector.leftIsPurple);
 
-		// HSV values
-		telemetry.addData("", "=== HSV VALUES ===");
-		telemetry.addData("Hue (0-360)", String.format("%.1f", colorDetector.avgHSV[0]));
-		telemetry.addData("Saturation (0-1)", String.format("%.3f", colorDetector.avgHSV[1]));
-		telemetry.addData("Value (0-1)", String.format("%.3f", colorDetector.avgHSV[2]));
-
-		// Detection status
-		telemetry.addData("", "=== DETECTION STATUS ===");
-		String detectedColor;
-		if (colorDetector.isGreen) {
-			detectedColor = "GREEN ✓";
-		} else if (colorDetector.isPurple) {
-			detectedColor = "PURPLE ✓";
-		} else {
-			detectedColor = "UNKNOWN";
-		}
-		telemetry.addData("Detected Color", detectedColor);
-		telemetry.addData("Is Green", colorDetector.isGreen);
-		telemetry.addData("Is Purple", colorDetector.isPurple);
+		// Right sensor readings
+		telemetry.addData("", "=== RIGHT SENSOR ===");
+		telemetry.addData("Red", colorDetector.rightRed);
+		telemetry.addData("Green", colorDetector.rightGreen);
+		telemetry.addData("Blue", colorDetector.rightBlue);
+		telemetry.addData("Hue (0-360)", String.format("%.1f", colorDetector.rightHSV[0]));
+		telemetry.addData("Saturation (0-1)", String.format("%.3f", colorDetector.rightHSV[1]));
+		telemetry.addData("Value (0-1)", String.format("%.3f", colorDetector.rightHSV[2]));
+		telemetry.addData("Is Green", colorDetector.rightIsGreen);
+		telemetry.addData("Is Purple", colorDetector.rightIsPurple);
 
 		// Current thresholds
 		telemetry.addData("", "=== GREEN THRESHOLDS ===");

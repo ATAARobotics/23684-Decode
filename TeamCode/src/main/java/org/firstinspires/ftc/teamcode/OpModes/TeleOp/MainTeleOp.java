@@ -12,7 +12,6 @@ import org.firstinspires.ftc.teamcode.Roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.Subsystems.Intake;
 import org.firstinspires.ftc.teamcode.Subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystems.RGBIndicator;
-import org.firstinspires.ftc.teamcode.Subsystems.RobotState;
 import org.firstinspires.ftc.teamcode.Subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystems.Transfer;
@@ -52,19 +51,15 @@ public class MainTeleOp extends OpMode {
 	protected Limelight limelight;
 	protected RGBIndicator rgbIndicator;
 
-
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
 	protected boolean rightTriggerPressed = false;
 	protected boolean xButtonPressed = false;
-	protected boolean yButtonPressed = false;
 	protected boolean aButtonPressed = false;
 	protected boolean bButtonPressed = false;
 	protected boolean spindexerUpCrossed = false;
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
-	protected boolean leftBumperPressed = false;
-	protected boolean rightBumperPressed = false;
 	protected boolean dpadUpPressed = false;
 	protected boolean dpadDownPressed = false;
 	protected boolean transferAboveRPM = false;
@@ -106,7 +101,7 @@ public class MainTeleOp extends OpMode {
 		scheduler.schedule(transfer.intakeDoorForward());
 		scheduler.schedule(transfer.transferBackward());
 		scheduler.update();
-		limelight.Start(getStartingPose().heading.toDouble());
+		limelight.start();
 
 		scheduler.schedule(spindexer.setTarget(0));
 	}
@@ -117,16 +112,17 @@ public class MainTeleOp extends OpMode {
 
 		// CRITICAL - Must complete quickly for responsive driving
 		drive.updatePoseEstimate();
+		limelight.update();
 		handleDriveInput();
 
 		// Phase 1: Core subsystem updates
         SubsystemUpdater.update();
         handleOperatorInput();
         spindexer.update();
-        scheduler.update();
+		scheduler.update();
 
 		// Phase 2: Non-critical updates (budget: 4.5ms)
-		if ((System.nanoTime() - startTime) < 4_500_000) {
+		if ((System.nanoTime() - startTime) < 30_000_000) {
 			updateRGBIndicator();
 			displayTelemetry();
 			telemetry.update();
@@ -144,12 +140,6 @@ public class MainTeleOp extends OpMode {
 			telemetry.addData("Performance", "Max loop time: %.2fms", maxLoopTime / 1_000_000.0);
 			telemetry.addData("Performance", "Avg loop time: %.2fms", (System.nanoTime() - lastLoopTime) / 1_000_000.0 / 100.0);
 			lastLoopTime = System.nanoTime();
-		}
-
-		// Safety: If we're consistently over budget, reduce workload
-		if (loopCount > 10 && maxLoopTime > TARGET_LOOP_TIME_NS * 1.5) {
-			// Reduce telemetry frequency if we're consistently over budget
-			SubsystemUpdater.TELEMETRY_INTERVAL = Math.min(10, SubsystemUpdater.TELEMETRY_INTERVAL + 1);
 		}
 	}
 
@@ -204,13 +194,13 @@ public class MainTeleOp extends OpMode {
 		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
 				scheduler.schedule(
-						drive.actionBuilder(drive.localizer.getPose())
+						drive.actionBuilder(new Pose2d(limelight.botPose.getPosition().x, limelight.botPose.getPosition().y, limelight.botPose.getOrientation().getYaw()))
 								.strafeToLinearHeading(new Vector2d(56.75, 10.25),Math.toRadians(-23))
 								.build()
 				);
 			} else if (getTeam() == Team.BLUE) {
 				scheduler.schedule(
-						drive.actionBuilder(drive.localizer.getPose())
+						drive.actionBuilder(new Pose2d(limelight.botPose.getPosition().x, limelight.botPose.getPosition().y, limelight.botPose.getOrientation().getYaw()))
 								.strafeToLinearHeading(new Vector2d(56.75, -10.25),Math.toRadians(23))
 								.build()
 				);

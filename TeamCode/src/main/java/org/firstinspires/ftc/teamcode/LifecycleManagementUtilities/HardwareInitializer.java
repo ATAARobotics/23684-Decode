@@ -26,7 +26,7 @@ public class HardwareInitializer {
 		RGBIndicator.initialize(hardwareMap);
 		DistanceDetector.initialize(hardwareMap);
 
-		// Initialize Spindexer last (depends on Transfer and ColorSensor)
+		// Initialize Spindexer last (depends on some other subsystems)
 		Spindexer.initialize(hardwareMap);
 	}
 }
