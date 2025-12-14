@@ -2,10 +2,7 @@ package org.firstinspires.ftc.teamcode.OpModes.Tests;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.PoseVelocity2d;
-import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -14,6 +11,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.Utilities.PIDFController;
+import org.firstinspires.ftc.teamcode.Utilities.UnwrapAngle;
 
 /**
  * Drive test OpMode for testing Mecanum drive with PID control.
@@ -32,6 +30,9 @@ public class Test_Drive extends OpMode {
 	public static double targetX = 0;
 	public static double targetY = 0;
 	public static double targetH = 0;
+	public double prevHeading = 0;
+	public double prevWrapped =0;
+	public double prevUnwrappedHeading = 0;
 
 	// Drive system components
 	private Pose2d pose;
@@ -40,6 +41,9 @@ public class Test_Drive extends OpMode {
 	private PIDFController xPidController;
 	private PIDFController yPidController;
 	private PIDFController headingPidController;
+
+	private MecanumDrive drive;
+
 
 	private static final double DEADZONE_THRESHOLD = 0.05;
 
@@ -77,10 +81,13 @@ public class Test_Drive extends OpMode {
 		pinpoint.setEncoderDirections(xEncoderDirection, yEncoderDirection);
 		pinpoint.resetPosAndIMU();
 
+		drive = new MecanumDrive(hardwareMap,pose);
 		frontRight = hardwareMap.get(DcMotor.class, "frontRight");
 		rearRight = hardwareMap.get(DcMotor.class, "rearRight");
 		frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
 		rearLeft = hardwareMap.get(DcMotor.class, "rearLeft");
+
+		prevHeading = pinpoint.getHeading(AngleUnit.DEGREES);
 
 	}
 
@@ -100,31 +107,46 @@ public class Test_Drive extends OpMode {
 		);
 		target = new Pose2d(targetX, targetY, Math.toRadians(targetH));
 
+		prevUnwrappedHeading = UnwrapAngle.unwrap(prevHeading,Math.toDegrees(pose.heading.toDouble()),prevUnwrappedHeading);
+
 		// Calculate power commands
 		double forwardPower = yPidController.getOutput(pose.position.y, target.position.y);
 		double strafePower = xPidController.getOutput(pose.position.x, target.position.x);
 		double turnPower = headingPidController.getOutput(
-				normalizeAngle(pose.heading.toDouble()),
-				normalizeAngle(target.heading.toDouble())
+				prevUnwrappedHeading,
+				Math.toDegrees(target.heading.toDouble())
 		);
+		prevHeading = pinpoint.getHeading(AngleUnit.DEGREES);
 
 		// Apply deadzone
 		forwardPower = Math.abs(forwardPower) > DEADZONE_THRESHOLD ? forwardPower : 0;
 		strafePower = Math.abs(strafePower) > DEADZONE_THRESHOLD ? strafePower : 0;
 		turnPower = Math.abs(turnPower) > DEADZONE_THRESHOLD ? turnPower : 0;
 
-		double y = forwardPower; // Remember, Y stick is reversed!
-		double x = strafePower;
-		double rx = turnPower;
 
-		frontLeft.setPower(y + x + rx);
-		rearLeft.setPower(y - x + rx);
-		frontRight.setPower(y - x - rx);
-		rearRight.setPower(y + x - rx);
+		double rotX = strafePower * Math.cos(-pose.heading.toDouble()) - forwardPower * Math.sin(-pose.heading.toDouble());
+		double rotY = strafePower * Math.sin(-pose.heading.toDouble()) + forwardPower * Math.cos(-pose.heading.toDouble());
+
+		rotX = rotX * 1.1;  // Counteract imperfect strafing
+
+		// Denominator is the largest motor power (absolute value) or 1
+		// This ensures all the powers maintain the same ratio,
+		// but only if at least one is out of the range [-1, 1]
+		double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(turnPower), 1);
+		double frontLeftPower = (rotY + rotX + turnPower) / denominator;
+		double backLeftPower = (rotY - rotX + turnPower) / denominator;
+		double frontRightPower = (rotY - rotX - turnPower) / denominator;
+		double backRightPower = (rotY + rotX - turnPower) / denominator;
+
+		frontLeft.setPower(frontLeftPower);
+		rearLeft.setPower(backLeftPower);
+		frontRight.setPower(frontRightPower);
+		rearRight.setPower(backRightPower);
 
 		// Telemetry
 		telemetry.addData("Position", pose.position);
 		telemetry.addData("Heading (deg)", Math.toDegrees(pose.heading.toDouble()));
+		telemetry.addData("Heading Target",Math.toDegrees(target.heading.toDouble()));
 		telemetry.addLine();
 		telemetry.addData("Forward Power", forwardPower);
 		telemetry.addData("Strafe Power", strafePower);
@@ -136,9 +158,9 @@ public class Test_Drive extends OpMode {
 	 * X-axis (strafe) PID controller gains.
 	 */
 	public static class XController {
-		public static double kP = 0;
+		public static double kP = 0.1;
 		public static double kI = 0;
-		public static double kD = 0;
+		public static double kD = 0.01;
 		public static double kF = 0;
 	}
 
@@ -148,9 +170,9 @@ public class Test_Drive extends OpMode {
 	 * Y-axis (forward) PID controller gains.
 	 */
 	public static class YController {
-		public static double kP = 0;
+		public static double kP = 0.1;
 		public static double kI = 0;
-		public static double kD = 0;
+		public static double kD = 0.01;
 		public static double kF = 0;
 	}
 

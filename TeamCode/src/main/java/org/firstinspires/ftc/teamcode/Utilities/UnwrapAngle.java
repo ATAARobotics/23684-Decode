@@ -16,10 +16,10 @@ public class UnwrapAngle {
 
 		// 2. Normalize the difference to be between -180 and 180
 		// If the jump is too big, it means we crossed the 0/360 boundary
-		if (diff > 180) {
-			diff -= 360; // We crossed from high to low (e.g., 0 -> 350 is -10, not +350)
-		} else if (diff < -180) {
-			diff += 360; // We crossed from low to high (e.g., 350 -> 0 is +10, not -350)
+		if (diff > 90) {
+			diff -= 180; // We crossed from high to low (e.g., 0 -> 350 is -10, not +350)
+		} else if (diff < -90) {
+			diff += 180; // We crossed from low to high (e.g., 350 -> 0 is +10, not -350)
 		}
 
 		// 3. Add the corrected difference to the running total

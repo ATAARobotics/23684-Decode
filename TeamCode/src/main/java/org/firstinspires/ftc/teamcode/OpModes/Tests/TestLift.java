@@ -15,7 +15,7 @@ public class TestLift extends OpMode {
 
     @Override
     public void loop() {
-        decodeTest.setPower(gamepad1.left_stick_y);
+        decodeTest.setPower(gamepad1.left_stick_y / 2);
 
     }
 }
