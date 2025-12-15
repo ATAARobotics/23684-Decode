@@ -68,7 +68,6 @@ public class Test_Drive extends OpMode {
 		rearLeft = hardwareMap.get(DcMotor.class, "rearLeft");
 
 		prevHeading = pinpoint.getHeading(AngleUnit.DEGREES);
-
 	}
 
 	@Override
@@ -125,8 +124,8 @@ public class Test_Drive extends OpMode {
 
 		// Telemetry
 		telemetry.addData("Position", pose.position);
-		telemetry.addData("Heading (deg)", Math.toDegrees(pose.heading.toDouble()));
-		telemetry.addData("Heading Target",Math.toDegrees(target.heading.toDouble()));
+		telemetry.addData("Heading (deg)", Math.toDegrees(prevUnwrappedHeading));
+		telemetry.addData("Heading Target", Math.toDegrees(Angle.nearestCoterminal(Math.toDegrees(target.heading.toDouble()), prevUnwrappedHeading, 180)));
 		telemetry.addLine();
 		telemetry.addData("Forward Power", forwardPower);
 		telemetry.addData("Strafe Power", strafePower);
