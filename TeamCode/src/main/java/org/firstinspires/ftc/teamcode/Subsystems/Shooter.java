@@ -93,7 +93,7 @@ public class Shooter {
 		}
 	}
 
-	public void updateRPM(long nanoTime) {
+	private void updateRPM(long nanoTime) {
 		double upperVelocity = upperShooter.getVelocity();
 		double lowerVelocity = lowerShooter.getVelocity();
 

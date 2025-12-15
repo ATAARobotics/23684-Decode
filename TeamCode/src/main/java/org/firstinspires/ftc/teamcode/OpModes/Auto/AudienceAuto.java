@@ -4,15 +4,12 @@ import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
-import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareInitializer;
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.SubsystemUpdater;
@@ -21,10 +18,9 @@ import org.firstinspires.ftc.teamcode.Subsystems.Intake;
 import org.firstinspires.ftc.teamcode.Subsystems.RobotState;
 import org.firstinspires.ftc.teamcode.Subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
-import org.firstinspires.ftc.teamcode.Subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.Utilities.ActionScheduler;
-import org.firstinspires.ftc.teamcode.Utilities.SpindexerPositionUtility;
-import org.firstinspires.ftc.teamcode.Utilities.TransferUtility;
+import org.firstinspires.ftc.teamcode.Utilities.SpindexerPosition;
+import org.firstinspires.ftc.teamcode.Utilities.Transfer;
 
 /**
  * Abstract base class for Audience-side autonomous modes.
@@ -44,10 +40,8 @@ public abstract class AudienceAuto extends OpMode {
 
 	private Spindexer spindexer;
 	private Shooter shooter;
-	private Transfer transfer;
+	private org.firstinspires.ftc.teamcode.Subsystems.Transfer transfer;
 	private Intake intake;
-	private CRServo transferRight;
-	private CRServo transferLeft;
 	private MecanumDrive drive;
 	private TrajectoryActionBuilder trajectoryToShootingPosition;
 	private TrajectoryActionBuilder trajectoryToCollectionPosition;
@@ -79,16 +73,11 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Subsystem Init", "Spindexer initialized");
 		telemetry.update();
 
-		transfer = Transfer.getInstance();
+		transfer = org.firstinspires.ftc.teamcode.Subsystems.Transfer.getInstance();
 		telemetry.addData("Subsystem Init", "Transfer initialized");
 		telemetry.update();
 
 		intake = Intake.getInstance();
-
-		// TODO: Remove this and transition to using the subsystem
-		transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
-		transferRight = hardwareMap.get(CRServo.class, "transferRight");
-		transferRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
 		telemetry.addData("Subsystem Init", "Intake initialized");
 		telemetry.update();
@@ -103,7 +92,6 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Subsystem Init", "ActionScheduler initialized");
 		telemetry.update();
 
-		//double shotAngle = calculateShotAngle(getShootingX(), getShootingY());
 		double shotAngle = GetShootingHeading();
 		trajectoryToShootingPosition = drive.actionBuilder(new Pose2d(60, -9, Math.toRadians(0)))
 				.strafeToLinearHeading(new Vector2d(55, -9), Math.toRadians(23));
@@ -117,9 +105,9 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Trajectory", "Collection angle: %.2f°", getCollectionHeading());
 		telemetry.update();
 
-		shooterTarget1 = SpindexerPositionUtility.getNextShootPosition(0);
-		shooterTarget2 = SpindexerPositionUtility.getNextShootPosition(shooterTarget1);
-		shooterTarget3 = SpindexerPositionUtility.getNextShootPosition(shooterTarget2);
+		shooterTarget1 = SpindexerPosition.getNextShootPosition(0);
+		shooterTarget2 = SpindexerPosition.getNextShootPosition(shooterTarget1);
+		shooterTarget3 = SpindexerPosition.getNextShootPosition(shooterTarget2);
 
 		telemetry.addData("Status", "Initialization complete");
 		telemetry.update();
@@ -168,8 +156,6 @@ public abstract class AudienceAuto extends OpMode {
 									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
 									return true; // Continue running this action
 								} else {
-									// Optional: Stop the shooter when finished
-									// shooter.run(0);
 									return false; // Action is done
 								}
 							}
@@ -194,8 +180,6 @@ public abstract class AudienceAuto extends OpMode {
 									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
 									return true; // Continue running this action
 								} else {
-									// Optional: Stop the shooter when finished
-									// shooter.run(0);
 									return false; // Action is done
 								}
 							}
@@ -220,8 +204,6 @@ public abstract class AudienceAuto extends OpMode {
 									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
 									return true; // Continue running this action
 								} else {
-									// Optional: Stop the shooter when finished
-									// shooter.run(0);
 									return false; // Action is done
 								}
 							}
@@ -244,12 +226,10 @@ public abstract class AudienceAuto extends OpMode {
 		spindexer.update();
 
 		// Control transfer mechanism based on readiness (spindexer position + shooter RPM)
-		if (TransferUtility.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM)) {
-			transferLeft.setPower(1);
-			transferRight.setPower(1);
+		if (Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM)) {
+			transfer.transferForward();
 		} else {
-			transferLeft.setPower(0);
-			transferRight.setPower(0);
+			transfer.transferBackward();
 		}
 
 		// Update telemetry
@@ -260,9 +240,9 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Scheduler Status", !actionScheduler.isSchedulerEmpty() ? "Busy" : "Idle");
 		telemetry.addData("Shooter RPM", "%.0f", shooter.averageRPM);
 		telemetry.addData("Shooter Target RPM", "%.0f", Shooter.AUDIENCE_RPM);
-		telemetry.addData("Spindexer at Shooting Pos", TransferUtility.isSpindexerAtShootingPosition(spindexer));
-		telemetry.addData("Shooter at Target RPM", TransferUtility.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM));
-		telemetry.addData("Transfer Ready", TransferUtility.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM));
+		telemetry.addData("Spindexer at Shooting Pos", Transfer.isSpindexerAtShootingPosition(spindexer));
+		telemetry.addData("Shooter at Target RPM", Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM));
+		telemetry.addData("Transfer Ready", Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM));
 		telemetry.update();
 	}
 

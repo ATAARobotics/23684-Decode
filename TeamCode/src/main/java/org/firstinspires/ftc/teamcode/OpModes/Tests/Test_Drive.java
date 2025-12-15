@@ -11,13 +11,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Roadrunner.MecanumDrive;
 import org.firstinspires.ftc.teamcode.Utilities.PIDFController;
-import org.firstinspires.ftc.teamcode.Utilities.UnwrapAngle;
+import org.firstinspires.ftc.teamcode.Utilities.Angle;
 
 /**
  * Drive test OpMode for testing Mecanum drive with PID control.
  * Uses GoBilda Pinpoint for odometry.
  */
-
 @Config
 @TeleOp
 public class Test_Drive extends OpMode {
@@ -31,7 +30,6 @@ public class Test_Drive extends OpMode {
 	public static double targetY = 0;
 	public static double targetH = 0;
 	public double prevHeading = 0;
-	public double prevWrapped =0;
 	public double prevUnwrappedHeading = 0;
 
 	// Drive system components
@@ -43,25 +41,7 @@ public class Test_Drive extends OpMode {
 	private PIDFController headingPidController;
 
 	private MecanumDrive drive;
-
-
 	private static final double DEADZONE_THRESHOLD = 0.05;
-
-	/**
-	 * Normalize an angle to the range [-pi, pi].
-	 *
-	 * @param angle the angle in radians
-	 * @return the normalized angle
-	 */
-	private double normalizeAngle(double angle) {
-		while (angle > Math.PI) {
-			angle -= 2 * Math.PI;
-		}
-		while (angle < -Math.PI) {
-			angle += 2 * Math.PI;
-		}
-		return angle;
-	}
 
 	@Override
 	public void init() {
@@ -107,16 +87,16 @@ public class Test_Drive extends OpMode {
 		);
 		target = new Pose2d(targetX, targetY, Math.toRadians(targetH));
 
-		prevUnwrappedHeading = UnwrapAngle.unwrap(prevHeading,Math.toDegrees(pose.heading.toDouble()),prevUnwrappedHeading);
+		prevUnwrappedHeading = Angle.unwrap(prevHeading, Math.toDegrees(pose.heading.toDouble()), prevUnwrappedHeading, 180);
 
 		// Calculate power commands
 		double forwardPower = yPidController.getOutput(pose.position.y, target.position.y);
 		double strafePower = xPidController.getOutput(pose.position.x, target.position.x);
 		double turnPower = headingPidController.getOutput(
 				prevUnwrappedHeading,
-				Math.toDegrees(target.heading.toDouble())
+				Angle.nearestCoterminal(Math.toDegrees(target.heading.toDouble()), prevUnwrappedHeading, 180)
 		);
-		prevHeading = pinpoint.getHeading(AngleUnit.DEGREES);
+		prevHeading = Math.toDegrees(pose.heading.toDouble());
 
 		// Apply deadzone
 		forwardPower = Math.abs(forwardPower) > DEADZONE_THRESHOLD ? forwardPower : 0;

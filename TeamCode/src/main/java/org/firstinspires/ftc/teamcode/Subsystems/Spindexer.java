@@ -158,15 +158,10 @@ public class Spindexer {
 	public void update() {
 		currentPositionDegrees = getCalibratedPosition();
 
-		// PID values should never be updated during operation (per requirements)
-		// controller.setPID(P, I, D, F); // REMOVED as per requirements
-
 		power = controller.getOutput(currentPositionDegrees, targetPosition);
 		instance.spindexerRight.setDirection(DcMotorSimple.Direction.REVERSE);
 		spindexerLeft.setPower(power);
 		spindexerRight.setPower(power);
-
-		//currentPosition = currentPositionDegrees;
 	}
 
 	public Action setTarget(double angle) {

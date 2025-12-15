@@ -20,7 +20,8 @@ public class SubsystemUpdater {
 	 * Must be called every loop cycle for proper PID control and sensor readings.
 	 */
 	public static void update() {
-		Shooter.getInstance().updateRPM(System.nanoTime());
+		// TODO: Move Shooter PID control from run to update. Run should only set the target RPM.
+//		Shooter.getInstance().update();
 
 		TelemetryPacket telemetryPacket = new TelemetryPacket();
 		ColorDetector.getInstance().update().run(telemetryPacket);

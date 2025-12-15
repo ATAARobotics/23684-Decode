@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.Utilities;
 /**
  * Utility class for calculating shot angles based on robot and goal positions
  */
-public class ShotAngleUtility {
+public class ShotAngle {
     /**
      * Calculate the angle needed to aim at a goal position from the robot's current position
      *

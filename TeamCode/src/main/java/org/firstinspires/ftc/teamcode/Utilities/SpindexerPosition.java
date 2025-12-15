@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode.Utilities;
 
 /**
- * SpindexerPositionUtility provides utility methods for calculating
+ * SpindexerPosition provides utility methods for calculating
  * the next positions for the Spindexer to shoot or intake balls.
  * The utility uses modular arithmetic to determine positions:
  * - Shoot positions: x ≡ 0 (mod 120)
  * - Intake positions: x ≡ 20 (mod 120)
  */
-public class SpindexerPositionUtility {
+public class SpindexerPosition {
 
     /**
      * Calculates the next position for the Spindexer to shoot a ball.

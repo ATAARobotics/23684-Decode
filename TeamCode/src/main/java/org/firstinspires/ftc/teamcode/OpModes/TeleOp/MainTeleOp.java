@@ -14,12 +14,10 @@ import org.firstinspires.ftc.teamcode.Subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystems.RGBIndicator;
 import org.firstinspires.ftc.teamcode.Subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
-import org.firstinspires.ftc.teamcode.Subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.Utilities.ActionScheduler;
-import org.firstinspires.ftc.teamcode.Utilities.ShotAngleUtility;
-import org.firstinspires.ftc.teamcode.Utilities.SpindexerPositionUtility;
+import org.firstinspires.ftc.teamcode.Utilities.SpindexerPosition;
 import org.firstinspires.ftc.teamcode.Utilities.Team;
-import org.firstinspires.ftc.teamcode.Utilities.TransferUtility;
+import org.firstinspires.ftc.teamcode.Utilities.Transfer;
 
 /**
  * Main TeleOp OpMode for driver control
@@ -46,7 +44,7 @@ public class MainTeleOp extends OpMode {
 	protected ActionScheduler scheduler;
 	protected Shooter shooter;
 	protected Intake intake;
-	protected Transfer transfer;
+	protected org.firstinspires.ftc.teamcode.Subsystems.Transfer transfer;
 	protected Spindexer spindexer;
 	protected Limelight limelight;
 	protected RGBIndicator rgbIndicator;
@@ -69,7 +67,6 @@ public class MainTeleOp extends OpMode {
 	private long lastLoopTime = 0;
 	private long maxLoopTime = 0;
 	private long loopCount = 0;
-	private static final long TARGET_LOOP_TIME_NS = 5_000_000; // 5ms target
 
 	@Override
 	public void init() {
@@ -79,7 +76,7 @@ public class MainTeleOp extends OpMode {
 		scheduler = ActionScheduler.getInstance();
 		shooter = Shooter.getInstance();
 		intake = Intake.getInstance();
-		transfer = Transfer.getInstance();
+		transfer = org.firstinspires.ftc.teamcode.Subsystems.Transfer.getInstance();
 		spindexer = Spindexer.getInstance();
 		spindexer.resetCalibrationAverage();
 		rgbIndicator = RGBIndicator.getInstance();
@@ -121,9 +118,13 @@ public class MainTeleOp extends OpMode {
         spindexer.update();
 		scheduler.update();
 
-		// Phase 2: Non-critical updates (budget: 4.5ms)
-		if ((System.nanoTime() - startTime) < 30_000_000) {
+		// Phase 2: Useful updates (budget: 45ms)
+		if ((System.nanoTime() - startTime) < 45_000_000) {
 			updateRGBIndicator();
+		}
+
+		// Phase 3: Non-critical updates (budget: 30ms)
+		if ((System.nanoTime() - startTime) < 30_000_000) {
 			displayTelemetry();
 			telemetry.update();
 		}
@@ -161,30 +162,10 @@ public class MainTeleOp extends OpMode {
 	}
 
 	/**
-	 * Update RGB indicator color based on shooter RPM using discrete color ranges.
-	 * Predefined colors: Off, Red, Orange, Yellow, Sage, Green, Azure, Blue, Indigo, Violet, White
+	 * Update RGB indicator color
 	 */
 	private void updateRGBIndicator() {
-		double rpm = shooter.averageRPM;
-		double color = 0;
-
-		if (rpm <= 1000) {
-			color = 0.277;
-		} else if (rpm <= 1500) {
-			color = 0.333;
-		} else if (rpm <= 2000) {
-			color = 0.388;
-		} else if (rpm <= 2400) {
-			color = 0.444;
-		} else if (rpm <= 2600) {
-			color = 0.500;
-		} else if (rpm <= 2800) {
-			color = 0.666;
-		} else if (rpm > 2800) {
-			color = 0.722;
-		}
-
-		rgbIndicator.setDirectPosition(color);
+		scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
 	}
 
 	/**
@@ -216,9 +197,9 @@ public class MainTeleOp extends OpMode {
 			double strafePower;
 
 			if (gamepad1.right_bumper){
-				forwardPower = -gamepad1.left_stick_y / 2; // Left stick Y (inverted)
-				turnPower = -gamepad1.right_stick_x / 2; // Right stick X
-				strafePower = -gamepad1.left_stick_x / 2; // Left stick X
+				forwardPower = -gamepad1.left_stick_y * 0.5; // Left stick Y (inverted)
+				turnPower = -gamepad1.right_stick_x * 0.5; // Right stick X
+				strafePower = -gamepad1.left_stick_x * 0.5; // Left stick X
 			}else{
 				 forwardPower = -gamepad1.left_stick_y; // Left stick Y (inverted)
 				 turnPower = -gamepad1.right_stick_x; // Right stick X
@@ -237,21 +218,6 @@ public class MainTeleOp extends OpMode {
 			);
 			drive.setDrivePowers(velocity);
 		}
-
-//		// Manual offset trim
-//		if (gamepad1.left_bumper && !leftBumperPressed) {
-//			scheduler.schedule(spindexer.applyManualOffsetTrim(-1.0));
-//			leftBumperPressed = true;
-//		} else if (!gamepad1.left_bumper && leftBumperPressed) {
-//			leftBumperPressed = false;
-//		}
-//
-//		if (gamepad1.right_bumper && !rightBumperPressed) {
-//			scheduler.schedule(spindexer.applyManualOffsetTrim(1.0));
-//			rightBumperPressed = true;
-//		} else if (!gamepad1.right_bumper && rightBumperPressed) {
-//			rightBumperPressed = false;
-//		}
 	}
 
 	/**
@@ -287,7 +253,7 @@ public class MainTeleOp extends OpMode {
 
 		// Automatic transfer based on readiness (only if neither X nor Y button held)
 		if (!gamepad2.x && !gamepad2.y) {
-			boolean isReady = TransferUtility.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM);
+			boolean isReady = Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM);
 			if (isReady && !transferAboveRPM) {
 				scheduler.schedule(transfer.transferForward());
 			} else if (!isReady && transferAboveRPM) {
@@ -335,7 +301,7 @@ public class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad2.dpad_down && !dpadDownPressed) {
-			double nextIntakePosition = SpindexerPositionUtility.getNextIntakePosition(lastSpindexerTarget);
+			double nextIntakePosition = SpindexerPosition.getNextIntakePosition(lastSpindexerTarget);
 			lastSpindexerTarget = (int) nextIntakePosition;
 			scheduler.schedule(spindexer.setTarget(nextIntakePosition));
 			dpadDownPressed = true;
@@ -344,7 +310,7 @@ public class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad2.dpad_up && !dpadUpPressed) {
-			double nextShootPosition = SpindexerPositionUtility.getNextShootPosition(lastSpindexerTarget);
+			double nextShootPosition = SpindexerPosition.getNextShootPosition(lastSpindexerTarget);
 			lastSpindexerTarget = (int) nextShootPosition;
 			scheduler.schedule(spindexer.setTarget(nextShootPosition));
 			dpadUpPressed = true;
@@ -381,12 +347,12 @@ public class MainTeleOp extends OpMode {
 		telemetry.addLine("=== Spindexer ===");
 		telemetry.addData("Current Location", spindexer.getCalibratedPosition());
 		telemetry.addData("Target", spindexer.targetPosition);
-		telemetry.addData("Next intake", SpindexerPositionUtility.getNextIntakePosition((int) spindexer.getCalibratedPosition()));
-		telemetry.addData("Next shoot", SpindexerPositionUtility.getNextShootPosition((int) spindexer.getCalibratedPosition()));
+		telemetry.addData("Next intake", SpindexerPosition.getNextIntakePosition((int) spindexer.getCalibratedPosition()));
+		telemetry.addData("Next shoot", SpindexerPosition.getNextShootPosition((int) spindexer.getCalibratedPosition()));
 
 		telemetry.addLine("=== Transfer ===");
-		telemetry.addData("Spindexer at Shooting Pos", TransferUtility.isSpindexerAtShootingPosition(spindexer));
-		telemetry.addData("Shooter at Target RPM", TransferUtility.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM));
-		telemetry.addData("Transfer Ready", TransferUtility.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM));
+		telemetry.addData("Spindexer at Shooting Pos", Transfer.isSpindexerAtShootingPosition(spindexer));
+		telemetry.addData("Shooter at Target RPM", Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM));
+		telemetry.addData("Transfer Ready", Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM));
 	}
 }

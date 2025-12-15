@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.OpModes.Tuning;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -12,7 +11,7 @@ import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.SubsystemUpda
 import org.firstinspires.ftc.teamcode.Subsystems.RobotState;
 import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.Utilities.ActionScheduler;
-import org.firstinspires.ftc.teamcode.Utilities.SpindexerPositionUtility;
+import org.firstinspires.ftc.teamcode.Utilities.SpindexerPosition;
 
 /**
  * Tuning OpMode for the Spindexer Subsystem
@@ -117,7 +116,7 @@ public class Tune_Spindexer extends OpMode {
 			double currentDegrees = spindexer.getCalibratedPosition();
 
 			// Calculate next shoot position using utility (now handles doubles)
-			double nextShootPosition = SpindexerPositionUtility.getNextShootPosition((int) currentDegrees);
+			double nextShootPosition = SpindexerPosition.getNextShootPosition((int) currentDegrees);
 
 			// Convert to revolutions for the spindexer (0-1 range)
 			double targetRevolutions = nextShootPosition / 360.0;

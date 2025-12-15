@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
  * - Spindexer position within tolerance of a shooting position
  * - Shooter RPM within tolerance of target RPM
  */
-public class TransferUtility {
+public class Transfer {
 	// Spindexer tolerance
 	public static final double SPINDEXER_TOLERANCE_DEGREES = 10.0;
 	
