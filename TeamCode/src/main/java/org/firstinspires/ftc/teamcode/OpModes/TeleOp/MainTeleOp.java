@@ -118,15 +118,14 @@ public class MainTeleOp extends OpMode {
         spindexer.update();
 		scheduler.update();
 
-		// Phase 2: Useful updates (budget: 45ms)
-		if ((System.nanoTime() - startTime) < 45_000_000) {
-			updateRGBIndicator();
-		}
+//		// Phase 2: Useful updates (budget: 45ms)
+//		if ((System.nanoTime() - startTime) < 45_000_000) {
+//			updateRGBIndicator();
+//		}
 
 		// Phase 3: Non-critical updates (budget: 30ms)
 		if ((System.nanoTime() - startTime) < 30_000_000) {
 			displayTelemetry();
-			telemetry.update();
 		}
 
 		// Performance monitoring
@@ -137,11 +136,11 @@ public class MainTeleOp extends OpMode {
 		loopCount++;
 
 		// Log performance stats periodically
-		if (loopCount % 100 == 0) {
-			telemetry.addData("Performance", "Max loop time: %.2fms", maxLoopTime / 1_000_000.0);
-			telemetry.addData("Performance", "Avg loop time: %.2fms", (System.nanoTime() - lastLoopTime) / 1_000_000.0 / 100.0);
-			lastLoopTime = System.nanoTime();
-		}
+		telemetry.addData("Performance", "Max loop time: %.2fms", maxLoopTime / 1_000_000.0);
+		telemetry.addData("Performance", "Avg loop time: %.2fms", (System.nanoTime() - lastLoopTime) / 1_000_000.0 / 100.0);
+		lastLoopTime = System.nanoTime();
+
+		telemetry.update();
 	}
 
 	@Override
