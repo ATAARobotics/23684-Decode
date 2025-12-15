@@ -142,7 +142,7 @@ public abstract class AudienceAuto extends OpMode {
 							long startTime = -1;
 
 							@Override
-							public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+							public boolean run(TelemetryPacket telemetryPacket) {
 								// Initialize startTime on the first run
 								if (startTime == -1) {
 									startTime = System.nanoTime();
@@ -166,7 +166,7 @@ public abstract class AudienceAuto extends OpMode {
 							long startTime = -1;
 
 							@Override
-							public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+							public boolean run(TelemetryPacket telemetryPacket) {
 								// Initialize startTime on the first run
 								if (startTime == -1) {
 									startTime = System.nanoTime();
@@ -190,7 +190,7 @@ public abstract class AudienceAuto extends OpMode {
 							long startTime = -1;
 
 							@Override
-							public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+							public boolean run(TelemetryPacket telemetryPacket) {
 								// Initialize startTime on the first run
 								if (startTime == -1) {
 									startTime = System.nanoTime();

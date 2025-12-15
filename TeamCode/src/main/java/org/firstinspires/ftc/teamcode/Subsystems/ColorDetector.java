@@ -162,28 +162,31 @@ public class ColorDetector {
 	 */
 	private class UpdateAction implements Action {
 		@Override
-		public boolean run(@NonNull TelemetryPacket packet) {
+		public boolean run(TelemetryPacket packet) {
 			updateValues();
 			
-			// Left sensor telemetry
-			packet.put("Left Red", leftRed);
-			packet.put("Left Green", leftGreen);
-			packet.put("Left Blue", leftBlue);
-			packet.put("Left Hue", leftHSV[0]);
-			packet.put("Left Saturation", leftHSV[1]);
-			packet.put("Left Value", leftHSV[2]);
-			packet.put("Left Is Green", leftIsGreen);
-			packet.put("Left Is Purple", leftIsPurple);
-			
-			// Right sensor telemetry
-			packet.put("Right Red", rightRed);
-			packet.put("Right Green", rightGreen);
-			packet.put("Right Blue", rightBlue);
-			packet.put("Right Hue", rightHSV[0]);
-			packet.put("Right Saturation", rightHSV[1]);
-			packet.put("Right Value", rightHSV[2]);
-			packet.put("Right Is Green", rightIsGreen);
-			packet.put("Right Is Purple", rightIsPurple);
+			// Only send telemetry if packet is provided (non-null)
+			if (packet != null) {
+				// Left sensor telemetry
+				packet.put("Left Red", leftRed);
+				packet.put("Left Green", leftGreen);
+				packet.put("Left Blue", leftBlue);
+				packet.put("Left Hue", leftHSV[0]);
+				packet.put("Left Saturation", leftHSV[1]);
+				packet.put("Left Value", leftHSV[2]);
+				packet.put("Left Is Green", leftIsGreen);
+				packet.put("Left Is Purple", leftIsPurple);
+				
+				// Right sensor telemetry
+				packet.put("Right Red", rightRed);
+				packet.put("Right Green", rightGreen);
+				packet.put("Right Blue", rightBlue);
+				packet.put("Right Hue", rightHSV[0]);
+				packet.put("Right Saturation", rightHSV[1]);
+				packet.put("Right Value", rightHSV[2]);
+				packet.put("Right Is Green", rightIsGreen);
+				packet.put("Right Is Purple", rightIsPurple);
+			}
 			
 			return false; // Action finishes immediately after one frame
 		}

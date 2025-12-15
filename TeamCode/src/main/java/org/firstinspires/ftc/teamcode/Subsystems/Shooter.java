@@ -164,13 +164,15 @@ public class Shooter {
 		upperShooter.setPower(upperPower);
 		lowerShooter.setPower(lowerPower);
 
-		// Standardized Telemetry
-		packet.put("Shooter Upper Target", upperTarget);
-		packet.put("Shooter Lower Target", lowerTarget);
-		packet.put("Shooter Upper RPM", upperRPM);
-		packet.put("Shooter Lower RPM", lowerRPM);
-		packet.put("Upper Power", upperPower);
-		packet.put("Lower Power", lowerPower);
+		// Standardized Telemetry - only send if packet is provided
+		if (packet != null) {
+			packet.put("Shooter Upper Target", upperTarget);
+			packet.put("Shooter Lower Target", lowerTarget);
+			packet.put("Shooter Upper RPM", upperRPM);
+			packet.put("Shooter Lower RPM", lowerRPM);
+			packet.put("Upper Power", upperPower);
+			packet.put("Lower Power", lowerPower);
+		}
 	}
 
 	public Action run(double targetRPM) {
@@ -192,42 +194,45 @@ public class Shooter {
 			private final long TIMEOUT_NS = 5_000_000_000L;
 
 			@Override
-			public boolean run(@NonNull TelemetryPacket packet) {
-				long now = System.nanoTime();
-				if (startTime == -1) startTime = now;
+			public boolean run(TelemetryPacket packet) {
+			long now = System.nanoTime();
+			if (startTime == -1) startTime = now;
 
-				// 1. TIMEOUT CHECK
-				if (now - startTime > TIMEOUT_NS) {
-					// Safety: Stop if we time out
-					upperShooter.setPower(0);
-					lowerShooter.setPower(0);
-					return false;
-				}
-
-				updateRPM(now);
-
-				// 2. CONTROL LOGIC (Reused from helper)
-				updateMotors(upperTargetRPM, lowerTargetRPM, packet);
-
-				// 3. CHECK IF AT TARGET
-				if (!hasReachedTarget && isAtTargetRPM(upperTargetRPM, lowerTargetRPM)) {
-					hasReachedTarget = true;
-				}
-
-				packet.put("Shooter Ready", hasReachedTarget);
-
-				// 4. SHOT DETECTION
-				if (!hasReachedTarget) {
-					return true; // Keep spinning up
-				}
-
-				// Drop detection
-				double targetAvg = (upperTargetRPM + lowerTargetRPM) * 0.5;
-				double currentAvg = (upperRPM + lowerRPM) * 0.5;
-				boolean shotFired = currentAvg < (targetAvg * 0.92);
-
-				return !shotFired;
+			// 1. TIMEOUT CHECK
+			if (now - startTime > TIMEOUT_NS) {
+			// Safety: Stop if we time out
+			upperShooter.setPower(0);
+			lowerShooter.setPower(0);
+			return false;
 			}
+
+			updateRPM(now);
+
+			// 2. CONTROL LOGIC (Reused from helper)
+			updateMotors(upperTargetRPM, lowerTargetRPM, packet);
+
+			// 3. CHECK IF AT TARGET
+			if (!hasReachedTarget && isAtTargetRPM(upperTargetRPM, lowerTargetRPM)) {
+			hasReachedTarget = true;
+			}
+
+			// Only send telemetry if packet is provided
+			if (packet != null) {
+			 packet.put("Shooter Ready", hasReachedTarget);
+			}
+
+			// 4. SHOT DETECTION
+			if (!hasReachedTarget) {
+			 return true; // Keep spinning up
+			}
+
+			// Drop detection
+			double targetAvg = (upperTargetRPM + lowerTargetRPM) * 0.5;
+			double currentAvg = (upperRPM + lowerRPM) * 0.5;
+			 boolean shotFired = currentAvg < (targetAvg * 0.92);
+
+			return !shotFired;
+		}
 		};
 	}
 

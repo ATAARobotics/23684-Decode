@@ -43,26 +43,36 @@ public class ActionScheduler {
 	}
 
 	/**
-	 * Update all running actions. This should be called once per loop iteration.
+	 * Update all running actions with telemetry control.
+	 * This should be called once per loop iteration.
 	 * Calls run() on each active action and removes actions that are complete.
+	 * 
+	 * @param sendTelemetry if true, sends telemetry to FTC Dashboard; if false, skips dashboard overhead
 	 */
-	public void update() {
+	public void update(boolean sendTelemetry) {
 		// Early exit if no actions to process
 		if (runningActions.isEmpty()) {
 			return;
 		}
 
-		// Only create telemetry packet if we have actions or need to send data
+		// Only create telemetry packet if we have actions AND telemetry is enabled
 		TelemetryPacket packet = null;
 		List<Action> newActions = new ArrayList<>();
 
 		for (Action action : runningActions) {
-			if (packet == null) {
-				packet = new TelemetryPacket();
-			}
-			action.preview(packet.fieldOverlay());
-			if (action.run(packet)) {
-				newActions.add(action);
+			if (sendTelemetry) {
+				if (packet == null) {
+					packet = new TelemetryPacket();
+				}
+				action.preview(packet.fieldOverlay());
+				if (action.run(packet)) {
+					newActions.add(action);
+				}
+			} else {
+				// Still run actions but with null packet to skip telemetry overhead
+				if (action.run(null)) {
+					newActions.add(action);
+				}
 			}
 		}
 
@@ -72,6 +82,14 @@ public class ActionScheduler {
 		if (packet != null) {
 			dashboard.sendTelemetryPacket(packet);
 		}
+	}
+
+	/**
+	 * Update all running actions with telemetry enabled (default behavior for backward compatibility).
+	 * This should be called once per loop iteration.
+	 */
+	public void update() {
+		update(true);
 	}
 
 	/**

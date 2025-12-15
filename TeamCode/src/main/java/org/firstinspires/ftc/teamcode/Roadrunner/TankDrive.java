@@ -337,7 +337,7 @@ public final class TankDrive {
 		}
 
 		@Override
-		public boolean run(@NonNull TelemetryPacket p) {
+		public boolean run(TelemetryPacket p) {
 			double t;
 			if (beginTs < 0) {
 				beginTs = Actions.now();
@@ -427,7 +427,7 @@ public final class TankDrive {
 		}
 
 		@Override
-		public boolean run(@NonNull TelemetryPacket p) {
+		public boolean run(TelemetryPacket p) {
 			double t;
 			if (beginTs < 0) {
 				beginTs = Actions.now();

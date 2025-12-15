@@ -68,6 +68,13 @@ public class MainTeleOp extends OpMode {
 	private long maxLoopTime = 0;
 	private long loopCount = 0;
 
+	// Telemetry throttling
+	public static boolean ENABLE_TELEMETRY = false;
+	private long lastTelemetryTime = 0;
+	private static final long TELEMETRY_UPDATE_INTERVAL = 100_000_000; // 100ms (roughly 100 loop ticks at 10ms/loop)
+	private static final long MAX_LOOP_TIME_FOR_TELEMETRY = 25_000_000; // 25ms
+	private long previousLoopTime = 0;
+
 	@Override
 	public void init() {
 		// Initialize hardware
@@ -113,10 +120,15 @@ public class MainTeleOp extends OpMode {
 		handleDriveInput();
 
 		// Phase 1: Core subsystem updates
-        SubsystemUpdater.update();
+		// SubsystemUpdater and scheduler MUST run every loop, but telemetry is throttled
+		boolean sendTelemetry = shouldUpdateTelemetry(startTime);
+		SubsystemUpdater.update(sendTelemetry);
+		
         handleOperatorInput();
         spindexer.update();
-		scheduler.update();
+		
+		// Update scheduler - always runs, but telemetry gated
+		scheduler.update(sendTelemetry);
 
 //		// Phase 2: Useful updates (budget: 45ms)
 //		if ((System.nanoTime() - startTime) < 45_000_000) {
@@ -124,22 +136,32 @@ public class MainTeleOp extends OpMode {
 //		}
 
 		// Phase 3: Non-critical updates (budget: 30ms)
-		if ((System.nanoTime() - startTime) < 30_000_000) {
+		if (ENABLE_TELEMETRY && (System.nanoTime() - startTime) < 30_000_000) {
 			displayTelemetry();
 		}
 
 		// Performance monitoring
 		long loopTime = System.nanoTime() - startTime;
+		previousLoopTime = loopTime;
+		
 		if (loopTime > maxLoopTime) {
 			maxLoopTime = loopTime;
 		}
 		loopCount++;
 
-		// Log performance stats periodically
-		telemetry.addData("Performance", "Max loop time: %.2fms", maxLoopTime / 1_000_000.0);
-		telemetry.addData("Performance", "Avg loop time: %.2fms", (System.nanoTime() - lastLoopTime) / 1_000_000.0 / 100.0);
+		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
+		// This is separate from dashboard telemetry and always visible to the driver
+		telemetry.addData("Loop Time", "Current: %.2fms", loopTime / 1_000_000.0);
+		telemetry.addData("Loop Time", "Max: %.2fms", maxLoopTime / 1_000_000.0);
+		telemetry.addData("Loop Time", "Avg: %.2fms", (System.nanoTime() - lastLoopTime) / 1_000_000.0 / 100.0);
+		
+		if (ENABLE_TELEMETRY) {
+			telemetry.addData("Telemetry", "Dashboard enabled");
+		} else {
+			telemetry.addData("Telemetry", "Dashboard disabled (low latency)");
+		}
+		
 		lastLoopTime = System.nanoTime();
-
 		telemetry.update();
 	}
 
@@ -147,6 +169,31 @@ public class MainTeleOp extends OpMode {
 	public void stop() {
 		// Called when OpMode is stopped
 		HardwareShutdown.shutdown();
+	}
+
+	/**
+	 * Check if telemetry should be updated based on throttling and loop time constraints.
+	 * 
+	 * @param currentLoopStart the start time of the current loop iteration (nanoTime)
+	 * @return true if telemetry should be sent to the dashboard, false otherwise
+	 */
+	private boolean shouldUpdateTelemetry(long currentLoopStart) {
+		if (!ENABLE_TELEMETRY) {
+			return false;
+		}
+		
+		// Don't update telemetry if previous loop exceeded budget
+		if (previousLoopTime > MAX_LOOP_TIME_FOR_TELEMETRY) {
+			return false;
+		}
+		
+		// Update telemetry only at the specified interval
+		if ((currentLoopStart - lastTelemetryTime) >= TELEMETRY_UPDATE_INTERVAL) {
+			lastTelemetryTime = currentLoopStart;
+			return true;
+		}
+		
+		return false;
 	}
 
 	/**

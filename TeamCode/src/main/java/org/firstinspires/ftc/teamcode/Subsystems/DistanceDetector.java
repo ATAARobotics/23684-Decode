@@ -89,10 +89,15 @@ public class DistanceDetector {
 	 */
 	private class UpdateAction implements Action {
 		@Override
-		public boolean run(@NonNull TelemetryPacket packet) {
+		public boolean run(TelemetryPacket packet) {
 			updateValues();
-			packet.put("Distance (cm)", rawDistance);
-			packet.put("Is Object", isObject);
+			
+			// Only send telemetry if packet is provided (non-null)
+			if (packet != null) {
+				packet.put("Distance (cm)", rawDistance);
+				packet.put("Is Object", isObject);
+			}
+			
 			return false; // Action finishes immediately after one frame
 		}
 	}

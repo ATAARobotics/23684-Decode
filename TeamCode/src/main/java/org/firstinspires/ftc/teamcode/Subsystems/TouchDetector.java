@@ -83,11 +83,16 @@ public class TouchDetector {
 	 */
 	private class UpdateAction implements Action {
 		@Override
-		public boolean run(@NonNull TelemetryPacket packet) {
+		public boolean run(TelemetryPacket packet) {
 			updateValues();
-			packet.put("Touch Left", touchLeft);
-			packet.put("Touch Right", touchRight);
-			packet.put("Detected", detected);
+			
+			// Only send telemetry if packet is provided (non-null)
+			if (packet != null) {
+				packet.put("Touch Left", touchLeft);
+				packet.put("Touch Right", touchRight);
+				packet.put("Detected", detected);
+			}
+			
 			return false; // Action finishes immediately after one frame
 		}
 	}
