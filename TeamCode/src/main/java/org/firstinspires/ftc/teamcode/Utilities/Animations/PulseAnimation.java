@@ -12,6 +12,7 @@ public class PulseAnimation implements Animation {
     private final long periodMs;
     private final float[] baseHsv = new float[3];
     private final float[] currentHsv = new float[3];
+    private long elapsedTimeMs = 0;
 
     /**
      * @param baseColor Base color to pulse (hex string).
@@ -30,7 +31,12 @@ public class PulseAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         // Sine wave for smooth pulsing
         double t = (elapsedTimeMs % periodMs) / (double) periodMs;
         double sine = Math.sin(2 * Math.PI * t);
@@ -45,12 +51,12 @@ public class PulseAnimation implements Animation {
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return false; // Infinite pulse
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

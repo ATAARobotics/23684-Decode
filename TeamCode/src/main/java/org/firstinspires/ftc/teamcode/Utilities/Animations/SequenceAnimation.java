@@ -7,6 +7,7 @@ public class SequenceAnimation implements Animation {
     private final String[] colors;
     private final long[] durationsMs;
     private long totalDuration = 0;
+    private long elapsedTimeMs = 0;
 
     /**
      * @param colors Array of hex color strings.
@@ -24,7 +25,12 @@ public class SequenceAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         if (elapsedTimeMs >= totalDuration) {
             return colors[colors.length - 1];
         }
@@ -39,12 +45,12 @@ public class SequenceAnimation implements Animation {
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return elapsedTimeMs >= totalDuration;
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

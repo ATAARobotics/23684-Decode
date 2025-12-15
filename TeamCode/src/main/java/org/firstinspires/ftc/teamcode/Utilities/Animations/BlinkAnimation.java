@@ -7,6 +7,7 @@ public class BlinkAnimation implements Animation {
     private final String color1;
     private final String color2;
     private final long intervalMs;
+    private long elapsedTimeMs = 0;
 
     /**
      * @param color1 First color (hex string).
@@ -20,18 +21,23 @@ public class BlinkAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         long phase = (elapsedTimeMs / intervalMs) % 2;
         return phase == 0 ? color1 : color2;
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return false; // Infinite blink
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

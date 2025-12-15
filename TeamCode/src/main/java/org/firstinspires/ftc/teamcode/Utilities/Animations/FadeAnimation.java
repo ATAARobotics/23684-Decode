@@ -12,6 +12,7 @@ public class FadeAnimation implements Animation {
     private final float[] startHsv = new float[3];
     private final float[] endHsv = new float[3];
     private final float[] currentHsv = new float[3];
+    private long elapsedTimeMs = 0;
 
     /**
      * @param startColor Starting color (hex string).
@@ -31,7 +32,12 @@ public class FadeAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         float t = Math.min((float) elapsedTimeMs / durationMs, 1.0f);
 
         // Interpolate HSV
@@ -44,12 +50,12 @@ public class FadeAnimation implements Animation {
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return elapsedTimeMs >= durationMs;
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

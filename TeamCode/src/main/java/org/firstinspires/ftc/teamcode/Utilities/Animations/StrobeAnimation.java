@@ -6,6 +6,7 @@ package org.firstinspires.ftc.teamcode.Utilities.Animations;
 public class StrobeAnimation implements Animation {
     private final String color;
     private final long intervalMs;
+    private long elapsedTimeMs = 0;
 
     /**
      * @param color Color to flash (hex string).
@@ -17,18 +18,23 @@ public class StrobeAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         long phase = (elapsedTimeMs / intervalMs) % 2;
         return phase == 0 ? color : "#000000"; // Off
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return false; // Infinite strobe
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

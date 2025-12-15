@@ -8,6 +8,7 @@ import android.graphics.Color;
 public class RainbowAnimation implements Animation {
     private final long cycleDurationMs;
     private final float[] hsv = new float[3];
+    private long elapsedTimeMs = 0;
 
     /**
      * @param cycleDurationMs Duration for one full rainbow cycle in ms.
@@ -19,7 +20,12 @@ public class RainbowAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         // Hue cycles from 0 to 360 over the cycle duration
         float hue = (elapsedTimeMs % cycleDurationMs) / (float) cycleDurationMs * 360.0f;
         hsv[0] = hue;
@@ -29,12 +35,12 @@ public class RainbowAnimation implements Animation {
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return false; // Infinite rainbow
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

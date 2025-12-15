@@ -6,6 +6,7 @@ package org.firstinspires.ftc.teamcode.Utilities.Animations;
 public class CycleAnimation implements Animation {
     private final String[] colors;
     private final long[] intervalsMs;
+    private long elapsedTimeMs = 0;
 
     /**
      * @param colors Array of hex color strings.
@@ -20,7 +21,12 @@ public class CycleAnimation implements Animation {
     }
 
     @Override
-    public String getColor(long elapsedTimeMs) {
+    public void update(long deltaTimeMs) {
+        elapsedTimeMs += deltaTimeMs;
+    }
+
+    @Override
+    public String getColor() {
         long totalCycleTime = 0;
         for (long interval : intervalsMs) {
             totalCycleTime += interval;
@@ -38,12 +44,12 @@ public class CycleAnimation implements Animation {
     }
 
     @Override
-    public boolean isFinished(long elapsedTimeMs) {
+    public boolean isFinished() {
         return false; // Infinite cycle
     }
 
     @Override
     public void reset() {
-        // No state to reset
+        elapsedTimeMs = 0;
     }
 }

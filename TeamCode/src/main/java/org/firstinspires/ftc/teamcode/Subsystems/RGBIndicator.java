@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 import android.graphics.Color;
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -32,7 +31,10 @@ public class RGBIndicator {
 	public enum Preset {
 		READY(new BlinkAnimation("#00FF00", "#000000", 1000)), // Green blink
 		BUSY(new PulseAnimation("#0000FF", 0.3f, 1.0f, 1000)), // Blue pulse
-		ERROR(new BlinkAnimation("#FF0000", "#000000", 200)); // Red fast blink
+		ERROR(new BlinkAnimation("#FF0000", "#000000", 200)), // Red fast blink
+		RAINBOW(new RainbowAnimation(3000)), // Rainbow cycle
+		STROBE(new StrobeAnimation("#FFFFFF", 50)), // White strobe
+		BREATHING(new BreathingAnimation("#00FF00", 2000)); // Green breathing
 
 		private final Animation animation;
 
@@ -53,7 +55,7 @@ public class RGBIndicator {
 
 	// Animation management
 	private Animation currentAnimation = null;
-	private long animationStartTime = 0;
+	private long lastUpdateTime = 0;
 
 	private RGBIndicator() {}
 
@@ -181,7 +183,7 @@ public class RGBIndicator {
 
 	public void startAnimation(Animation animation) {
 		this.currentAnimation = animation;
-		this.animationStartTime = System.currentTimeMillis();
+		this.lastUpdateTime = System.nanoTime();
 		animation.reset();
 	}
 
@@ -191,10 +193,13 @@ public class RGBIndicator {
 
 	public void updateAnimation() {
 		if (currentAnimation != null) {
-			long elapsed = System.currentTimeMillis() - animationStartTime;
-			String color = currentAnimation.getColor(elapsed);
+			long currentTime = System.nanoTime();
+			long deltaTime = (currentTime - lastUpdateTime) / 1_000_000; // Convert to milliseconds
+			lastUpdateTime = currentTime;
+			currentAnimation.update(deltaTime);
+			String color = currentAnimation.getColor();
 			setColor(color);
-			if (currentAnimation.isFinished(elapsed)) {
+			if (currentAnimation.isFinished()) {
 				stopAnimation();
 			}
 		}
@@ -204,27 +209,4 @@ public class RGBIndicator {
 		startAnimation(preset.getAnimation());
 	}
 
-	public Action animationAction(Animation animation, long durationMs) {
-		return new Action() {
-			long startTime = -1;
-			@Override
-			public boolean run(TelemetryPacket telemetryPacket) {
-				if (startTime == -1) {
-					startTime = System.nanoTime();
-					startAnimation(animation);
-				}
-				long elapsedNs = System.nanoTime() - startTime;
-				long elapsedMs = elapsedNs / 1_000_000;
-				if (elapsedMs >= durationMs) {
-					stopAnimation();
-					return false;
-				}
-				return true;
-			}
-		};
-	}
-
-	public Action presetAction(Preset preset, long durationMs) {
-		return animationAction(preset.getAnimation(), durationMs);
-	}
 }
