@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Subsystems.ColorDetector;
 import org.firstinspires.ftc.teamcode.Subsystems.DistanceDetector;
+import org.firstinspires.ftc.teamcode.Subsystems.RGBIndicator;
 import org.firstinspires.ftc.teamcode.Subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystems.TouchDetector;
@@ -26,6 +27,7 @@ public class SubsystemUpdater {
 		TelemetryPacket telemetryPacket = new TelemetryPacket();
 		ColorDetector.getInstance().update().run(telemetryPacket);
 		DistanceDetector.getInstance().update().run(telemetryPacket);
+		RGBIndicator.getInstance().updateAnimation();
 		FtcDashboard.getInstance().sendTelemetryPacket(telemetryPacket);
 	}
 }

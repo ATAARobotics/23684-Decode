@@ -2,10 +2,13 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 import android.graphics.Color;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.Utilities.Animations.*;
 
 @Config
 public class RGBIndicator {
@@ -26,11 +29,31 @@ public class RGBIndicator {
 	private static final double VAL_WHITE = 1.0;
 	private static final double VAL_OFF = 0.0;
 
+	public enum Preset {
+		READY(new BlinkAnimation("#00FF00", "#000000", 1000)), // Green blink
+		BUSY(new PulseAnimation("#0000FF", 0.3f, 1.0f, 1000)), // Blue pulse
+		ERROR(new BlinkAnimation("#FF0000", "#000000", 200)); // Red fast blink
+
+		private final Animation animation;
+
+		Preset(Animation animation) {
+			this.animation = animation;
+		}
+
+		public Animation getAnimation() {
+			return animation;
+		}
+	}
+
 	private static RGBIndicator instance = null;
 	private Servo rgbServo;
 
 	// Reusable array to prevent garbage collection churn
 	private final float[] hsvCache = new float[3];
+
+	// Animation management
+	private Animation currentAnimation = null;
+	private long animationStartTime = 0;
 
 	private RGBIndicator() {}
 
@@ -55,6 +78,7 @@ public class RGBIndicator {
 	 * Execution time: ~0.02ms
 	 */
 	public void setColor(String hexColor) {
+		stopAnimation(); // Stop any running animation
 		if (rgbServo == null) return;
 
 		// 1. Fast Hex Parsing
@@ -153,5 +177,54 @@ public class RGBIndicator {
 
 	public Action setColorAction(String hexColor) {
 		return new InstantAction(() -> setColor(hexColor));
+	}
+
+	public void startAnimation(Animation animation) {
+		this.currentAnimation = animation;
+		this.animationStartTime = System.currentTimeMillis();
+		animation.reset();
+	}
+
+	public void stopAnimation() {
+		this.currentAnimation = null;
+	}
+
+	public void updateAnimation() {
+		if (currentAnimation != null) {
+			long elapsed = System.currentTimeMillis() - animationStartTime;
+			String color = currentAnimation.getColor(elapsed);
+			setColor(color);
+			if (currentAnimation.isFinished(elapsed)) {
+				stopAnimation();
+			}
+		}
+	}
+
+	public void startPreset(Preset preset) {
+		startAnimation(preset.getAnimation());
+	}
+
+	public Action animationAction(Animation animation, long durationMs) {
+		return new Action() {
+			long startTime = -1;
+			@Override
+			public boolean run(TelemetryPacket telemetryPacket) {
+				if (startTime == -1) {
+					startTime = System.nanoTime();
+					startAnimation(animation);
+				}
+				long elapsedNs = System.nanoTime() - startTime;
+				long elapsedMs = elapsedNs / 1_000_000;
+				if (elapsedMs >= durationMs) {
+					stopAnimation();
+					return false;
+				}
+				return true;
+			}
+		};
+	}
+
+	public Action presetAction(Preset preset, long durationMs) {
+		return animationAction(preset.getAnimation(), durationMs);
 	}
 }
