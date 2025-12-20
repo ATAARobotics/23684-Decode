@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import java.util.List;
 
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareInitializer;
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareShutdown;
@@ -48,6 +50,7 @@ public class MainTeleOp extends OpMode {
 	protected Spindexer spindexer;
 	protected Limelight limelight;
 	protected RGBIndicator rgbIndicator;
+	protected List<LynxModule> allHubs;
 
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -89,7 +92,14 @@ public class MainTeleOp extends OpMode {
 		rgbIndicator = RGBIndicator.getInstance();
 		limelight = new Limelight(hardwareMap);
 
+		// Enable Lynx bulk caching to reduce USB latency (~3ms per sensor call)
+		allHubs = hardwareMap.getAll(LynxModule.class);
+		for (LynxModule hub : allHubs) {
+			hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+		}
+
 		telemetry.addData("Status", "Initialized - Waiting for START");
+		telemetry.addData("Bulk Caching", "AUTO mode enabled on " + allHubs.size() + " hub(s)");
 		telemetry.update();
 	}
 

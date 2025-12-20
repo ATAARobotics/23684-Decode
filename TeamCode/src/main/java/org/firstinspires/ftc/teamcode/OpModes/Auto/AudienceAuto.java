@@ -9,7 +9,9 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import java.util.List;
 
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareInitializer;
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.SubsystemUpdater;
@@ -49,6 +51,7 @@ public abstract class AudienceAuto extends OpMode {
 	private int shooterTarget2;
 	private int shooterTarget3;
 	private ActionScheduler actionScheduler;
+	private List<LynxModule> allHubs;
 
 	protected double calculateShotAngle(double x, double y) {
 		double deltaX = getGoalX() - x;
@@ -90,6 +93,14 @@ public abstract class AudienceAuto extends OpMode {
 
 		actionScheduler = ActionScheduler.getInstance();
 		telemetry.addData("Subsystem Init", "ActionScheduler initialized");
+		telemetry.update();
+
+		// Enable Lynx bulk caching to reduce USB latency (~3ms per sensor call)
+		allHubs = hardwareMap.getAll(LynxModule.class);
+		for (LynxModule hub : allHubs) {
+			hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+		}
+		telemetry.addData("Subsystem Init", "Bulk Caching enabled on " + allHubs.size() + " hub(s)");
 		telemetry.update();
 
 		double shotAngle = GetShootingHeading();
