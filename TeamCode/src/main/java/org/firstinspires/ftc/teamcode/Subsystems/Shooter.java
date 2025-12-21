@@ -15,11 +15,11 @@ import org.firstinspires.ftc.teamcode.Utilities.FeedForwardController;
 public class Shooter {
 	// --- PID Controller Constants ---
 	public static double UPPER_P = 0.0024, UPPER_I = 0, UPPER_D = 0;
-	public static double LOWER_P = 0.002, LOWER_I = 0, LOWER_D = 0;
+	public static double LOWER_P = 0.001, LOWER_I = 0, LOWER_D = 0;
 
 	// --- Feedforward Constants ---
-	public static double UPPER_KS = 0.28, UPPER_KV = 0.000095;
-	public static double LOWER_KS = 0.29, LOWER_KV = 0.00017;
+	public static double UPPER_KS = 0.15, UPPER_KV = 0.000074;
+	public static double LOWER_KS = 0.3, LOWER_KV = 0.00017;
 
 	// --- Motor Power Constants ---
 	public static double STOP_POWER = 0.0;
@@ -31,7 +31,7 @@ public class Shooter {
 	// --- Pre-calculated constants ---
 	private static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
 	private static final double HALF_DIVISOR = 0.5;
-	public static double AUDIENCE_RPM = 2570.0;
+	public static double AUDIENCE_RPM = 2310;
 
 	// --- Motor Offsets ---
 	public static double UPPER_OFFSET = 0.0;

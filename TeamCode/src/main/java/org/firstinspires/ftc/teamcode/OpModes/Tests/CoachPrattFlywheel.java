@@ -36,6 +36,7 @@ public class CoachPrattFlywheel extends OpMode {
 
         upperShooter = hardwareMap.get(DcMotorEx.class, "upperShooter");
         lowerShooter = hardwareMap.get(DcMotorEx.class, "lowerShooter");
+        dashboard = FtcDashboard.getInstance();
 
         upperShooter.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
