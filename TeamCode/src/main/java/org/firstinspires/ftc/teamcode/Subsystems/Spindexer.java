@@ -159,7 +159,7 @@ public class Spindexer {
 		currentPositionDegrees = getCalibratedPosition();
 
 		power = controller.getOutput(currentPositionDegrees, targetPosition);
-		instance.spindexerRight.setDirection(DcMotorSimple.Direction.REVERSE);
+//		instance.spindexerRight.setDirection(DcMotorSimple.Direction.REVERSE);
 		spindexerLeft.setPower(power);
 		spindexerRight.setPower(power);
 	}
@@ -209,7 +209,7 @@ public class Spindexer {
 			// Clamp power between -1 and 1
 			double clampedPower = Math.max(-1.0, Math.min(1.0, power));
 			spindexerLeft.setPower(clampedPower);
-			spindexerRight.setPower(clampedPower);
+			spindexerRight.setPower(-clampedPower);
 		});
 	}
 }

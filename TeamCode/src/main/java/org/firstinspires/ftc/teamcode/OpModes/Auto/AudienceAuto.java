@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
@@ -47,6 +48,11 @@ public abstract class AudienceAuto extends OpMode {
 	private MecanumDrive drive;
 	private TrajectoryActionBuilder trajectoryToShootingPosition;
 	private TrajectoryActionBuilder trajectoryToCollectionPosition;
+
+	private TrajectoryActionBuilder trajectoryToPickUpOne;
+	private TrajectoryActionBuilder trajectoryToPickUpTwo;
+	private TrajectoryActionBuilder trajectoryToPickUpThree;
+
 
 	private ShootThreeAction shootThreeAction;
 	private int shooterTarget1;
@@ -118,6 +124,9 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Trajectory", "Collection angle: %.2f°", getCollectionHeading());
 		telemetry.update();
 
+		trajectoryToPickUpOne = drive.actionBuilder(new Pose2d(35, -23, Math.toRadians(-90)))
+				.strafeTo(new Vector2d(35,-50));
+
 		shooterTarget1 = SpindexerPosition.getNextShootPosition(0);
 		shooterTarget2 = SpindexerPosition.getNextShootPosition(shooterTarget1);
 		shooterTarget3 = SpindexerPosition.getNextShootPosition(shooterTarget2);
@@ -148,6 +157,14 @@ public abstract class AudienceAuto extends OpMode {
 						trajectoryToShootingPosition.build(),
 						shootThreeAction.ShootThreeArtifacts(),
 						trajectoryToCollectionPosition.build(),
+						intake.in(),
+						new ParallelAction(
+						spindexer.setDirectPower(1),
+						trajectoryToPickUpOne.build()
+						),
+						trajectoryToShootingPosition.build(),
+						shootThreeAction.ShootThreeArtifacts(),
+
 						new SleepAction(3)
 				)
 		);

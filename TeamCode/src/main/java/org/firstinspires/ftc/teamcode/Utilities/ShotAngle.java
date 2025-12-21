@@ -16,6 +16,6 @@ public class ShotAngle {
     public static double calculateShotAngle(double x, double y, double goalX, double goalY) {
         double deltaX = goalX - x;
         double deltaY = goalY - y;
-        return -Math.atan2(deltaY, deltaX);
+        return Math.atan2(-deltaY, -deltaX);
     }
 }
