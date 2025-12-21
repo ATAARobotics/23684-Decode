@@ -6,11 +6,13 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.Utilities.DistanceFromTag;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,4 +121,32 @@ public class Limelight {
 			}
 		}
 	}
+
+	public double TagXOffset(int tagID) {
+
+		LLResult llResult = limelight.getLatestResult();
+		if (llResult != null && llResult.isValid()) {
+
+			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+				if (fiducial.getFiducialId() == tagID) {
+					return fiducial.getTargetXDegrees();
+				}else{
+				return 0;
+				}
+			}
+			return 0;
+		}
+		return 0;
+	}
+
+	public boolean AreGoalsFound(){
+		LLResult llResult = limelight.getLatestResult();
+
+		if (llResult != null && llResult.isValid()) {
+			return true;
+		}
+		return false;
+	}
+
 }

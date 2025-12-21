@@ -1,22 +1,28 @@
 package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
-
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import java.util.List;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareInitializer;
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareShutdown;
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.SubsystemUpdater;
 import org.firstinspires.ftc.teamcode.Roadrunner.MecanumDrive;
+import org.firstinspires.ftc.teamcode.Subsystems.GenevaSpindexer;
 import org.firstinspires.ftc.teamcode.Subsystems.Intake;
 import org.firstinspires.ftc.teamcode.Subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystems.RGBIndicator;
 import org.firstinspires.ftc.teamcode.Subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.Utilities.ActionScheduler;
+import org.firstinspires.ftc.teamcode.Utilities.Angle;
+import org.firstinspires.ftc.teamcode.Utilities.PIDFController;
+import org.firstinspires.ftc.teamcode.Utilities.PIDFDrive;
+import org.firstinspires.ftc.teamcode.Utilities.ShotAngle;
 import org.firstinspires.ftc.teamcode.Utilities.SpindexerPosition;
 import org.firstinspires.ftc.teamcode.Utilities.Team;
 import org.firstinspires.ftc.teamcode.Utilities.Transfer;
@@ -46,11 +52,17 @@ public class MainTeleOp extends OpMode {
 	protected ActionScheduler scheduler;
 	protected Shooter shooter;
 	protected Intake intake;
+
+	protected GenevaSpindexer geneva;
 	protected org.firstinspires.ftc.teamcode.Subsystems.Transfer transfer;
 	protected Spindexer spindexer;
 	protected Limelight limelight;
 	protected RGBIndicator rgbIndicator;
 	protected List<LynxModule> allHubs;
+
+
+
+	protected PIDFController headingpidf;
 
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -78,6 +90,9 @@ public class MainTeleOp extends OpMode {
 	private static final long MAX_LOOP_TIME_FOR_TELEMETRY = 25_000_000; // 25ms
 	private long previousLoopTime = 0;
 
+	private double Hp = 0.1,Hi = 0,Hd = 0,Hf = 0;
+	private double prevHeading;
+
 	@Override
 	public void init() {
 		// Initialize hardware
@@ -91,6 +106,9 @@ public class MainTeleOp extends OpMode {
 		spindexer.resetCalibrationAverage();
 		rgbIndicator = RGBIndicator.getInstance();
 		limelight = new Limelight(hardwareMap);
+		headingpidf = new PIDFController(Hp,Hi,Hd,Hf);
+		prevHeading = Math.toDegrees(drive.localizer.getPose().heading.toDouble());
+		geneva = new GenevaSpindexer(hardwareMap);
 
 		// Enable Lynx bulk caching to reduce USB latency (~3ms per sensor call)
 		allHubs = hardwareMap.getAll(LynxModule.class);
@@ -128,14 +146,16 @@ public class MainTeleOp extends OpMode {
 		drive.updatePoseEstimate();
 		limelight.update();
 		handleDriveInput();
+		//handleHeadinglockDriveInput();
 
 		// Phase 1: Core subsystem updates
 		// SubsystemUpdater and scheduler MUST run every loop, but telemetry is throttled
-		boolean sendTelemetry = shouldUpdateTelemetry(startTime);
+		boolean sendTelemetry = true;
 		SubsystemUpdater.update(sendTelemetry);
 		
-        handleOperatorInput();
-        spindexer.update();
+   handleOperatorInput();
+
+//        spindexer.update();
 		
 		// Update scheduler - always runs, but telemetry gated
 		scheduler.update(sendTelemetry);
@@ -220,14 +240,25 @@ public class MainTeleOp extends OpMode {
 	/**
 	 * Update RGB indicator color
 	 */
-	private void updateRGBIndicator() {
-		scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
-	}
+//	private void updateRGBIndicator() {
+//		scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
+//	}
 
 	/**
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
+
+		DcMotorEx frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
+		DcMotorEx rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
+		DcMotorEx frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
+		DcMotorEx rearLeft = hardwareMap.get(DcMotorEx.class, "rearLeft");
+
+		frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+		frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+		rearRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+		rearLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
 		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
 				scheduler.schedule(
@@ -248,32 +279,129 @@ public class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad1.a) {
-			double forwardPower;
-			double turnPower;
-			double strafePower;
+//			double forwardPower;
+//			double turnPower;
+//			double strafePower;
+//
+//			if (gamepad1.right_bumper){
+//				forwardPower = -gamepad1.left_stick_y * 0.5; // Left stick Y (inverted)
+//				turnPower = -gamepad1.right_stick_x * 0.5; // Right stick X
+//				strafePower = -gamepad1.left_stick_x * 0.5; // Left stick X
+//			}else{
+//				 forwardPower = -gamepad1.left_stick_y; // Left stick Y (inverted)
+//				 turnPower = -gamepad1.right_stick_x; // Right stick X
+//				 strafePower = -gamepad1.left_stick_x; // Left stick X
+//			}
+//
+//			// Apply deadzone
+//			forwardPower = Math.abs(forwardPower) > 0.05 ? forwardPower : 0;
+//			strafePower = Math.abs(strafePower) > 0.05 ? strafePower : 0;
+//			turnPower = Math.abs(turnPower) > 0.05 ? turnPower : 0;
+//
+//			// Create velocity command
+//			PoseVelocity2d velocity = new PoseVelocity2d(
+//					new Vector2d(forwardPower, strafePower),
+//					turnPower
+//			);
+//			drive.setDrivePowers(velocity);
 
-			if (gamepad1.right_bumper){
-				forwardPower = -gamepad1.left_stick_y * 0.5; // Left stick Y (inverted)
-				turnPower = -gamepad1.right_stick_x * 0.5; // Right stick X
-				strafePower = -gamepad1.left_stick_x * 0.5; // Left stick X
-			}else{
-				 forwardPower = -gamepad1.left_stick_y; // Left stick Y (inverted)
-				 turnPower = -gamepad1.right_stick_x; // Right stick X
-				 strafePower = -gamepad1.left_stick_x; // Left stick X
-			}
+			double y = -gamepad1.left_stick_y; // Remember, Y stick value is reversed
+			double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
+			double rx = gamepad1.right_stick_x;
 
-			// Apply deadzone
-			forwardPower = Math.abs(forwardPower) > 0.05 ? forwardPower : 0;
-			strafePower = Math.abs(strafePower) > 0.05 ? strafePower : 0;
-			turnPower = Math.abs(turnPower) > 0.05 ? turnPower : 0;
+			// Denominator is the largest motor power (absolute value) or 1
+			// This ensures all the powers maintain the same ratio,
+			// but only if at least one is out of the range [-1, 1]
+			double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+			double frontLeftPower = (y + x + rx) / denominator;
+			double backLeftPower = (y - x + rx) / denominator;
+			double frontRightPower = (y - x - rx) / denominator;
+			double backRightPower = (y + x - rx) / denominator;
 
-			// Create velocity command
-			PoseVelocity2d velocity = new PoseVelocity2d(
-					new Vector2d(forwardPower, strafePower),
-					turnPower
-			);
-			drive.setDrivePowers(velocity);
+			frontLeft.setPower(frontLeftPower);
+			rearLeft.setPower(backLeftPower);
+			frontRight.setPower(frontRightPower);
+			rearRight.setPower(backRightPower);
 		}
+	}
+
+	private void handleHeadinglockDriveInput() {
+		double DEADZONE_THRESHOLD = 0.05;
+
+		int tag = 20;
+
+		DcMotor frontRight = hardwareMap.get(DcMotor.class, "frontRight");
+		DcMotor rearRight = hardwareMap.get(DcMotor.class, "rearRight");
+		DcMotor frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
+		DcMotor rearLeft = hardwareMap.get(DcMotor.class, "rearLeft");
+
+		headingpidf.setPID(Hp,Hi,Hd,Hf);
+		Pose2d noApriltagTarget  = new Pose2d(0,0,0);
+
+		if (getTeam() == Team.RED){
+			noApriltagTarget = new Pose2d(0,0, ShotAngle.calculateShotAngle(drive.localizer.getPose().position.x,drive.localizer.getPose().position.y,-72,72));
+			tag = 24;
+		}else if (getTeam() == Team.BLUE){
+			noApriltagTarget = new Pose2d(0,0, ShotAngle.calculateShotAngle(drive.localizer.getPose().position.x,drive.localizer.getPose().position.y,-72,-72));
+			tag = 20;
+		}
+
+		double prevUnwrappedHeading = 0;
+		prevUnwrappedHeading = Angle.unwrap(prevHeading, Math.toDegrees(drive.localizer.getPose().heading.toDouble()), prevUnwrappedHeading, 180);
+
+		// Calculate power commands
+		double strafePower  = gamepad1.left_stick_x;
+		double forwardPower = -gamepad1.left_stick_y;
+		double turnPower = 0;
+
+		if (gamepad1.right_trigger == 1) {
+			if (limelight.AreGoalsFound()){
+				turnPower = headingpidf.getOutput(
+						limelight.TagXOffset(tag),
+						0);
+			}else{
+				turnPower = headingpidf.getOutput(
+						-prevUnwrappedHeading,
+						Math.toDegrees(noApriltagTarget.heading.toDouble())
+				);
+			}
+		} else{
+			turnPower = gamepad1.left_stick_x;
+		}
+
+
+		prevHeading = Math.toDegrees(drive.localizer.getPose().heading.toDouble());
+
+		// Apply deadzone
+		forwardPower = Math.abs(forwardPower) > DEADZONE_THRESHOLD ? forwardPower : 0;
+		strafePower = Math.abs(strafePower) > DEADZONE_THRESHOLD ? strafePower : 0;
+		turnPower = Math.abs(turnPower) > DEADZONE_THRESHOLD ? turnPower : 0;
+
+//		PoseVelocity2d velocity = new PoseVelocity2d(
+//				new Vector2d(forwardPower, strafePower),
+//				turnPower
+//		);
+//		drive.setDrivePowers(velocity);
+
+
+		double rotX = strafePower * Math.cos(-drive.localizer.getPose().heading.toDouble()) - forwardPower * Math.sin(-drive.localizer.getPose().heading.toDouble());
+		double rotY = strafePower * Math.sin(-drive.localizer.getPose().heading.toDouble()) + forwardPower * Math.cos(-drive.localizer.getPose().heading.toDouble());
+
+		rotX = rotX * 1.1;  // Counteract imperfect strafing
+
+		// Denominator is the largest motor power (absolute value) or 1
+		// This ensures all the powers maintain the same ratio,
+		// but only if at least one is out of the range [-1, 1]
+		double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(turnPower), 1);
+		double frontLeftPower = (rotY + rotX + turnPower) / denominator;
+		double backLeftPower = (rotY - rotX + turnPower) / denominator;
+		double frontRightPower = (rotY - rotX - turnPower) / denominator;
+		double backRightPower = (rotY + rotX - turnPower) / denominator;
+
+		frontLeft.setPower(frontLeftPower);
+		rearLeft.setPower(backLeftPower);
+		frontRight.setPower(frontRightPower);
+		rearRight.setPower(backRightPower);
 	}
 
 	/**
@@ -343,32 +471,33 @@ public class MainTeleOp extends OpMode {
 		}
 		// Crosses 0.2 threshold going up (from lower to 0.2+)
 		else if (leftJoystickY >= 0.2 && !spindexerUpCrossed) {
-			scheduler.schedule(spindexer.setDirectPower(0.25));
+			scheduler.schedule(spindexer.setDirectPower(gamepad2.left_stick_y));
 			spindexerUpCrossed = true;
 			spindexerMidCrossed = false;
 			spindexerDownCrossed = false;
 		}
 		// Crosses -0.2 threshold going down (to -0.2 or below)
 		else if (leftJoystickY <= -0.2 && !spindexerDownCrossed) {
-			scheduler.schedule(spindexer.setDirectPower(-0.25));
+			scheduler.schedule(spindexer.setDirectPower(gamepad2.left_stick_y));
 			spindexerDownCrossed = true;
 			spindexerMidCrossed = false;
 			spindexerUpCrossed = false;
 		}
-
-		if (gamepad2.dpad_down && !dpadDownPressed) {
-			double nextIntakePosition = SpindexerPosition.getNextIntakePosition(lastSpindexerTarget);
-			lastSpindexerTarget = (int) nextIntakePosition;
-			scheduler.schedule(spindexer.setTarget(nextIntakePosition));
-			dpadDownPressed = true;
-		} else if (!gamepad2.dpad_down && dpadDownPressed) {
-			dpadDownPressed = false;
-		}
-
+//
+//		if (gamepad2.dpad_down && !dpadDownPressed) {
+//			double nextIntakePosition = SpindexerPosition.getNextIntakePosition(lastSpindexerTarget);
+//			lastSpindexerTarget = (int) nextIntakePosition;
+//			scheduler.schedule(spindexer.setTarget(nextIntakePosition));
+//			dpadDownPressed = true;
+//		} else if (!gamepad2.dpad_down && dpadDownPressed) {
+//			dpadDownPressed = false;
+//		}
+//
 		if (gamepad2.dpad_up && !dpadUpPressed) {
-			double nextShootPosition = SpindexerPosition.getNextShootPosition(lastSpindexerTarget);
-			lastSpindexerTarget = (int) nextShootPosition;
-			scheduler.schedule(spindexer.setTarget(nextShootPosition));
+//			double nextShootPosition = SpindexerPosition.getNextShootPosition(lastSpindexerTarget);
+//			lastSpindexerTarget = (int) nextShootPosition;
+//			scheduler.schedule(spindexer.setTarget(nextShootPosition));
+			scheduler.schedule(geneva.NextSlot());
 			dpadUpPressed = true;
 		} else if (!gamepad2.dpad_up && dpadUpPressed) {
 			dpadUpPressed = false;

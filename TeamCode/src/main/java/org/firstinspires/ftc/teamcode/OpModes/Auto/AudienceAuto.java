@@ -47,6 +47,8 @@ public abstract class AudienceAuto extends OpMode {
 	private MecanumDrive drive;
 	private TrajectoryActionBuilder trajectoryToShootingPosition;
 	private TrajectoryActionBuilder trajectoryToCollectionPosition;
+
+	private ShootThreeAction shootThreeAction;
 	private int shooterTarget1;
 	private int shooterTarget2;
 	private int shooterTarget3;
@@ -144,82 +146,7 @@ public abstract class AudienceAuto extends OpMode {
 		actionScheduler.schedule(
 				new SequentialAction(
 						trajectoryToShootingPosition.build(),
-						transfer.intakeDoorForward(),
-						intake.slow(),
-						spindexer.setTarget(shooterTarget1),
-						shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
-						// TODO: Extract into a helper function later
-						new Action() {
-							long startTime = -1;
-
-							@Override
-							public boolean run(TelemetryPacket telemetryPacket) {
-								// Initialize startTime on the first run
-								if (startTime == -1) {
-									startTime = System.nanoTime();
-								}
-
-								// Calculate how much time has passed
-								long elapsedTime = System.nanoTime() - startTime;
-
-								// Check if less than 1 second (1,000,000,000 nanoseconds) has passed
-								if (elapsedTime < 1_000_000_000L) {
-									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
-									return true; // Continue running this action
-								} else {
-									return false; // Action is done
-								}
-							}
-						},
-						spindexer.setTarget(shooterTarget2),
-						shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
-						new Action() {
-							long startTime = -1;
-
-							@Override
-							public boolean run(TelemetryPacket telemetryPacket) {
-								// Initialize startTime on the first run
-								if (startTime == -1) {
-									startTime = System.nanoTime();
-								}
-
-								// Calculate how much time has passed
-								long elapsedTime = System.nanoTime() - startTime;
-
-								// Check if less than 1 second (1,000,000,000 nanoseconds) has passed
-								if (elapsedTime < 1_000_000_000L) {
-									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
-									return true; // Continue running this action
-								} else {
-									return false; // Action is done
-								}
-							}
-						},
-						spindexer.setTarget(shooterTarget3),
-						shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
-						new Action() {
-							long startTime = -1;
-
-							@Override
-							public boolean run(TelemetryPacket telemetryPacket) {
-								// Initialize startTime on the first run
-								if (startTime == -1) {
-									startTime = System.nanoTime();
-								}
-
-								// Calculate how much time has passed
-								long elapsedTime = System.nanoTime() - startTime;
-
-								// Check if less than 1 second (1,000,000,000 nanoseconds) has passed
-								if (elapsedTime < 1_000_000_000L) {
-									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
-									return true; // Continue running this action
-								} else {
-									return false; // Action is done
-								}
-							}
-						},
-						shooter.stop(),
+						shootThreeAction.ShootThreeArtifacts(),
 						trajectoryToCollectionPosition.build(),
 						new SleepAction(3)
 				)
