@@ -195,44 +195,44 @@ public class Shooter {
 
 			@Override
 			public boolean run(TelemetryPacket packet) {
-			long now = System.nanoTime();
-			if (startTime == -1) startTime = now;
+				long now = System.nanoTime();
+				if (startTime == -1) startTime = now;
 
-			// 1. TIMEOUT CHECK
-			if (now - startTime > TIMEOUT_NS) {
-			// Safety: Stop if we time out
-			upperShooter.setPower(0);
-			lowerShooter.setPower(0);
-			return false;
+				// 1. TIMEOUT CHECK
+				if (now - startTime > TIMEOUT_NS) {
+					// Safety: Stop if we time out
+					upperShooter.setPower(0);
+					lowerShooter.setPower(0);
+					return false;
+				}
+
+				updateRPM(now);
+
+				// 2. CONTROL LOGIC (Reused from helper)
+				updateMotors(upperTargetRPM, lowerTargetRPM, packet);
+
+				// 3. CHECK IF AT TARGET
+				if (!hasReachedTarget && isAtTargetRPM(upperTargetRPM, lowerTargetRPM)) {
+					hasReachedTarget = true;
+				}
+
+				// Only send telemetry if packet is provided
+				if (packet != null) {
+					packet.put("Shooter Ready", hasReachedTarget);
+				}
+
+				// 4. SHOT DETECTION
+				if (!hasReachedTarget) {
+					return true; // Keep spinning up
+				}
+
+				// Drop detection
+				double targetAvg = (upperTargetRPM + lowerTargetRPM) * 0.5;
+				double currentAvg = (upperRPM + lowerRPM) * 0.5;
+				boolean shotFired = currentAvg < (targetAvg * 0.92);
+
+				return !shotFired;
 			}
-
-			updateRPM(now);
-
-			// 2. CONTROL LOGIC (Reused from helper)
-			updateMotors(upperTargetRPM, lowerTargetRPM, packet);
-
-			// 3. CHECK IF AT TARGET
-			if (!hasReachedTarget && isAtTargetRPM(upperTargetRPM, lowerTargetRPM)) {
-			hasReachedTarget = true;
-			}
-
-			// Only send telemetry if packet is provided
-			if (packet != null) {
-			 packet.put("Shooter Ready", hasReachedTarget);
-			}
-
-			// 4. SHOT DETECTION
-			if (!hasReachedTarget) {
-			 return true; // Keep spinning up
-			}
-
-			// Drop detection
-			double targetAvg = (upperTargetRPM + lowerTargetRPM) * 0.5;
-			double currentAvg = (upperRPM + lowerRPM) * 0.5;
-			 boolean shotFired = currentAvg < (targetAvg * 0.92);
-
-			return !shotFired;
-		}
 		};
 	}
 

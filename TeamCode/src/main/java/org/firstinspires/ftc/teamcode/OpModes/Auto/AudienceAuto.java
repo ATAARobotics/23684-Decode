@@ -74,7 +74,6 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.update();
 
 		spindexer = Spindexer.getInstance();
-		spindexer.resetCalibrationAverage();
 		telemetry.addData("Subsystem Init", "Spindexer initialized");
 		telemetry.update();
 
@@ -127,11 +126,6 @@ public abstract class AudienceAuto extends OpMode {
 	}
 
 	@Override
-	public void init_loop() {
-		spindexer.updateCalibrationAverage();
-	}
-
-	@Override
 	public void start() {
 		telemetry.addData("Status", "Match started - scheduling autonomous sequence");
 		telemetry.addData("Event", "Action Sequence", "1. Move to shooting position + spin up");
@@ -140,8 +134,6 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Event", "Action Sequence", "4. Repeat spin cycles");
 		telemetry.addData("Event", "Action Sequence", "5. Move to collection position");
 		telemetry.update();
-
-		spindexer.finalizeTeleOpCalibration();
 
 		actionScheduler.schedule(
 				new SequentialAction(
