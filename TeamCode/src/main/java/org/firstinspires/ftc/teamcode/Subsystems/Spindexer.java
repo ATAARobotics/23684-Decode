@@ -15,11 +15,12 @@ import org.firstinspires.ftc.teamcode.Utilities.BallColor;
 public class Spindexer {
 	// 360 ticks per 360 degrees for the through-bore encoder
 	public static double DEGREES_PER_TICK = (double) 360 / 8192;
-	public static double SLOW_POWER = 0.5;
+	public static double SPIN_POWER = 1;
 	private static Spindexer instance = null;
 	// Store detected ball colors for each slot (0, 1, 2)
 	private final BallColor[] ballColors = new BallColor[3];
-	private CRServo spindexerServo;
+	private CRServo spindexerLeft;
+	private CRServo spindexerRight;
 	private DcMotorEx spindexerEncoder;
 	private int currentSlot = 0; // Track the current slot
 	private double slotError = 0;
@@ -42,7 +43,8 @@ public class Spindexer {
 
 	public static void initialize(HardwareMap hardwareMap) {
 		instance = new Spindexer();
-		instance.spindexerServo = hardwareMap.get(CRServo.class, "spindexerServo");
+		instance.spindexerLeft = hardwareMap.get(CRServo.class, "spindexerLeft");
+		instance.spindexerRight = hardwareMap.get(CRServo.class, "spindexerRight");
 		instance.spindexerEncoder = hardwareMap.get(DcMotorEx.class, "frontRight");
 	}
 
@@ -95,9 +97,10 @@ public class Spindexer {
 		}
 
 		if (status != Status.AT_TARGET) {
-			if (currentPower != SLOW_POWER) {
-				spindexerServo.setPower(SLOW_POWER);
-				currentPower = SLOW_POWER;
+			if (currentPower != SPIN_POWER) {
+				spindexerLeft.setPower(SPIN_POWER);
+				spindexerRight.setPower(SPIN_POWER);
+				currentPower = SPIN_POWER;
 			}
 
 			boolean isSettling = (status == Status.ALMOST_AT_TARGET);
@@ -113,7 +116,8 @@ public class Spindexer {
 				}
 
 				if (System.nanoTime() - startTime > 400_000_000L) {
-					spindexerServo.setPower(0);
+					spindexerLeft.setPower(0);
+					spindexerRight.setPower(0);
 					currentPower = 0;
 					startTime = 0;
 					status = Status.AT_TARGET;
@@ -167,7 +171,8 @@ public class Spindexer {
 		return new InstantAction(() -> {
 			// Clamp power between -1 and 1
 			double clampedPower = Math.max(-1.0, Math.min(1.0, power));
-			spindexerServo.setPower(clampedPower);
+			spindexerLeft.setPower(clampedPower);
+			spindexerRight.setPower(clampedPower);
 		});
 	}
 }
