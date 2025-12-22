@@ -23,13 +23,12 @@ public class Transfer {
 	 * @return true if the spindexer is at a shooting position (within tolerance), false otherwise
 	 */
 	public static boolean isSpindexerAtShootingPosition(Spindexer spindexer) {
-		double currentPosition = spindexer.getCalibratedPosition();
-		
-		for (double shootingPos : SHOOTING_POSITIONS) {
-			if (isWithinTolerance(currentPosition, shootingPos, SPINDEXER_TOLERANCE_DEGREES)) {
-				return true;
-			}
-		}
+		// TODO: FIX
+//		for (double shootingPos : SHOOTING_POSITIONS) {
+//			if (isWithinTolerance(currentPosition, shootingPos, SPINDEXER_TOLERANCE_DEGREES)) {
+//				return true;
+//			}
+//		}
 		return false;
 	}
 	

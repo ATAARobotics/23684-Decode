@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -21,9 +20,7 @@ import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.Utilities.ActionScheduler;
 import org.firstinspires.ftc.teamcode.Utilities.Angle;
 import org.firstinspires.ftc.teamcode.Utilities.PIDFController;
-import org.firstinspires.ftc.teamcode.Utilities.PIDFDrive;
 import org.firstinspires.ftc.teamcode.Utilities.ShotAngle;
-import org.firstinspires.ftc.teamcode.Utilities.SpindexerPosition;
 import org.firstinspires.ftc.teamcode.Utilities.Team;
 import org.firstinspires.ftc.teamcode.Utilities.Transfer;
 
@@ -33,36 +30,23 @@ import org.firstinspires.ftc.teamcode.Utilities.Transfer;
  * Gamepad 1 (Driver):
  * - Left Stick: Drive forward/backward/strafe
  * - Right Stick: Turn left/right
- * <p>
- * Gamepad 2 (Operator):
- * - A: Intake in
- * - B: Intake out
- * - X: Transfer forward (forced)
- * - Y: Transfer backward (forced)
- * - LB: Transfer forward
- * - RB: Transfer stop
- * - LT: IntakeDoor open
- * - RT: IntakeDoor close
- * - DPad Up: Spindexer spin forward
- * - DPad Down: Spindexer spin backward
- * - Priority: X then RPM-based
  */
 public class MainTeleOp extends OpMode {
 	protected MecanumDrive drive;
 	protected ActionScheduler scheduler;
 	protected Shooter shooter;
 	protected Intake intake;
-
-	protected GenevaSpindexer geneva;
 	protected org.firstinspires.ftc.teamcode.Subsystems.Transfer transfer;
 	protected Spindexer spindexer;
 	protected Limelight limelight;
 	protected RGBIndicator rgbIndicator;
 	protected List<LynxModule> allHubs;
+	DcMotorEx frontRight;
+	DcMotorEx rearRight;
+	DcMotorEx frontLeft;
+	DcMotorEx rearLeft;
 
-
-
-	protected PIDFController headingpidf;
+	protected PIDFController headingPIDF;
 
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -73,15 +57,10 @@ public class MainTeleOp extends OpMode {
 	protected boolean spindexerUpCrossed = false;
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
-	protected boolean dpadUpPressed = false;
-	protected boolean dpadDownPressed = false;
 	protected boolean transferAboveRPM = false;
-	protected int lastSpindexerTarget = 0;
 
 	// Performance monitoring
-	private long lastLoopTime = 0;
 	private long maxLoopTime = 0;
-	private long loopCount = 0;
 
 	// Telemetry throttling
 	public static boolean ENABLE_TELEMETRY = false;
@@ -90,7 +69,10 @@ public class MainTeleOp extends OpMode {
 	private static final long MAX_LOOP_TIME_FOR_TELEMETRY = 25_000_000; // 25ms
 	private long previousLoopTime = 0;
 
-	private double Hp = 0.1,Hi = 0,Hd = 0,Hf = 0;
+	private final double Hp = 0.1;
+	private final double Hi = 0;
+	private final double Hd = 0;
+	private final double Hf = 0;
 	private double prevHeading;
 
 	@Override
@@ -103,33 +85,35 @@ public class MainTeleOp extends OpMode {
 		intake = Intake.getInstance();
 		transfer = org.firstinspires.ftc.teamcode.Subsystems.Transfer.getInstance();
 		spindexer = Spindexer.getInstance();
-		spindexer.resetCalibrationAverage();
 		rgbIndicator = RGBIndicator.getInstance();
 		limelight = new Limelight(hardwareMap);
-		headingpidf = new PIDFController(Hp,Hi,Hd,Hf);
+		headingPIDF = new PIDFController(Hp,Hi,Hd,Hf);
 		prevHeading = Math.toDegrees(drive.localizer.getPose().heading.toDouble());
-		geneva = new GenevaSpindexer(hardwareMap);
 
-		// Enable Lynx bulk caching to reduce USB latency (~3ms per sensor call)
+		frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
+		rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
+		frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
+		rearLeft = hardwareMap.get(DcMotorEx.class, "rearLeft");
+
+		frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+		frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+		rearRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+		rearLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
+		// Enable Lynx bulk caching to reduce USB latency
 		allHubs = hardwareMap.getAll(LynxModule.class);
 		for (LynxModule hub : allHubs) {
-			hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+			hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
 		}
 
 		telemetry.addData("Status", "Initialized - Waiting for START");
-		telemetry.addData("Bulk Caching", "AUTO mode enabled on " + allHubs.size() + " hub(s)");
+		telemetry.addData("Bulk Caching", "MANUAL mode enabled on " + allHubs.size() + " hub(s)");
 		telemetry.update();
-	}
-
-	@Override
-	public void init_loop() {
-		spindexer.updateCalibrationAverage();
 	}
 
 	@Override
 	public void start() {
 		// Called when START is pressed
-		spindexer.finalizeTeleOpCalibration();
 		scheduler.schedule(transfer.intakeDoorForward());
 		scheduler.schedule(transfer.transferBackward());
 		scheduler.update();
@@ -139,34 +123,40 @@ public class MainTeleOp extends OpMode {
 	}
 
 	@Override
+	public void init_loop(){
+		for (LynxModule hub : allHubs) {
+			hub.clearBulkCache();
+		}
+	}
+
+	@Override
 	public void loop() {
 		long startTime = System.nanoTime();
+
+		for (LynxModule hub : allHubs) {
+			hub.clearBulkCache();
+		}
 
 		// CRITICAL - Must complete quickly for responsive driving
 		drive.updatePoseEstimate();
 		limelight.update();
 		handleDriveInput();
+		handleOperatorInput();
 		//handleHeadinglockDriveInput();
 
 		// Phase 1: Core subsystem updates
 		// SubsystemUpdater and scheduler MUST run every loop, but telemetry is throttled
 		boolean sendTelemetry = true;
 		SubsystemUpdater.update(sendTelemetry);
-		
-   handleOperatorInput();
-
-//        spindexer.update();
-		
-		// Update scheduler - always runs, but telemetry gated
 		scheduler.update(sendTelemetry);
 
-//		// Phase 2: Useful updates (budget: 45ms)
-//		if ((System.nanoTime() - startTime) < 45_000_000) {
-//			updateRGBIndicator();
-//		}
+		// Phase 2: Useful updates (budget: 10ms)
+		if ((System.nanoTime() - startTime) < 10_000_000) {
+			updateRGBIndicator();
+		}
 
-		// Phase 3: Non-critical updates (budget: 30ms)
-		if (ENABLE_TELEMETRY && (System.nanoTime() - startTime) < 30_000_000) {
+		// Phase 3: Non-critical updates (budget: 15ms)
+		if (ENABLE_TELEMETRY && (System.nanoTime() - startTime) < 15_000_000) {
 			displayTelemetry();
 		}
 
@@ -177,21 +167,18 @@ public class MainTeleOp extends OpMode {
 		if (loopTime > maxLoopTime) {
 			maxLoopTime = loopTime;
 		}
-		loopCount++;
 
 		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
 		// This is separate from dashboard telemetry and always visible to the driver
 		telemetry.addData("Loop Time", "Current: %.2fms", loopTime / 1_000_000.0);
 		telemetry.addData("Loop Time", "Max: %.2fms", maxLoopTime / 1_000_000.0);
-		telemetry.addData("Loop Time", "Avg: %.2fms", (System.nanoTime() - lastLoopTime) / 1_000_000.0 / 100.0);
 		
 		if (ENABLE_TELEMETRY) {
 			telemetry.addData("Telemetry", "Dashboard enabled");
 		} else {
 			telemetry.addData("Telemetry", "Dashboard disabled (low latency)");
 		}
-		
-		lastLoopTime = System.nanoTime();
+
 		telemetry.update();
 	}
 
@@ -240,38 +227,27 @@ public class MainTeleOp extends OpMode {
 	/**
 	 * Update RGB indicator color
 	 */
-//	private void updateRGBIndicator() {
-//		scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
-//	}
+	private void updateRGBIndicator() {
+		scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
+	}
 
 	/**
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
-
-		DcMotorEx frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
-		DcMotorEx rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
-		DcMotorEx frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
-		DcMotorEx rearLeft = hardwareMap.get(DcMotorEx.class, "rearLeft");
-
-		frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-		frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-		rearRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-		rearLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-
 		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
-				scheduler.schedule(
-						drive.actionBuilder(new Pose2d(limelight.botPose.getPosition().x, limelight.botPose.getPosition().y, limelight.botPose.getOrientation().getYaw()))
-								.strafeToLinearHeading(new Vector2d(56.75, 10.25),Math.toRadians(-23))
-								.build()
-				);
+//				scheduler.schedule(
+//						drive.actionBuilder(new Pose2d(limelight.botPose.getPosition().x, limelight.botPose.getPosition().y, limelight.botPose.getOrientation().getYaw()))
+//								.strafeToLinearHeading(new Vector2d(56.75, 10.25),Math.toRadians(-23))
+//								.build()
+//				);
 			} else if (getTeam() == Team.BLUE) {
-				scheduler.schedule(
-						drive.actionBuilder(new Pose2d(limelight.botPose.getPosition().x, limelight.botPose.getPosition().y, limelight.botPose.getOrientation().getYaw()))
-								.strafeToLinearHeading(new Vector2d(56.75, -10.25),Math.toRadians(23))
-								.build()
-				);
+//				scheduler.schedule(
+//						drive.actionBuilder(new Pose2d(limelight.botPose.getPosition().x, limelight.botPose.getPosition().y, limelight.botPose.getOrientation().getYaw()))
+//								.strafeToLinearHeading(new Vector2d(56.75, -10.25),Math.toRadians(23))
+//								.build()
+//				);
 			}
 			aButtonPressed = true;
 		} else if (!gamepad1.a && aButtonPressed) {
@@ -279,33 +255,7 @@ public class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad1.a) {
-//			double forwardPower;
-//			double turnPower;
-//			double strafePower;
-//
-//			if (gamepad1.right_bumper){
-//				forwardPower = -gamepad1.left_stick_y * 0.5; // Left stick Y (inverted)
-//				turnPower = -gamepad1.right_stick_x * 0.5; // Right stick X
-//				strafePower = -gamepad1.left_stick_x * 0.5; // Left stick X
-//			}else{
-//				 forwardPower = -gamepad1.left_stick_y; // Left stick Y (inverted)
-//				 turnPower = -gamepad1.right_stick_x; // Right stick X
-//				 strafePower = -gamepad1.left_stick_x; // Left stick X
-//			}
-//
-//			// Apply deadzone
-//			forwardPower = Math.abs(forwardPower) > 0.05 ? forwardPower : 0;
-//			strafePower = Math.abs(strafePower) > 0.05 ? strafePower : 0;
-//			turnPower = Math.abs(turnPower) > 0.05 ? turnPower : 0;
-//
-//			// Create velocity command
-//			PoseVelocity2d velocity = new PoseVelocity2d(
-//					new Vector2d(forwardPower, strafePower),
-//					turnPower
-//			);
-//			drive.setDrivePowers(velocity);
-
-			double y = -gamepad1.left_stick_y; // Remember, Y stick value is reversed
+			double y = -gamepad1.left_stick_y; // Y stick value is reversed
 			double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
 			double rx = gamepad1.right_stick_x;
 
@@ -335,7 +285,7 @@ public class MainTeleOp extends OpMode {
 		DcMotor frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
 		DcMotor rearLeft = hardwareMap.get(DcMotor.class, "rearLeft");
 
-		headingpidf.setPID(Hp,Hi,Hd,Hf);
+		headingPIDF.setPID(Hp,Hi,Hd,Hf);
 		Pose2d noApriltagTarget  = new Pose2d(0,0,0);
 
 		if (getTeam() == Team.RED){
@@ -356,11 +306,11 @@ public class MainTeleOp extends OpMode {
 
 		if (gamepad1.right_trigger == 1) {
 			if (limelight.AreGoalsFound()){
-				turnPower = headingpidf.getOutput(
+				turnPower = headingPIDF.getOutput(
 						limelight.TagXOffset(tag),
 						0);
 			}else{
-				turnPower = headingpidf.getOutput(
+				turnPower = headingPIDF.getOutput(
 						-prevUnwrappedHeading,
 						Math.toDegrees(noApriltagTarget.heading.toDouble())
 				);
@@ -435,8 +385,8 @@ public class MainTeleOp extends OpMode {
 			xButtonPressed = false;
 		}
 
-		// Automatic transfer based on readiness (only if neither X nor Y button held)
-		if (!gamepad2.x && !gamepad2.y) {
+		// Automatic transfer based on readiness (only if X button isn't held)
+		if (!gamepad2.x) {
 			boolean isReady = Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM);
 			if (isReady && !transferAboveRPM) {
 				scheduler.schedule(transfer.transferForward());
@@ -483,25 +433,6 @@ public class MainTeleOp extends OpMode {
 			spindexerMidCrossed = false;
 			spindexerUpCrossed = false;
 		}
-//
-//		if (gamepad2.dpad_down && !dpadDownPressed) {
-//			double nextIntakePosition = SpindexerPosition.getNextIntakePosition(lastSpindexerTarget);
-//			lastSpindexerTarget = (int) nextIntakePosition;
-//			scheduler.schedule(spindexer.setTarget(nextIntakePosition));
-//			dpadDownPressed = true;
-//		} else if (!gamepad2.dpad_down && dpadDownPressed) {
-//			dpadDownPressed = false;
-//		}
-//
-		if (gamepad2.dpad_up && !dpadUpPressed) {
-//			double nextShootPosition = SpindexerPosition.getNextShootPosition(lastSpindexerTarget);
-//			lastSpindexerTarget = (int) nextShootPosition;
-//			scheduler.schedule(spindexer.setTarget(nextShootPosition));
-			scheduler.schedule(geneva.NextSlot());
-			dpadUpPressed = true;
-		} else if (!gamepad2.dpad_up && dpadUpPressed) {
-			dpadUpPressed = false;
-		}
 	}
 
 	/**
@@ -522,18 +453,11 @@ public class MainTeleOp extends OpMode {
 		telemetry.addData("Left Trigger", "Intake");
 		telemetry.addData("Right Trigger", "Shooter");
 		telemetry.addData("Left Joystick Y (Spindexer)", String.format("%.2f", -gamepad2.left_stick_y));
-		telemetry.addData("Spindexer Position", String.format("%.2f", spindexer.getCalibratedPosition() / 360.0));
 
 		telemetry.addLine("=== SHOOTER ===");
 		telemetry.addData("Upper RPM", String.format("%.2f", shooter.upperRPM));
 		telemetry.addData("Lower RPM", String.format("%.2f", shooter.lowerRPM));
 		telemetry.addData("Average RPM", String.format("%.2f", shooter.averageRPM));
-
-		telemetry.addLine("=== Spindexer ===");
-		telemetry.addData("Current Location", spindexer.getCalibratedPosition());
-		telemetry.addData("Target", spindexer.targetPosition);
-		telemetry.addData("Next intake", SpindexerPosition.getNextIntakePosition((int) spindexer.getCalibratedPosition()));
-		telemetry.addData("Next shoot", SpindexerPosition.getNextShootPosition((int) spindexer.getCalibratedPosition()));
 
 		telemetry.addLine("=== Transfer ===");
 		telemetry.addData("Spindexer at Shooting Pos", Transfer.isSpindexerAtShootingPosition(spindexer));
