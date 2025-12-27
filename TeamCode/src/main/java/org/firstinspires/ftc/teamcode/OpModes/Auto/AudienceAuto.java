@@ -4,11 +4,11 @@ import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
-import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
+import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -48,13 +48,6 @@ public abstract class AudienceAuto extends OpMode {
 	private MecanumDrive drive;
 	private TrajectoryActionBuilder trajectoryToShootingPosition;
 	private TrajectoryActionBuilder trajectoryToCollectionPosition;
-
-	private TrajectoryActionBuilder trajectoryToPickUpOne;
-	private TrajectoryActionBuilder trajectoryToPickUpTwo;
-	private TrajectoryActionBuilder trajectoryToPickUpThree;
-
-
-	private ShootThreeAction shootThreeAction;
 	private int shooterTarget1;
 	private int shooterTarget2;
 	private int shooterTarget3;
@@ -80,6 +73,7 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.update();
 
 		spindexer = Spindexer.getInstance();
+		//spindexer.resetCalibrationAverage();
 		telemetry.addData("Subsystem Init", "Spindexer initialized");
 		telemetry.update();
 
@@ -123,15 +117,17 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Trajectory", "Collection angle: %.2f°", getCollectionHeading());
 		telemetry.update();
 
-		trajectoryToPickUpOne = drive.actionBuilder(new Pose2d(35, -23, Math.toRadians(-90)))
-				.strafeTo(new Vector2d(35,-50));
-
 		shooterTarget1 = SpindexerPosition.getNextShootPosition(0);
 		shooterTarget2 = SpindexerPosition.getNextShootPosition(shooterTarget1);
 		shooterTarget3 = SpindexerPosition.getNextShootPosition(shooterTarget2);
 
 		telemetry.addData("Status", "Initialization complete");
 		telemetry.update();
+	}
+
+	@Override
+	public void init_loop() {
+		//spindexer.updateCalibrationAverage();
 	}
 
 	@Override
@@ -144,19 +140,88 @@ public abstract class AudienceAuto extends OpMode {
 		telemetry.addData("Event", "Action Sequence", "5. Move to collection position");
 		telemetry.update();
 
+		//spindexer.finalizeTeleOpCalibration();
+
 		actionScheduler.schedule(
 				new SequentialAction(
 						trajectoryToShootingPosition.build(),
-						shootThreeAction.ShootThreeArtifacts(),
-						trajectoryToCollectionPosition.build(),
-						intake.in(),
-						new ParallelAction(
-						spindexer.setDirectPower(1),
-						trajectoryToPickUpOne.build()
-						),
-						trajectoryToShootingPosition.build(),
-						shootThreeAction.ShootThreeArtifacts(),
+						transfer.intakeDoorForward(),
+						intake.slow(),
+						spindexer.setTarget(shooterTarget1),
+						shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
+						// TODO: Extract into a helper function later
+						new Action() {
+							long startTime = -1;
 
+							@Override
+							public boolean run(TelemetryPacket telemetryPacket) {
+								// Initialize startTime on the first run
+								if (startTime == -1) {
+									startTime = System.nanoTime();
+								}
+
+								// Calculate how much time has passed
+								long elapsedTime = System.nanoTime() - startTime;
+
+								// Check if less than 1 second (1,000,000,000 nanoseconds) has passed
+								if (elapsedTime < 1_000_000_000L) {
+									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
+									return true; // Continue running this action
+								} else {
+									return false; // Action is done
+								}
+							}
+						},
+						spindexer.setTarget(shooterTarget2),
+						shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
+						new Action() {
+							long startTime = -1;
+
+							@Override
+							public boolean run(TelemetryPacket telemetryPacket) {
+								// Initialize startTime on the first run
+								if (startTime == -1) {
+									startTime = System.nanoTime();
+								}
+
+								// Calculate how much time has passed
+								long elapsedTime = System.nanoTime() - startTime;
+
+								// Check if less than 1 second (1,000,000,000 nanoseconds) has passed
+								if (elapsedTime < 1_000_000_000L) {
+									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
+									return true; // Continue running this action
+								} else {
+									return false; // Action is done
+								}
+							}
+						},
+						spindexer.setTarget(shooterTarget3),
+						shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
+						new Action() {
+							long startTime = -1;
+
+							@Override
+							public boolean run(TelemetryPacket telemetryPacket) {
+								// Initialize startTime on the first run
+								if (startTime == -1) {
+									startTime = System.nanoTime();
+								}
+
+								// Calculate how much time has passed
+								long elapsedTime = System.nanoTime() - startTime;
+
+								// Check if less than 1 second (1,000,000,000 nanoseconds) has passed
+								if (elapsedTime < 1_000_000_000L) {
+									shooter.run(Shooter.AUDIENCE_RPM).run(new TelemetryPacket());
+									return true; // Continue running this action
+								} else {
+									return false; // Action is done
+								}
+							}
+						},
+						shooter.stop(),
+						trajectoryToCollectionPosition.build(),
 						new SleepAction(3)
 				)
 		);
@@ -174,9 +239,9 @@ public abstract class AudienceAuto extends OpMode {
 
 		// Control transfer mechanism based on readiness (spindexer position + shooter RPM)
 		if (Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM)) {
-			transfer.transferForward();
+			transfer.transferIn();
 		} else {
-			transfer.transferBackward();
+			transfer.transferOut();
 		}
 
 		// Update telemetry

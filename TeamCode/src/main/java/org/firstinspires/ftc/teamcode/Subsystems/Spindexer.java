@@ -6,11 +6,17 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
+import com.acmerobotics.roadrunner.SequentialAction;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.ServoController;
 
 import org.firstinspires.ftc.teamcode.Utilities.BallColor;
+import org.firstinspires.ftc.teamcode.Utilities.PIDFController;
+
 @Config
 public class Spindexer {
 	// 360 ticks per 360 degrees for the through-bore encoder
@@ -34,6 +40,10 @@ public class Spindexer {
 	}
 	public Status status = Status.NOT_AT_TARGET;
 
+	PIDFController spindexerPIDF;
+	public double p = 0.001;
+
+
 	private Spindexer() {
 		// Initialize all slots as EMPTY
 		for (int i = 0; i < 3; i++) {
@@ -45,7 +55,11 @@ public class Spindexer {
 		instance = new Spindexer();
 		instance.spindexerLeft = hardwareMap.get(CRServo.class, "spindexerLeft");
 		instance.spindexerRight = hardwareMap.get(CRServo.class, "spindexerRight");
-		instance.spindexerEncoder = hardwareMap.get(DcMotorEx.class, "frontRight");
+		instance.spindexerEncoder = hardwareMap.get(DcMotorEx.class, "intake");
+		instance.spindexerEncoder.setDirection(DcMotorSimple.Direction.REVERSE);
+		instance.spindexerEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		instance.spindexerEncoder.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		instance.spindexerPIDF = new PIDFController(0.001, 0, 0, 0);
 	}
 
 	public static Spindexer getInstance() {
@@ -133,6 +147,59 @@ public class Spindexer {
 		return new InstantAction(() -> targetSlot = slot);
 	}
 
+	public Action NextSlot() {
+		return new Action() {
+			boolean initialized = false;
+			double target = spindexerEncoder.getCurrentPosition() + ((double) 8192 /3);
+
+			@Override
+			public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+
+				spindexerPIDF.setPID(p,0,0,0);
+				double power = spindexerPIDF.getOutput(spindexerEncoder.getCurrentPosition(), target);
+					spindexerLeft.setPower(power);
+					spindexerRight.setPower(power);
+
+
+
+					double error = Math.abs(spindexerEncoder.getCurrentPosition() - target);
+
+
+
+				return error < 100;
+			}
+
+		};
+	}
+
+	public Action next() {
+		return packet -> {
+			boolean checked = false;
+			double target = 0;
+			if (!checked) {
+				 target = spindexerEncoder.getCurrentPosition() + ((double) 8192 / 3);
+				checked = true;
+			}else {
+				if (spindexerEncoder.getCurrentPosition() >= target) {
+					spindexerLeft.setPower(0);
+					spindexerRight.setPower(0);
+				} else {
+					spindexerLeft.setPower(SPIN_POWER);
+					spindexerRight.setPower(SPIN_POWER);
+				}
+			}
+			return spindexerEncoder.getCurrentPosition() <= target;
+		};
+	}
+
+
+	public Action TwoSlots(){
+		return new SequentialAction(
+				NextSlot(),
+				NextSlot()
+		);
+	}
+
 	public Action toSlot(int slot) {
 		return new Action() {
 			boolean initialized = false;
@@ -143,7 +210,7 @@ public class Spindexer {
 					return !status.equals(Status.AT_TARGET);
 				} else {
 					initialized = true;
-					setTarget(slot).run(null);
+					setTarget(slot).run(new TelemetryPacket());
 					return true;
 				}
 			}

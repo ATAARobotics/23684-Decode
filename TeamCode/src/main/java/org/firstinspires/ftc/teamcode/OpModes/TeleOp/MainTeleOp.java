@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import java.util.List;
@@ -11,7 +10,6 @@ import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareIniti
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.HardwareShutdown;
 import org.firstinspires.ftc.teamcode.LifecycleManagementUtilities.SubsystemUpdater;
 import org.firstinspires.ftc.teamcode.Roadrunner.MecanumDrive;
-import org.firstinspires.ftc.teamcode.Subsystems.GenevaSpindexer;
 import org.firstinspires.ftc.teamcode.Subsystems.Intake;
 import org.firstinspires.ftc.teamcode.Subsystems.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystems.RGBIndicator;
@@ -115,7 +113,7 @@ public class MainTeleOp extends OpMode {
 	public void start() {
 		// Called when START is pressed
 		scheduler.schedule(transfer.intakeDoorForward());
-		scheduler.schedule(transfer.transferBackward());
+		scheduler.schedule(transfer.transferOut());
 		scheduler.update();
 		limelight.start();
 
@@ -378,10 +376,10 @@ public class MainTeleOp extends OpMode {
 
 		// X Button: Override transfer forward - manual control
 		if (gamepad2.x && !xButtonPressed) {
-			scheduler.schedule(transfer.transferForward());
+			scheduler.schedule(transfer.transferIn());
 			xButtonPressed = true;
 		} else if (!gamepad2.x && xButtonPressed) {
-			scheduler.schedule(transfer.transferBackward());
+			scheduler.schedule(transfer.transferOut());
 			xButtonPressed = false;
 		}
 
@@ -389,9 +387,9 @@ public class MainTeleOp extends OpMode {
 		if (!gamepad2.x) {
 			boolean isReady = Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM);
 			if (isReady && !transferAboveRPM) {
-				scheduler.schedule(transfer.transferForward());
+				scheduler.schedule(transfer.transferIn());
 			} else if (!isReady && transferAboveRPM) {
-				scheduler.schedule(transfer.transferBackward());
+				scheduler.schedule(transfer.transferOut());
 			}
 			transferAboveRPM = isReady;
 		}

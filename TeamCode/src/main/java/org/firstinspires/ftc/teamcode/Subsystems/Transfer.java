@@ -63,7 +63,7 @@ public class Transfer {
 	 *
 	 * @return Action that starts transfer servos forward
 	 */
-	public Action transferForward() {
+	public Action transferIn() {
 		return new InstantAction(() -> {
 			setTransferDirections();
 			transferLeft.setPower(FORWARD_POWER);
@@ -77,7 +77,7 @@ public class Transfer {
 	 *
 	 * @return Action that starts transfer servos backward
 	 */
-	public Action transferBackward() {
+	public Action transferOut() {
 		return new InstantAction(() -> {
 			setTransferDirections();
 			transferLeft.setPower(BACKWARD_POWER);

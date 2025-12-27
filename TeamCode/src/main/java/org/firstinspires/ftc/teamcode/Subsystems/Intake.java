@@ -1,18 +1,22 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 @Config
 public class Intake {
 
 	// Motor power constants
-	public static double IN_POWER = 1.0;
-	public static double SLOW_POWER = 0.3;
-	public static double OUT_POWER = -1.0;
+	public static double IN_POWER = -1.0;
+	public static double SLOW_POWER = -0.3;
+	public static double OUT_POWER = 1.0;
 	public static double STOP_POWER = 0.0;
 	private static Intake instance = null;
 	private DcMotor intake;
@@ -23,6 +27,7 @@ public class Intake {
 	public static void initialize(HardwareMap hardwareMap) {
 		instance = new Intake();
 		instance.intake = hardwareMap.get(DcMotor.class, "intake");
+		instance.intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 	}
 
 	public static Intake getInstance() {
@@ -43,7 +48,13 @@ public class Intake {
 	 * @return Action that starts intake motor forward
 	 */
 	public Action in() {
-		return new InstantAction(() -> intake.setPower(IN_POWER));
+		return new Action() {
+			@Override
+			public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+				intake.setPower(IN_POWER);
+				return false;
+			}
+		};
 	}
 
 	/**

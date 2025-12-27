@@ -25,7 +25,7 @@ public class Shooter {
 	public static double STOP_POWER = 0.0;
 
 	// --- RPM & Control Constants ---
-	public static double RPM_TOLERANCE = 100.0;
+	public static double RPM_TOLERANCE = 50; // 100 before
 	public static double TICKS_PER_REVOLUTION = 28.0;
 
 	// --- Pre-calculated constants ---
@@ -183,7 +183,25 @@ public class Shooter {
 		return packet -> {
 			updateRPM(System.nanoTime());
 			updateMotors(upperTargetRPM, lowerTargetRPM, packet);
-			return false;
+			return averageRPM <= AUDIENCE_RPM - RPM_TOLERANCE;
+		};
+	}
+
+	public Action MindlessRun(double upperTargetRPM, double lowerTargetRPM) {
+		return packet -> {
+			updateRPM(System.nanoTime());
+			updateMotors(upperTargetRPM, lowerTargetRPM, packet);
+			return true;
+		};
+	}
+
+	public Action WaitForShoot(){
+		return new Action() {
+			@Override
+			public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+				updateRPM(System.nanoTime());
+				return averageRPM >= AUDIENCE_RPM - RPM_TOLERANCE;
+			}
 		};
 	}
 

@@ -61,9 +61,9 @@ public class Test_Shooter extends OpMode {
 
 			// Transfer forward only if at target RPM, otherwise backward
 			if (shooter.isAtTargetRPM(lowerTargetRPM, upperTargetRPM)) {
-				scheduler.schedule(transfer.transferForward());
+				scheduler.schedule(transfer.transferIn());
 			} else {
-				scheduler.schedule(transfer.transferBackward());
+				scheduler.schedule(transfer.transferOut());
 			}
 		} else {
 			scheduler.schedule(shooter.run(0));

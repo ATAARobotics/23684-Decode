@@ -9,7 +9,7 @@ import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 public class FrontsideAuto {
 
     public static double shootingX = 57, shootingY = -23; // this is the position used shooting blank right now
-    public static double  Goalx = -60, Goaly = -60; // this is the position of the goal blank right now
+    public static double  Goalx = -72, Goaly = -72; // this is the position of the goal blank right now
 
     public static double AngleofShot(double x, double y){
         double diffx = Goalx - x;
@@ -31,46 +31,45 @@ public class FrontsideAuto {
                 // PRE LOAD
 
                 // most likey we would start the camera init now
-                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), AngleofShot(shootingX,shootingY)) // move to shoot
+                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), 23) // move to shoot
                 // checks the apriltag to find corect order
-                .waitSeconds(2) // fires the artifact in corect order
+                .waitSeconds(2) // fires the artifact in correct order
 
                 // SPIKE MARK ONE
 
-                .strafeToLinearHeading(new Vector2d(35,-23), Math.toRadians(270)) // turns to the first spike zone
+                .strafeToLinearHeading(new Vector2d(27,-24), Math.toRadians(270)) // turns to the first spike zone
                 // the brush would also start running
                 .waitSeconds(0.03)
-                .strafeTo(new Vector2d(35,-50)) // pick up the first spike zone
-                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), AngleofShot(shootingX,shootingY)) // goes to
+                .strafeTo(new Vector2d(27,-53)) // pick up the first spike zone
+                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), 23) // goes to
                 // shoot the brand new loaded
-                .waitSeconds(2) // fires the artifact in corect order
+                .waitSeconds(2) // fires the artifact in correct order
 
                 // SPIKE MARK TWO
 
-                .strafeToLinearHeading(new Vector2d(10,-23), Math.toRadians(270))
+                .strafeToLinearHeading(new Vector2d(4,-24), Math.toRadians(270))
                 .waitSeconds(0.03)
-                .strafeTo(new Vector2d(11,-50)) // pick up the Second spike zone
-                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), AngleofShot(shootingX,shootingY))// goes to
+                .strafeTo(new Vector2d(4,-53)) // pick up the Second spike zone
+                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), 23)// goes to
                 // shoot the brand new loaded
                 .waitSeconds(2) // fires the artifact in corect order
 
 
                 // SPIKE MARK THREE
 
-                .strafeToLinearHeading(new Vector2d(-10,-23), Math.toRadians(270))
+                .strafeToLinearHeading(new Vector2d(-20,-24), Math.toRadians(270))
                 .waitSeconds(0.03)
-                .strafeTo(new Vector2d(-11,-50)) // pick up the three spike zone
-                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), AngleofShot(shootingX,shootingY))// goes to
-                // shoot the brand new loaded
+                .strafeTo(new Vector2d(-20,-43)) // pick up the three spike zone
+                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), 23)
                 .waitSeconds(2) // fires the artifact in corect order
 
-                // Human Player
-
-                .strafeToLinearHeading(new Vector2d(57,-37), Math.toRadians(270))
-                .waitSeconds(0.03)
-                .strafeTo(new Vector2d(57,-56)) // pick up the three spike zone
-                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), AngleofShot(shootingX,shootingY))// goes to
-                // shoot the brand new loaded
+//                // Human Player
+//
+//                .strafeToLinearHeading(new Vector2d(57,-37), Math.toRadians(270))
+//                .waitSeconds(0.03)
+//                .strafeTo(new Vector2d(57,-56)) // pick up the three spike zone
+//                .strafeToLinearHeading(new Vector2d(shootingX, shootingY), AngleofShot(shootingX,shootingY))// goes to
+//                // shoot the brand new loaded
 
 
 

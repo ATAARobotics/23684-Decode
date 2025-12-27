@@ -10,14 +10,12 @@ import org.firstinspires.ftc.teamcode.Subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.Utilities.SpindexerPosition;
 
-public class ShootThreeAction {
+public class ShootThreeAction{
     private Spindexer spindexer;
     private Shooter shooter;
     private Transfer transfer;
     private Intake intake;
-    private int shooterTarget1;
-    private int shooterTarget2;
-    private int shooterTarget3;
+
 
     public ShootThreeAction(){
         spindexer = Spindexer.getInstance();
@@ -25,18 +23,13 @@ public class ShootThreeAction {
         transfer = Transfer.getInstance();
         intake = Intake.getInstance();
 
-        shooterTarget1 = SpindexerPosition.getNextShootPosition(0);
-        shooterTarget2 = SpindexerPosition.getNextShootPosition(shooterTarget1);
-        shooterTarget3 = SpindexerPosition.getNextShootPosition(shooterTarget2);
-
     }
-
     public Action ShootThreeArtifacts(){
         return new SequentialAction(
+                shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                 transfer.intakeDoorForward(),
                 intake.slow(),
-                spindexer.setTarget(shooterTarget1),
-                shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
+                spindexer.toSlot(0),
                 // TODO: Extract into a helper function later
                 new Action() {
                     long startTime = -1;
@@ -60,7 +53,7 @@ public class ShootThreeAction {
                         }
                     }
                 },
-                spindexer.setTarget(shooterTarget2),
+                spindexer.toSlot(1),
                 shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                 new Action() {
                     long startTime = -1;
@@ -84,7 +77,7 @@ public class ShootThreeAction {
                         }
                     }
                 },
-                spindexer.setTarget(shooterTarget3),
+                spindexer.toSlot(2),
                 shooter.runAndWait(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                 new Action() {
                     long startTime = -1;
