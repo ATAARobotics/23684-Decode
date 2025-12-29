@@ -17,7 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Limelight {
+public class Limelight{
 	private final Limelight3A limelight;
 	private final GoBildaPinpointDriver pinpoint;
 	private double yawOffset = 0;
