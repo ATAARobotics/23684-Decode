@@ -18,7 +18,7 @@ public class Transfer {
         intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
     }
 
-    Command IntakeDoorIn(){
+    public Command IntakeDoorIn(){
         return new CommandBase() {
             @Override
             public void execute() {
@@ -32,7 +32,7 @@ public class Transfer {
         };
     }
 
-    Command IntakeDoorOut(){
+    public Command IntakeDoorOut(){
         return new CommandBase() {
             @Override
             public void execute() {
@@ -46,7 +46,7 @@ public class Transfer {
         };
     }
 
-    Command TransferIn(){
+   public Command TransferIn(){
         return new CommandBase() {
             @Override
             public void execute() {
@@ -60,7 +60,7 @@ public class Transfer {
         };
     }
 
-    Command TransferOut(){
+    public Command TransferOut(){
         return new CommandBase() {
             @Override
             public void execute() {

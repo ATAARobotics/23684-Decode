@@ -22,7 +22,7 @@ public class Intake {
 
     }
 
-    Command In(){
+   public Command In(){
         return new CommandBase() {
             @Override
             public void execute() {
@@ -35,7 +35,7 @@ public class Intake {
         };
     }
 
-    Command Slow(){
+    public Command Slow(){
         return new CommandBase() {
             @Override
             public void execute() {
@@ -48,7 +48,7 @@ public class Intake {
         };
     }
 
-    Command Out(){
+    public Command Out(){
         return new CommandBase() {
             @Override
             public void execute() {
@@ -61,7 +61,7 @@ public class Intake {
         };
     }
 
-    Command Stop(){
+    public Command Stop(){
         return new CommandBase() {
             @Override
             public void execute() {
