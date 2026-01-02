@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
@@ -172,6 +173,7 @@ public class AudienceAuto extends OpMode {
     @Override
     public void start() {
         scheduler.schedule(
+            new SequentialCommandGroup(
                 new ParallelCommandGroup(
                       new FollowPathCommand(follower,paths.shootPreload),
                       shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
@@ -223,13 +225,14 @@ public class AudienceAuto extends OpMode {
                 new WaitCommand(30),
                 new FollowPathCommand(follower,paths.toCollectSpikeTree),
                 new ParallelCommandGroup(
-                        new FollowPathCommand(follower,paths.toShootSpikeTwo),
+                        new FollowPathCommand(follower,paths.toShootSpikeThree),
                         intake.Out(),
                         shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
                 ),
                 transfer.TransferOut(),
                 shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800) // shoot spike two
-        );
+            )
+            );
 
     }
 
