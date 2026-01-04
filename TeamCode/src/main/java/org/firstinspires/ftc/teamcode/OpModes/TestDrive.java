@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.OpModes;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -10,6 +11,7 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.seattlesolvers.solverslib.geometry.Pose2d;
 
 import org.firstinspires.ftc.teamcode.Utills.ShootAngle;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -23,7 +25,7 @@ public class TestDrive extends OpMode {
 
     ShootAngle shootAngle;
 
-       public static Pose startingPose; //See ExampleAuto to understand how to use this
+       public static PathChain NowPose; //See ExampleAuto to understand how to use this
 
     Path path;
 
@@ -34,16 +36,23 @@ public class TestDrive extends OpMode {
     private boolean slowMode = false;
     private double slowModeMultiplier = 0.5;
 
+    public boolean checked = false;
+
+    Pose holdpose;
+
     @Override
     public void init() {
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(72,72,Math.toRadians(270)));
+        holdpose = new Pose(0,0,0);
         follower.update();
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
         pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
                 .addPath(new Path(new BezierLine(follower::getPose, new Pose(45, 98))))
                 .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(45), 0.8))
                 .build();
+
+
     }
 
 
@@ -81,6 +90,16 @@ public class TestDrive extends OpMode {
                     -gamepad1.right_stick_x * slowModeMultiplier,
                     true // Robot Centric
             );
+
+            if (Math.abs(gamepad1.left_stick_y) + Math.abs(gamepad1.left_stick_x) + Math.abs(gamepad1.right_stick_x) == 0){
+                if (!checked){
+                    holdpose = follower.getPose();
+                    checked = true;
+                }
+                follower.holdPoint(holdpose);
+            }else{
+                checked = false;
+            }
         }
 
         if (gamepad1.yWasPressed()){
@@ -119,6 +138,9 @@ public class TestDrive extends OpMode {
         if (gamepad2.yWasPressed()) {
             slowModeMultiplier -= 0.25;
         }
+
+
+
 
         telemetryM.debug("position", follower.getPose());
         telemetryM.debug("velocity", follower.getVelocity());
