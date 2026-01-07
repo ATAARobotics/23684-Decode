@@ -50,7 +50,7 @@ public class AudienceAuto extends OpMode {
             shootPreload = follower
                     .pathBuilder()
                     .addPath(
-                            new BezierLine(new Pose(63.000, 9.000), new Pose(59.440, 17.328))
+                            new BezierLine(new Pose(63.000, 9), new Pose(59.440, 17.328))
                     )
                     .setLinearHeadingInterpolation(
                             Math.toRadians(270),
@@ -154,7 +154,7 @@ public class AudienceAuto extends OpMode {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(72, 8, Math.toRadians(90)));
+        follower.setStartingPose(new Pose(63, 9, Math.toRadians(270)));
 
         scheduler = CommandScheduler.getInstance();
 
@@ -175,62 +175,62 @@ public class AudienceAuto extends OpMode {
         scheduler.schedule(
             new SequentialCommandGroup(
                 new ParallelCommandGroup(
-                      new FollowPathCommand(follower,paths.shootPreload),
-                      shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
-                      spindexer.DirectPower(1),
-                      transfer.IntakeDoorIn(),
-                      transfer.TransferIn(),
-                      intake.Slow()
+                      new FollowPathCommand(follower,paths.shootPreload).withTimeout(500)
+//                      shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(500),
+//                      spindexer.DirectPower(1),
+//                      transfer.IntakeDoorIn(),
+//                      transfer.TransferIn(),
+//                      intake.Slow()
                 ),
-                transfer.TransferOut(),
-                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800), // shoot preloaded
+//                transfer.TransferOut(),
+//                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800), // shoot preloaded
                 new ParallelCommandGroup(
-                    shooter.Stop(),
-                    intake.In(),
-                    transfer.TransferIn(),
+//                    shooter.Stop(),
+//                    intake.In(),
+//                    transfer.TransferIn(),
                     new FollowPathCommand(follower,paths.ToSpikeOne)
                 ),
                 new WaitCommand(30),
                 new FollowPathCommand(follower,paths.CollectSpikeOne),
                 new ParallelCommandGroup(
-                    new FollowPathCommand(follower,paths.toShootSpikeOne),
-                    intake.Out(),
-                    shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+                    new FollowPathCommand(follower,paths.toShootSpikeOne)
+//                    intake.Out(),
+//                    shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
                 ),
-                transfer.TransferOut(),
-                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800), // shoot spike One
+//                transfer.TransferOut(),
+//                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800), // shoot spike One
 
                 new ParallelCommandGroup(
-                    shooter.Stop(),
-                    intake.In(),
-                    transfer.TransferIn(),
+//                    shooter.Stop(),
+//                    intake.In(),
+//                    transfer.TransferIn(),
                  new FollowPathCommand(follower,paths.toSpikeTwo)
                 ),
                 new WaitCommand(30),
                 new FollowPathCommand(follower,paths.CollectSpikeTwo),
                 new ParallelCommandGroup(
-                        new FollowPathCommand(follower,paths.toShootSpikeTwo),
-                        intake.Out(),
-                        shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+                        new FollowPathCommand(follower,paths.toShootSpikeTwo)
+//                        intake.Out(),
+//                        shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
                 ),
-                transfer.TransferOut(),
-                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800), // shoot spike two
-
+//                transfer.TransferOut(),
+//                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800), // shoot spike two
+//
                 new ParallelCommandGroup(
-                    shooter.Stop(),
-                    intake.In(),
-                    transfer.TransferIn(),
+//                    shooter.Stop(),
+//                    intake.In(),
+//                    transfer.TransferIn(),
                     new FollowPathCommand(follower,paths.toSpikeThree)
                 ),
                 new WaitCommand(30),
                 new FollowPathCommand(follower,paths.toCollectSpikeTree),
                 new ParallelCommandGroup(
-                        new FollowPathCommand(follower,paths.toShootSpikeThree),
-                        intake.Out(),
-                        shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
-                ),
-                transfer.TransferOut(),
-                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800) // shoot spike two
+                        new FollowPathCommand(follower,paths.toShootSpikeThree)
+//                        intake.Out(),
+//                        shooter.ToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+                )
+//                transfer.TransferOut(),
+//                shooter.MindlessToTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM).withTimeout(2800) // shoot spike two
             )
             );
 

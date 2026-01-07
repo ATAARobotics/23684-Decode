@@ -3,10 +3,12 @@ package org.firstinspires.ftc.teamcode.OpModes;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Utills.ShootAngle;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+@TeleOp
 public class holdPoseDrive extends OpMode {
 
     public double X = 0;

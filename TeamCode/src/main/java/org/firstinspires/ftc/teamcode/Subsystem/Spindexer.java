@@ -14,7 +14,7 @@ public class Spindexer {
     DcMotor spindexerEncoder;
 
     public Spindexer(HardwareMap hardwareMap) {
-        spindexer = hardwareMap.get(CRServo.class, "spindexer");
+        spindexer = hardwareMap.get(CRServo.class, "spindexerLeft");
         spindexerEncoder = hardwareMap.get(DcMotor.class, "intake");
     }
 
