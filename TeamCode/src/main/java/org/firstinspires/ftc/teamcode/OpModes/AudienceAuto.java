@@ -141,7 +141,7 @@ public class AudienceAuto extends OpMode {
 			shootPreload = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(63.000, 9.000), new Pose(59.440, 17.328))
+							new BezierLine(new Pose(63.000, 9), new Pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(270),

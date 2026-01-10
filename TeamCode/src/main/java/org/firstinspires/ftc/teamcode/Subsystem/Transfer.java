@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 
 public class Transfer {
     CRServo transferLeft;
@@ -19,59 +20,35 @@ public class Transfer {
     }
 
     public Command IntakeDoorIn(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                intakeDoorLeft.setPower(1);
-                intakeDoorRight.setPower(1);
-            }
-            @Override
-            public boolean isFinished() {
-                return true;
-            }
-        };
+        return new InstantCommand( () -> {
+            intakeDoorLeft.setPower(1);
+            intakeDoorRight.setPower(1);
+        }
+        );
     }
 
     public Command IntakeDoorOut(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                intakeDoorLeft.setPower(-1);
-                intakeDoorRight.setPower(-1);
-            }
-            @Override
-            public boolean isFinished() {
-                return true;
-            }
-        };
+        return new InstantCommand( () -> {
+            intakeDoorLeft.setPower(-1);
+            intakeDoorRight.setPower(-1);
+        }
+        );
     }
 
    public Command TransferIn(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                transferLeft.setPower(1);
-                transferRight.setPower(1);
-            }
-            @Override
-            public boolean isFinished() {
-                return true;
-            }
-        };
+       return new InstantCommand( () -> {
+           transferLeft.setPower(1);
+           transferRight.setPower(1);
+       }
+       );
     }
 
     public Command TransferOut(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                transferLeft.setPower(-1);
-                transferRight.setPower(-1);
-            }
-            @Override
-            public boolean isFinished() {
-                return true;
-            }
-        };
+        return new InstantCommand( () -> {
+            transferLeft.setPower(-1);
+            transferRight.setPower(-1);
+        }
+        );
     }
 
 }
