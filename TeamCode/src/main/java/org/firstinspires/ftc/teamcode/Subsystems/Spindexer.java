@@ -28,6 +28,9 @@ public class Spindexer {
 	private CRServo spindexerLeft;
 	private CRServo spindexerRight;
 	private DcMotorEx spindexerEncoder;
+
+	private DcMotorEx spindexerMotor;
+
 	private int currentSlot = 0; // Track the current slot
 	private double slotError = 0;
 	private int targetSlot = 0;
@@ -55,6 +58,7 @@ public class Spindexer {
 		instance = new Spindexer();
 		instance.spindexerLeft = hardwareMap.get(CRServo.class, "spindexerLeft");
 		instance.spindexerRight = hardwareMap.get(CRServo.class, "spindexerRight");
+		instance.spindexerMotor = hardwareMap.get(DcMotorEx.class, "spindexerMotor");
 		instance.spindexerEncoder = hardwareMap.get(DcMotorEx.class, "intake");
 		instance.spindexerEncoder.setDirection(DcMotorSimple.Direction.REVERSE);
 		instance.spindexerEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -240,6 +244,7 @@ public class Spindexer {
 			double clampedPower = Math.max(-1.0, Math.min(1.0, power));
 			spindexerLeft.setPower(clampedPower);
 			spindexerRight.setPower(clampedPower);
+			spindexerMotor.setPower(clampedPower);
 		});
 	}
 }

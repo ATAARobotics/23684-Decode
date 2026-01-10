@@ -417,16 +417,25 @@ public class MainTeleOp extends OpMode {
 				spindexerDownCrossed = false;
 			}
 		}
+
+		double spindexerPower = 0.4;
+
+		if(gamepad2.right_bumper){
+			spindexerPower = 0.8;
+		}else{
+			spindexerPower = 0.4;
+		}
+
 		// Crosses 0.2 threshold going up (from lower to 0.2+)
-		else if (leftJoystickY >= 0.2 && !spindexerUpCrossed) {
-			scheduler.schedule(spindexer.setDirectPower(gamepad2.left_stick_y));
+		 if (leftJoystickY >= 0.2 && !spindexerUpCrossed) {
+			scheduler.schedule(spindexer.setDirectPower(spindexerPower));
 			spindexerUpCrossed = true;
 			spindexerMidCrossed = false;
 			spindexerDownCrossed = false;
 		}
 		// Crosses -0.2 threshold going down (to -0.2 or below)
 		else if (leftJoystickY <= -0.2 && !spindexerDownCrossed) {
-			scheduler.schedule(spindexer.setDirectPower(gamepad2.left_stick_y));
+			scheduler.schedule(spindexer.setDirectPower(-spindexerPower));
 			spindexerDownCrossed = true;
 			spindexerMidCrossed = false;
 			spindexerUpCrossed = false;
