@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.Subsystem;
 
 import java.util.Collections;
@@ -23,54 +24,26 @@ public class Intake {
     }
 
    public Command In(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                intake.setPower(INSPEED);
-            }
-            @Override
-            public boolean isFinished() {
-                return intake.isBusy() && intake.getPower() == INSPEED;
-            }
-        };
+        return new InstantCommand(
+                ()-> intake.setPower(INSPEED)
+        );
     }
 
     public Command Slow(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                intake.setPower(SLOWSPEED);
-            }
-            @Override
-            public boolean isFinished() {
-                return intake.isBusy() && intake.getPower() == SLOWSPEED;
-            }
-        };
+        return new InstantCommand(
+                ()-> intake.setPower(SLOWSPEED)
+        );
     }
 
     public Command Out(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                intake.setPower(OUTSPEED);
-            }
-            @Override
-            public boolean isFinished() {
-                return intake.isBusy() && intake.getPower() == OUTSPEED;
-            }
-        };
+        return new InstantCommand(
+                ()-> intake.setPower(OUTSPEED)
+        );
     }
 
     public Command Stop(){
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                intake.setPower(0);
-            }
-            @Override
-            public boolean isFinished() {
-                return true;
-            }
-        };
+        return new InstantCommand(
+                ()-> intake.setPower(0)
+        );
     }
 }
