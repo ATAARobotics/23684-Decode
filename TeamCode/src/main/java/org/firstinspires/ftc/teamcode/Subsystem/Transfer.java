@@ -5,12 +5,13 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SubsystemBase;
 
-public class Transfer {
-    CRServo transferLeft;
-    CRServo transferRight;
-    CRServo intakeDoorRight;
-    CRServo intakeDoorLeft;
+public class Transfer extends SubsystemBase {
+    public final CRServo transferLeft;
+	public final CRServo transferRight;
+	public final CRServo intakeDoorRight;
+	public final CRServo intakeDoorLeft;
 
     public Transfer(HardwareMap hardwareMap) {
         transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
@@ -23,7 +24,7 @@ public class Transfer {
         return new InstantCommand( () -> {
             intakeDoorLeft.setPower(1);
             intakeDoorRight.setPower(1);
-        }
+        }, this
         );
     }
 
@@ -31,7 +32,7 @@ public class Transfer {
         return new InstantCommand( () -> {
             intakeDoorLeft.setPower(-1);
             intakeDoorRight.setPower(-1);
-        }
+        }, this
         );
     }
 
@@ -39,7 +40,7 @@ public class Transfer {
        return new InstantCommand( () -> {
            transferLeft.setPower(1);
            transferRight.setPower(1);
-       }
+       }, this
        );
     }
 
@@ -47,7 +48,7 @@ public class Transfer {
         return new InstantCommand( () -> {
             transferLeft.setPower(-1);
             transferRight.setPower(-1);
-        }
+        }, this
         );
     }
 

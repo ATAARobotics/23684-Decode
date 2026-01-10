@@ -7,22 +7,20 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
-public class Spindexer {
-    CRServo spindexer;
-
-    DcMotor spindexerMotor;
+public class Spindexer extends SubsystemBase {
+	private final DcMotor spindexerMotor;
 
     public Spindexer(HardwareMap hardwareMap) {
-        spindexer = hardwareMap.get(CRServo.class, "spindexerLeft");
         spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
         spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     public Command DirectPower(double power){
         return new InstantCommand(
-                ()-> spindexerMotor.setPower(power)
+                ()-> spindexerMotor.setPower(power), this
         );
     }
 
@@ -45,7 +43,4 @@ public class Spindexer {
             }
         };
     }
-
-
-
 }

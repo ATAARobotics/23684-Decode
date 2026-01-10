@@ -6,11 +6,12 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.Subsystem;
+import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import java.util.Collections;
 import java.util.Set;
 
-public class Intake {
+public class Intake extends SubsystemBase {
     DcMotor intake;
 
     double INSPEED = -0.5;
@@ -25,25 +26,25 @@ public class Intake {
 
    public Command In(){
         return new InstantCommand(
-                ()-> intake.setPower(INSPEED)
+                ()-> intake.setPower(INSPEED), this
         );
     }
 
     public Command Slow(){
         return new InstantCommand(
-                ()-> intake.setPower(SLOWSPEED)
+                ()-> intake.setPower(SLOWSPEED), this
         );
     }
 
     public Command Out(){
         return new InstantCommand(
-                ()-> intake.setPower(OUTSPEED)
+                ()-> intake.setPower(OUTSPEED), this
         );
     }
 
     public Command Stop(){
         return new InstantCommand(
-                ()-> intake.setPower(0)
+                ()-> intake.setPower(0), this
         );
     }
 }
