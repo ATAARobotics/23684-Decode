@@ -57,57 +57,75 @@ public class AudienceAuto extends OpMode {
 	public void start() {
 		scheduler.schedule(
 				new SequentialCommandGroup(
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.shootPreload),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
 								spindexer.DirectPower(1),
 								transfer.IntakeDoorIn(),
 								transfer.TransferIn(),
 								intake.Slow()
 						),
-						transfer.TransferOut(),
-						new ParallelCommandGroup(
+						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
+						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new ParallelCommandGroup( // Turn off the transfers and shooter
 								shooter.SetTarget(0, 0),
 								intake.In(),
-								transfer.TransferIn(),
-								new FollowPathCommand(follower, paths.ToSpikeOne)
+								transfer.TransferIn()
 						),
-						new WaitCommand(30),
-						new FollowPathCommand(follower, paths.CollectSpikeOne),
+						new FollowPathCommand(follower, paths.toSpikeOne),
+						new WaitCommand(30), // 30 millisecond wait
+						new FollowPathCommand(follower, paths.collectSpikeOne),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeOne),
-								intake.Out(),
-								shooter.WaitForTarget()
-						),
-						transfer.TransferOut(),
-						new ParallelCommandGroup(
-								shooter.WaitForTarget(),
-								intake.In(),
+								spindexer.DirectPower(1),
+								transfer.IntakeDoorIn(),
 								transfer.TransferIn(),
-								new FollowPathCommand(follower, paths.toSpikeTwo)
+								intake.Slow()
 						),
-						new WaitCommand(30),
-						new FollowPathCommand(follower, paths.CollectSpikeTwo),
-						new ParallelCommandGroup(
-								new FollowPathCommand(follower, paths.toShootSpikeTwo),
-								intake.Out(),
-								shooter.WaitForTarget()
-						),
-						transfer.TransferOut(),
-						new ParallelCommandGroup(
+						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
+						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new ParallelCommandGroup( // Turn off the transfers and shooter
 								shooter.SetTarget(0, 0),
 								intake.In(),
-								transfer.TransferIn(),
-								new FollowPathCommand(follower, paths.toSpikeThree)
+								transfer.TransferIn()
 						),
-						new WaitCommand(30),
-						new FollowPathCommand(follower, paths.toCollectSpikeTree),
+						new FollowPathCommand(follower, paths.collectSpikeTwo),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						new ParallelCommandGroup(
+								new FollowPathCommand(follower, paths.toShootSpikeOne),
+								spindexer.DirectPower(1),
+								transfer.IntakeDoorIn(),
+								transfer.TransferIn(),
+								intake.Slow()
+						),
+						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
+						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new ParallelCommandGroup( // Turn off the transfers and shooter
+								shooter.SetTarget(0, 0),
+								intake.In(),
+								transfer.TransferIn()
+						),
+						new FollowPathCommand(follower, paths.toCollectSpikeThree),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeThree),
-								intake.Out(),
-								shooter.WaitForTarget()
+								spindexer.DirectPower(1),
+								transfer.IntakeDoorIn(),
+								transfer.TransferIn(),
+								intake.Slow()
 						),
-						transfer.TransferOut()
+						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
+						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new ParallelCommandGroup( // Turn off the transfers and shooter
+								shooter.SetTarget(0, 0),
+								intake.Stop(),
+								transfer.TransferIn()
+						)
 				)
 		);
 
@@ -115,26 +133,26 @@ public class AudienceAuto extends OpMode {
 
 	@Override
 	public void loop() {
-		follower.update(); // Update Pedro Pathing
+		follower.update();
 		scheduler.run();
 
-		// Log values to Panels and Driver Station
-		panelsTelemetry.debug("X", follower.getPose().getX());
-		panelsTelemetry.debug("Y", follower.getPose().getY());
-		panelsTelemetry.debug("Heading", follower.getPose().getHeading());
-		panelsTelemetry.update(telemetry);
+//		// Log values to Panels and Driver Station
+//		panelsTelemetry.debug("X", follower.getPose().getX());
+//		panelsTelemetry.debug("Y", follower.getPose().getY());
+//		panelsTelemetry.debug("Heading", follower.getPose().getHeading());
+//		panelsTelemetry.update(telemetry);
 	}
 
 	public static class Paths {
 		public PathChain shootPreload;
-		public PathChain ToSpikeOne;
-		public PathChain CollectSpikeOne;
+		public PathChain toSpikeOne;
+		public PathChain collectSpikeOne;
 		public PathChain toShootSpikeOne;
 		public PathChain toSpikeTwo;
-		public PathChain CollectSpikeTwo;
+		public PathChain collectSpikeTwo;
 		public PathChain toShootSpikeTwo;
 		public PathChain toSpikeThree;
-		public PathChain toCollectSpikeTree;
+		public PathChain toCollectSpikeThree;
 		public PathChain toShootSpikeThree;
 
 		public Paths(Follower follower) {
@@ -149,7 +167,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.build();
 
-			ToSpikeOne = follower
+			toSpikeOne = follower
 					.pathBuilder()
 					.addPath(
 							new BezierLine(new Pose(59.440, 17.328), new Pose(41.000, 35.000))
@@ -160,7 +178,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.build();
 
-			CollectSpikeOne = follower
+			collectSpikeOne = follower
 					.pathBuilder()
 					.addPath(
 							new BezierLine(new Pose(41.000, 35.000), new Pose(9.000, 35.000))
@@ -190,7 +208,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.build();
 
-			CollectSpikeTwo = follower
+			collectSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
 							new BezierLine(new Pose(41.000, 60.000), new Pose(9.000, 60.000))
@@ -219,7 +237,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.build();
 
-			toCollectSpikeTree = follower
+			toCollectSpikeThree = follower
 					.pathBuilder()
 					.addPath(
 							new BezierLine(new Pose(41.000, 84.000), new Pose(15.000, 84.000))
