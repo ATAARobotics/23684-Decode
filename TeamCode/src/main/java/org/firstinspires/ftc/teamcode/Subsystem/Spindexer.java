@@ -18,6 +18,10 @@ public class Spindexer extends SubsystemBase {
         spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
+    public int getPosition() {
+        return spindexerMotor.getCurrentPosition();
+    }
+
     public Command DirectPower(double power){
         return new InstantCommand(
                 ()-> spindexerMotor.setPower(power), this
