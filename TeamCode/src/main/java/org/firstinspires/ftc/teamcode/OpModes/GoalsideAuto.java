@@ -7,9 +7,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
@@ -21,7 +19,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 
 
 @Configurable // Panels
@@ -172,16 +170,16 @@ public class GoalsideAuto extends OpMode {
                 new SequentialCommandGroup(
                         new ParallelCommandGroup(
                                 new FollowPathCommand(follower,paths.shootPreload),
-                                shooter.ToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+                                shooter.WaitForTarget(),
                                 spindexer.DirectPower(1),
                                 transfer.IntakeDoorIn(),
                                 transfer.TransferIn(),
                                 intake.Slow()
                         ),
                         transfer.TransferOut(),
-                        shooter.MindlessToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM).withTimeout(2800), // shoot preloaded
                         new ParallelCommandGroup(
-                                shooter.Stop(),
+                                shooter.SetTarget(0, 0),
                                 intake.In(),
                                 transfer.TransferIn(),
                                 new FollowPathCommand(follower,paths.toSpikeOne)
@@ -191,13 +189,12 @@ public class GoalsideAuto extends OpMode {
                         new ParallelCommandGroup(
                                 new FollowPathCommand(follower,paths.toShootSpikeOne),
                                 intake.Out(),
-                                shooter.ToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM)
+                                shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.WaitForTarget()
                         ),
                         transfer.TransferOut(),
-                        shooter.MindlessToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM).withTimeout(2800), // shoot spike One
-
                         new ParallelCommandGroup(
-                                shooter.Stop(),
+                                shooter.SetTarget(0, 0),
                                 intake.In(),
                                 transfer.TransferIn(),
                                 new FollowPathCommand(follower,paths.toSpikeTwo)
@@ -207,13 +204,12 @@ public class GoalsideAuto extends OpMode {
                         new ParallelCommandGroup(
                                 new FollowPathCommand(follower,paths.toShootSpikeTwo),
                                 intake.Out(),
-                                shooter.ToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM)
+                                shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.WaitForTarget()
                         ),
                         transfer.TransferOut(),
-                        shooter.MindlessToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM).withTimeout(2800), // shoot spike two
-
                         new ParallelCommandGroup(
-                                shooter.Stop(),
+                                shooter.SetTarget(0, 0),
                                 intake.In(),
                                 transfer.TransferIn(),
                                 new FollowPathCommand(follower,paths.toSpikeThree)
@@ -223,13 +219,12 @@ public class GoalsideAuto extends OpMode {
                         new ParallelCommandGroup(
                                 new FollowPathCommand(follower,paths.toShootSpikeThree),
                                 intake.Out(),
-                                shooter.ToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM)
+                                shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.WaitForTarget()
                         ),
-                        transfer.TransferOut(),
-                        shooter.MindlessToTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM).withTimeout(2800) // shoot spike two
+                        transfer.TransferOut()
                 )
-        );
-
+		);
     }
 
     @Override
