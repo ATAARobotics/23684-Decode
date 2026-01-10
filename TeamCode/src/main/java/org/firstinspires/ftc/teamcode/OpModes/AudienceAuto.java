@@ -39,7 +39,7 @@ public class AudienceAuto extends OpMode {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
 		follower = Constants.createFollower(hardwareMap);
-		follower.setStartingPose(new Pose(72, 8, Math.toRadians(90)));
+		follower.setStartingPose(new Pose(63.000, 9, Math.toRadians(270)));
 
 		scheduler = CommandScheduler.getInstance();
 
@@ -58,52 +58,56 @@ public class AudienceAuto extends OpMode {
 		scheduler.schedule(
 				new SequentialCommandGroup(
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						transfer.TransferIn(),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.shootPreload),
-								spindexer.DirectPower(1),
+								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorIn(),
-								transfer.TransferIn(),
 								intake.Slow()
 						),
 						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
 						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
 						new ParallelCommandGroup( // Turn off the transfers and shooter
+								spindexer.DirectPower(0),
 								shooter.SetTarget(0, 0),
 								intake.In(),
 								transfer.TransferIn()
 						),
 						new FollowPathCommand(follower, paths.toSpikeOne),
+						spindexer.DirectPower(0.3),
 						new WaitCommand(30), // 30 millisecond wait
 						new FollowPathCommand(follower, paths.collectSpikeOne),
+						spindexer.DirectPower(0),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						transfer.TransferIn(),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeOne),
-								spindexer.DirectPower(1),
+								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorIn(),
-								transfer.TransferIn(),
 								intake.Slow()
 						),
 						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
 						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
 						new ParallelCommandGroup( // Turn off the transfers and shooter
 								shooter.SetTarget(0, 0),
+								spindexer.DirectPower(0),
 								intake.In(),
 								transfer.TransferIn()
 						),
 						new FollowPathCommand(follower, paths.collectSpikeTwo),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						transfer.TransferIn(),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeOne),
-								spindexer.DirectPower(1),
+								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorIn(),
-								transfer.TransferIn(),
 								intake.Slow()
 						),
 						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
 						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
 						new ParallelCommandGroup( // Turn off the transfers and shooter
 								shooter.SetTarget(0, 0),
 								intake.In(),
@@ -111,19 +115,20 @@ public class AudienceAuto extends OpMode {
 						),
 						new FollowPathCommand(follower, paths.toCollectSpikeThree),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						transfer.TransferIn(),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeThree),
-								spindexer.DirectPower(1),
+								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorIn(),
-								transfer.TransferIn(),
 								intake.Slow()
 						),
 						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
 						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
 						new ParallelCommandGroup( // Turn off the transfers and shooter
 								shooter.SetTarget(0, 0),
 								intake.Stop(),
+								spindexer.DirectPower(0),
 								transfer.TransferIn()
 						)
 				)
@@ -135,6 +140,7 @@ public class AudienceAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
+
 
 //		// Log values to Panels and Driver Station
 //		panelsTelemetry.debug("X", follower.getPose().getX());

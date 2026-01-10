@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Subsystem;
 
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
@@ -16,6 +17,7 @@ public class Transfer extends SubsystemBase {
     public Transfer(HardwareMap hardwareMap) {
         transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
         transferRight = hardwareMap.get(CRServo.class, "transferRight");
+        transferRight.setDirection(DcMotorSimple.Direction.REVERSE);
         intakeDoorRight = hardwareMap.get(CRServo.class, "intakeDoorRight");
         intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
     }

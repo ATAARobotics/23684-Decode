@@ -5,8 +5,11 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.button.GamepadButton;
 import com.seattlesolvers.solverslib.command.button.Trigger;
+import com.seattlesolvers.solverslib.drivebase.MecanumDrive;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.seattlesolvers.solverslib.gamepad.TriggerReader;
@@ -104,12 +107,19 @@ public class MainTeleOp extends CommandOpMode {
     }
 
 	private void setupDriverControls() {
-		follower.setTeleOpDrive(
-				-driverOp.getLeftY(),
-				driverOp.getLeftX(),
-				driverOp.getRightX(),
-				false // Robot centric
-		);
+
+
+
+//        new PerpetualCommand(
+//                new InstantCommand(()->
+//		follower.setTeleOpDrive(
+//				-driverOp.getLeftY(),
+//				driverOp.getLeftX(),
+//				driverOp.getRightX(),
+//				false // Robot centric
+//		)
+//                )
+//        );
 	}
 
     private void setupOperatorControls() {
