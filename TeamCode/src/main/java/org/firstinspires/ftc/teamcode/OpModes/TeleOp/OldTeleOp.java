@@ -30,10 +30,6 @@ import java.util.List;
 @Configurable
 @TeleOp
 public class OldTeleOp extends OpMode {
-	private static final long TELEMETRY_UPDATE_INTERVAL = 100_000_000; // 100ms (roughly 100 loop ticks at 10ms/loop)
-	private static final long MAX_LOOP_TIME_FOR_TELEMETRY = 25_000_000; // 25ms
-	// Telemetry throttling
-	public static boolean ENABLE_TELEMETRY = false;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -42,6 +38,7 @@ public class OldTeleOp extends OpMode {
 	protected Spindexer spindexer;
 	protected Limelight limelight;
 	protected List<LynxModule> allHubs;
+
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
 	protected boolean rightTriggerPressed = false;
@@ -57,10 +54,9 @@ public class OldTeleOp extends OpMode {
 	DcMotorEx rearLeft;
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
+
 	// Performance monitoring
 	private long maxLoopTime = 0;
-	private final long lastTelemetryTime = 0;
-	private long previousLoopTime = 0;
 
 	double indicatorValue() {
 		double x = timer.seconds();
@@ -117,13 +113,14 @@ public class OldTeleOp extends OpMode {
 	@Override
 	public void start() {
 		// Called when START is pressed
-		scheduler.run();
 		limelight.start();
 		timer.startTime();
+		scheduler.run();
 	}
 
 	@Override
 	public void init_loop() {
+		scheduler.run();
 		for (LynxModule hub : allHubs) {
 			hub.clearBulkCache();
 		}
@@ -138,6 +135,7 @@ public class OldTeleOp extends OpMode {
 		}
 
 		// CRITICAL - Must complete quickly for responsive driving
+		scheduler.run();
 		follower.update();
 		limelight.update();
 		handleDriveInput();
@@ -145,14 +143,8 @@ public class OldTeleOp extends OpMode {
 		shooter.periodic();
 		updateRGBIndicator();
 
-		// Non-critical updates (budget: 25ms)
-		if (ENABLE_TELEMETRY && (System.nanoTime() - startTime) < 25_000_000) {
-			displayTelemetry();
-		}
-
 		// Performance monitoring
 		long loopTime = System.nanoTime() - startTime;
-		previousLoopTime = loopTime;
 
 		if (loopTime > maxLoopTime) {
 			maxLoopTime = loopTime;
@@ -162,12 +154,6 @@ public class OldTeleOp extends OpMode {
 		// This is separate from dashboard telemetry and always visible to the driver
 		telemetry.addData("Loop Time", "Current: %.2fms", loopTime / 1_000_000.0);
 		telemetry.addData("Loop Time", "Max: %.2fms", maxLoopTime / 1_000_000.0);
-
-		if (ENABLE_TELEMETRY) {
-			telemetry.addData("Telemetry", "Dashboard enabled");
-		} else {
-			telemetry.addData("Telemetry", "Dashboard disabled (low latency)");
-		}
 
 		telemetry.update();
 	}

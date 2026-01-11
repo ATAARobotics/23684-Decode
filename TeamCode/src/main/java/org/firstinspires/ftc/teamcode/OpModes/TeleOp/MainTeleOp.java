@@ -146,7 +146,7 @@ public class MainTeleOp extends CommandOpMode {
         intake = new Intake(hardwareMap);
         shooter = new Shooter(hardwareMap);
         spindexer = new Spindexer(hardwareMap);
-        transfer = new Transfer(hardwareMap);
+		transfer = new Transfer(hardwareMap);
 
 		follower = Constants.createFollower(hardwareMap);
 		follower.setStartingPose(new Pose(72, 72, Math.toRadians(270)));
