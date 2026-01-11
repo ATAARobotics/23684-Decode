@@ -30,10 +30,6 @@ import java.util.List;
 @Configurable
 @TeleOp
 public class OldTeleOp extends OpMode {
-	private static final long TELEMETRY_UPDATE_INTERVAL = 100_000_000; // 100ms (roughly 100 loop ticks at 10ms/loop)
-	private static final long MAX_LOOP_TIME_FOR_TELEMETRY = 25_000_000; // 25ms
-	// Telemetry throttling
-	public static boolean ENABLE_TELEMETRY = false;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -63,6 +59,7 @@ public class OldTeleOp extends OpMode {
 	private long maxLoopTime = 0;
 
 	double indicatorValue() {
+		// TODO: Export to a util class and beautify
 		double x = timer.seconds();
 		double hz = 1;
 		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
@@ -144,6 +141,7 @@ public class OldTeleOp extends OpMode {
 		limelight.update();
 		handleDriveInput();
 		handleOperatorInput();
+		// TODO: Try removing this and see if any issues arise
 		shooter.periodic();
 		updateRGBIndicator();
 
@@ -165,6 +163,7 @@ public class OldTeleOp extends OpMode {
 	@Override
 	public void stop() {
 		// Called when OpMode is stopped
+		// TODO: Stop all motors and disable the follower and scheduler
 	}
 
 	/**
@@ -204,7 +203,7 @@ public class OldTeleOp extends OpMode {
 		if (!gamepad1.a) {
 			if (inDeadzone(gamepad1.left_stick_y) && inDeadzone(gamepad1.left_stick_x) && inDeadzone(gamepad1.right_stick_x)) {
 				// No driver movement
-				follower.holdPoint(follower.getPose());
+//				follower.holdPoint(follower.getPose());
 				scheduler.schedule(transfer.IntakeDoorOut());
 			} else {
 				if (follower.isBusy()) {
@@ -247,8 +246,8 @@ public class OldTeleOp extends OpMode {
 			leftTriggerPressed = false;
 		}
 
-		// Right Trigger: schedule Shooter.run() repeatedly while pressed, Shooter.stop() once when released
-		if (gamepad2.right_trigger > 0.5) {
+		// Right Trigger
+		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
 			shooter.setTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM);
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
