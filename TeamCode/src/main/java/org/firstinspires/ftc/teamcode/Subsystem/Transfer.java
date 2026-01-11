@@ -20,6 +20,7 @@ public class Transfer extends SubsystemBase {
         transferRight.setDirection(DcMotorSimple.Direction.REVERSE);
         intakeDoorRight = hardwareMap.get(CRServo.class, "intakeDoorRight");
         intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
+        intakeDoorRight.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public Command IntakeDoorIn(){
@@ -38,18 +39,34 @@ public class Transfer extends SubsystemBase {
         );
     }
 
+    public Command IntakeDoorStop(){
+        return new InstantCommand( () -> {
+            intakeDoorLeft.setPower(0);
+            intakeDoorRight.setPower(0);
+        }, this
+        );
+    }
+
    public Command TransferIn(){
        return new InstantCommand( () -> {
-           transferLeft.setPower(1);
-           transferRight.setPower(1);
+           transferLeft.setPower(-1);
+           transferRight.setPower(-1);
        }, this
        );
     }
 
     public Command TransferOut(){
         return new InstantCommand( () -> {
-            transferLeft.setPower(-1);
-            transferRight.setPower(-1);
+            transferLeft.setPower(1);
+            transferRight.setPower(1);
+        }, this
+        );
+    }
+
+    public Command TransferStop(){
+        return new InstantCommand( () -> {
+            transferLeft.setPower(0);
+            transferRight.setPower(0);
         }, this
         );
     }

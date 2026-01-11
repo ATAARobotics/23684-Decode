@@ -4,15 +4,22 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.GamepadButton;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.drivebase.MecanumDrive;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
+import com.seattlesolvers.solverslib.gamepad.KeyReader;
 import com.seattlesolvers.solverslib.gamepad.TriggerReader;
+import com.seattlesolvers.solverslib.pedroCommand.TurnToCommand;
 
 import org.firstinspires.ftc.teamcode.Drive;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
@@ -20,6 +27,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utills.ShootAngle;
 
 import java.util.List;
 
@@ -51,23 +59,34 @@ public class MainTeleOp extends CommandOpMode {
     // Gamepads
     private GamepadEx driverOp;
     private GamepadEx operatorOp;
+    // Buttons - Driver
+    private GamepadButton turnBumper;
 
     // Buttons - Operator
     private GamepadButton xButton;
     private GamepadButton bButton;
 
+    private Servo rgbServo;
+
     // Lynx modules for bulk caching
     private List<LynxModule> allHubs;
+
+    double number = 0;
+    double twonumber = 0;
+
+    boolean driver = true;
+
+    boolean loopcolour = true;
 
     @Override
     public void initialize() {
         // Initialize hardware and subsystems
         initializeHardware();
+        rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 
-        // Setup gamepads
-        setupGamepads();
 
         // Setup buttons and commands
+        setupGamepads();
         setupOperatorControls();
 		setupDriverControls();
 
@@ -77,6 +96,48 @@ public class MainTeleOp extends CommandOpMode {
         register(spindexer);
         register(transfer);
     }
+
+
+    @Override
+    public void run() {
+        follower.update();
+        if (driver) {
+           DriverControls();
+           }
+
+        if (Math.abs(operatorOp.getLeftY()) > 0.2){
+            schedule(new ParallelCommandGroup(
+                    spindexer.DirectPower(0.5),
+                    transfer.IntakeDoorIn()
+            ));
+        }else{
+            schedule(new ParallelCommandGroup(
+                    spindexer.DirectPower(0),
+                    transfer.IntakeDoorStop()
+            ));
+        }
+        xButton.whenReleased(new InstantCommand(()->{
+            if (Math.abs(operatorOp.getRightY()) < 0.2){
+                schedule(transfer.TransferStop());
+            }else{
+                schedule(transfer.TransferIn());
+            }
+        }));
+
+        if (loopcolour){
+
+            schedule(new UninterruptibleCommand(
+                    new SequentialCommandGroup(
+                    new InstantCommand(()-> loopcolour = false),
+                    new InstantCommand(()-> rgbServo.setPosition(0.622)),
+                    new WaitCommand(1500),
+                    new InstantCommand(()-> rgbServo.setPosition(0.388)),
+                     new InstantCommand(()-> loopcolour = true)
+            )));
+        }
+
+    }
+
 
     private void initializeHardware() {
         // Get Lynx modules for bulk caching
@@ -94,7 +155,6 @@ public class MainTeleOp extends CommandOpMode {
 		follower = Constants.createFollower(hardwareMap);
 		follower.setStartingPose(new Pose(72, 72, Math.toRadians(270)));
 		follower.startTeleOpDrive();
-		follower.update();
 
         telemetry.addData("Status", "Initialized");
         telemetry.addData("Bulk Caching", "MANUAL mode enabled on " + allHubs.size() + " hub(s)");
@@ -106,51 +166,62 @@ public class MainTeleOp extends CommandOpMode {
         operatorOp = new GamepadEx(gamepad2);
     }
 
-	private void setupDriverControls() {
-
-
-
-//        new PerpetualCommand(
-//                new InstantCommand(()->
-//		follower.setTeleOpDrive(
-//				-driverOp.getLeftY(),
-//				driverOp.getLeftX(),
-//				driverOp.getRightX(),
-//				false // Robot centric
-//		)
-//                )
-//        );
+	private void DriverControls() {
+		follower.setTeleOpDrive(
+				driverOp.getLeftY(),
+				driverOp.getLeftX(),
+				driverOp.getRightX(),
+				false // Robot centric
+		);
 	}
+
+
+
+    private void setupDriverControls() {
+        // Turn Bumper: Toggle driver/operator control
+        turnBumper = new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER);
+        turnBumper.whenPressed(new SequentialCommandGroup(
+                new InstantCommand(()-> driver = false),
+                new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(),follower.getPose().getY(),0,144)),
+                new InstantCommand(()-> driver = true)
+        ));
+        turnBumper.whenReleased(new InstantCommand(()-> follower.startTeleOpDrive()));
+
+    }
 
     private void setupOperatorControls() {
         // X Button: Manual transfer control
         xButton = new GamepadButton(operatorOp, GamepadKeys.Button.X);
         xButton.whenPressed(transfer.TransferIn());
-        xButton.whenReleased(transfer.TransferOut());
+        //xButton.whenReleased(transfer.TransferStop());
 
         // B Button: Intake door and intake control
         bButton = new GamepadButton(operatorOp, GamepadKeys.Button.B);
         bButton.whenPressed(() -> {
-            schedule(transfer.IntakeDoorOut());
+            schedule(transfer.IntakeDoorStop());
             schedule(intake.Out());
         });
         bButton.whenReleased(() -> {
-            schedule(transfer.IntakeDoorIn());
+            schedule(transfer.IntakeDoorStop());
             schedule(intake.Stop());
         });
+
 
 		TriggerReader leftTriggerReader = new TriggerReader(
 				operatorOp, GamepadKeys.Trigger.LEFT_TRIGGER
 		);
 
 		Trigger leftTrigger = new Trigger(leftTriggerReader::isDown);
-		leftTrigger.whileActiveOnce(intake.In());
+		leftTrigger.whileActiveContinuous(intake.In());
 
 		TriggerReader rightTriggerReader = new TriggerReader(
 				operatorOp, GamepadKeys.Trigger.RIGHT_TRIGGER
 		);
 
 		Trigger rightTrigger = new Trigger(rightTriggerReader::isDown);
-		rightTrigger.whileActiveOnce(shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM));
+        if(rightTriggerReader.isDown()){
+            telemetry.addLine("pressed");
+        }
+		rightTrigger.whileActiveContinuous(shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM));
     }
 }

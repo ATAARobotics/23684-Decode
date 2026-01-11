@@ -14,9 +14,10 @@ import java.util.Set;
 public class Intake extends SubsystemBase {
     DcMotor intake;
 
-    double INSPEED = -0.5;
-    double OUTSPEED = 0.5;
-    double SLOWSPEED = -0.2;
+    double INSPEED = 0.5;
+    double OUTSPEED = -0.5;
+    double SLOWSPEED = 0.1;
+    double SLOWSPEEDOUT = -0.1;
 
     public Intake(HardwareMap hardwareMap){
         intake = hardwareMap.get(DcMotor.class, "intake");
@@ -35,6 +36,13 @@ public class Intake extends SubsystemBase {
                 ()-> intake.setPower(SLOWSPEED), this
         );
     }
+
+    public Command SlowOut(){
+        return new InstantCommand(
+                ()-> intake.setPower(SLOWSPEEDOUT), this
+        );
+    }
+
 
     public Command Out(){
         return new InstantCommand(

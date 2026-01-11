@@ -9,6 +9,8 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -33,6 +35,26 @@ public class AudienceAuto extends OpMode {
 	Transfer transfer;
 	private TelemetryManager panelsTelemetry; // Panels Telemetry instance
 	private Paths paths; // Paths defined in the Paths class
+	
+	public Servo rgbServo;
+	
+	ElapsedTime timer = new ElapsedTime();
+	
+	double indicatorValue() {
+		double x = timer.seconds();
+		double hz = 1;
+		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5){
+			hz = 2.5;
+		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
+			hz = 1;
+		}else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11 ) {
+			hz = 0.5;
+		}else{
+			hz = 0.5;
+		}
+		int state = Math.floorMod((int) Math.floor(x*hz), 2);
+		return 0.23 * state + 0.388;
+	}
 
 	@Override
 	public void init() {
@@ -48,6 +70,8 @@ public class AudienceAuto extends OpMode {
 		spindexer = new Spindexer(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		paths = new Paths(follower);
+		
+		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 
 		panelsTelemetry.debug("Status", "Initialized");
 		panelsTelemetry.update(telemetry);
@@ -55,82 +79,123 @@ public class AudienceAuto extends OpMode {
 
 	@Override
 	public void start() {
+		timer.startTime();
 		scheduler.schedule(
 				new SequentialCommandGroup(
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
 						transfer.TransferIn(),
+						new FollowPathCommand(follower, paths.shootPreload),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
 						new ParallelCommandGroup(
-								new FollowPathCommand(follower, paths.shootPreload),
 								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorIn(),
+								transfer.IntakeDoorOut(),
 								intake.Slow()
 						),
-						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
+						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
 						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						transfer.IntakeDoorStop(),
 						new ParallelCommandGroup( // Turn off the transfers and shooter
 								spindexer.DirectPower(0),
-								shooter.SetTarget(0, 0),
-								intake.In(),
-								transfer.TransferIn()
-						),
-						new FollowPathCommand(follower, paths.toSpikeOne),
-						spindexer.DirectPower(0.3),
-						new WaitCommand(30), // 30 millisecond wait
-						new FollowPathCommand(follower, paths.collectSpikeOne),
-						spindexer.DirectPower(0),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						transfer.TransferIn(),
-						new ParallelCommandGroup(
-								new FollowPathCommand(follower, paths.toShootSpikeOne),
-								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorIn(),
-								intake.Slow()
-						),
-						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
-						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
-						new ParallelCommandGroup( // Turn off the transfers and shooter
-								shooter.SetTarget(0, 0),
-								spindexer.DirectPower(0),
-								intake.In(),
-								transfer.TransferIn()
-						),
-						new FollowPathCommand(follower, paths.collectSpikeTwo),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						transfer.TransferIn(),
-						new ParallelCommandGroup(
-								new FollowPathCommand(follower, paths.toShootSpikeOne),
-								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorIn(),
-								intake.Slow()
-						),
-						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
-						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
-						new ParallelCommandGroup( // Turn off the transfers and shooter
-								shooter.SetTarget(0, 0),
-								intake.In(),
-								transfer.TransferIn()
-						),
-						new FollowPathCommand(follower, paths.toCollectSpikeThree),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						transfer.TransferIn(),
-						new ParallelCommandGroup(
-								new FollowPathCommand(follower, paths.toShootSpikeThree),
-								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorIn(),
-								intake.Slow()
-						),
-						shooter.WaitForTarget(), // Wait for the shooter to finish spinning up
-						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2800), // Wait 2.5 seconds to allow for all three artifacts to be shot
-						new ParallelCommandGroup( // Turn off the transfers and shooter
 								shooter.SetTarget(0, 0),
 								intake.Stop(),
+								transfer.TransferStop()
+						),
+						new FollowPathCommand(follower, paths.toSpikeOne),
+						transfer.TransferIn(),
+						new ParallelCommandGroup(
+							spindexer.DirectPower(0.3),
+							transfer.IntakeDoorOut(),
+							intake.In()
+						),
+						new WaitCommand(30), // 30 millisecond wait
+						new FollowPathCommand(follower, paths.collectSpikeOne),
+						new WaitCommand(30),
+						transfer.TransferStop(),
+						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
-								transfer.TransferIn()
-						)
+								transfer.IntakeDoorStop(),
+								intake.SlowOut()
+						),
+						new FollowPathCommand(follower, paths.toShootSpikeOne),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
+						transfer.IntakeDoorOut(),
+						new ParallelCommandGroup(
+							transfer.TransferOut(),
+							intake.Slow(),
+							spindexer.DirectPower(0.3)		
+						),
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						
+						// Spike 2
+						transfer.IntakeDoorStop(),
+						new ParallelCommandGroup( // Turn off the transfers and shooter
+								spindexer.DirectPower(0),
+								shooter.SetTarget(0, 0),
+								intake.Stop(),
+								transfer.TransferStop()
+						),
+						new FollowPathCommand(follower, paths.toSpikeTwo),
+						transfer.TransferIn(),
+						new ParallelCommandGroup(
+								spindexer.DirectPower(0.3),
+								transfer.IntakeDoorOut(),
+								intake.In()
+						),
+						new WaitCommand(30), // 30 millisecond wait
+						new FollowPathCommand(follower, paths.collectSpikeTwo),
+						new WaitCommand(30),
+						transfer.TransferStop(),
+						new ParallelCommandGroup(
+								spindexer.DirectPower(0),
+								transfer.IntakeDoorStop(),
+								intake.SlowOut()
+						),
+						new FollowPathCommand(follower, paths.toShootSpikeTwo),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
+						transfer.IntakeDoorOut(),
+						new ParallelCommandGroup(
+								transfer.TransferOut(),
+								intake.Slow(),
+								spindexer.DirectPower(0.3)
+						),
+						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifa
+
+						// Spike the third
+						transfer.IntakeDoorStop(),
+						new ParallelCommandGroup( // Turn off the transfers and shooter
+								spindexer.DirectPower(0),
+								shooter.SetTarget(0, 0),
+								intake.Stop(),
+								transfer.TransferStop()
+						),
+						new FollowPathCommand(follower, paths.toSpikeThree),
+						transfer.TransferIn(),
+						new ParallelCommandGroup(
+								spindexer.DirectPower(0.3),
+								transfer.IntakeDoorOut(),
+								intake.In()
+						),
+						new WaitCommand(30), // 30 millisecond wait
+						new FollowPathCommand(follower, paths.toCollectSpikeThree),
+						new WaitCommand(30),
+						transfer.TransferStop(),
+						new ParallelCommandGroup(
+								spindexer.DirectPower(0),
+								transfer.IntakeDoorStop(),
+								intake.SlowOut()
+						),
+						new FollowPathCommand(follower, paths.toShootSpikeThree),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
+						transfer.IntakeDoorOut(),
+						new ParallelCommandGroup(
+								transfer.TransferOut(),
+								intake.Slow(),
+								spindexer.DirectPower(0.3)
+						),
+						new WaitCommand(2500) // Wait 2.5 seconds to allow for all three artifa
 				)
 		);
 
@@ -140,6 +205,9 @@ public class AudienceAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
+		rgbServo.setPosition(indicatorValue());
+		shooter.periodic();
+		
 
 
 //		// Log values to Panels and Driver Station
@@ -176,7 +244,7 @@ public class AudienceAuto extends OpMode {
 			toSpikeOne = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(59.440, 17.328), new Pose(41.000, 35.000))
+							new BezierLine(new Pose(59.440, 17.328), new Pose(41.000, 40.50))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(294.935),
@@ -187,7 +255,7 @@ public class AudienceAuto extends OpMode {
 			collectSpikeOne = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(41.000, 35.000), new Pose(9.000, 35.000))
+							new BezierLine(new Pose(41.000, 40.50), new Pose(9.000, 40.50))
 					)
 					.setConstantHeadingInterpolation(Math.toRadians(180))
 					.build();
@@ -195,7 +263,7 @@ public class AudienceAuto extends OpMode {
 			toShootSpikeOne = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(9.000, 35.000), new Pose(59.440, 17.328))
+							new BezierLine(new Pose(9.000, 40.50), new Pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(180),
@@ -206,7 +274,7 @@ public class AudienceAuto extends OpMode {
 			toSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(59.44, 17.328), new Pose(41.000, 60.000))
+							new BezierLine(new Pose(59.44, 17.328), new Pose(41.000, 65.500))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(294.935),
@@ -217,7 +285,7 @@ public class AudienceAuto extends OpMode {
 			collectSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(41.000, 60.000), new Pose(9.000, 60.000))
+							new BezierLine(new Pose(41.000, 65.500), new Pose(9.000, 65.500))
 					)
 					.setConstantHeadingInterpolation(Math.toRadians(180))
 					.build();
@@ -225,7 +293,7 @@ public class AudienceAuto extends OpMode {
 			toShootSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(9.000, 60.000), new Pose(59.440, 17.328))
+							new BezierLine(new Pose(9.000, 65.500), new Pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(180),
@@ -235,7 +303,7 @@ public class AudienceAuto extends OpMode {
 			toSpikeThree = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(59.44, 17.328), new Pose(41.000, 84.000))
+							new BezierLine(new Pose(59.44, 17.328), new Pose(41.000, 89.500))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(294.935),
@@ -246,7 +314,7 @@ public class AudienceAuto extends OpMode {
 			toCollectSpikeThree = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(41.000, 84.000), new Pose(15.000, 84.000))
+							new BezierLine(new Pose(41.000, 89.500), new Pose(15.000, 89.500))
 					)
 					.setConstantHeadingInterpolation(Math.toRadians(180))
 					.build();
@@ -254,7 +322,7 @@ public class AudienceAuto extends OpMode {
 			toShootSpikeThree = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(15.000, 84.000), new Pose(59.000, 17.328))
+							new BezierLine(new Pose(15.000, 89.500), new Pose(59.000, 17.328))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(180),
