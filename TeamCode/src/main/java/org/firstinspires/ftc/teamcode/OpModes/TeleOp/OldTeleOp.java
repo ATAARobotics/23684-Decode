@@ -142,7 +142,7 @@ public class OldTeleOp extends OpMode {
 		handleDriveInput();
 		handleOperatorInput();
 		// TODO: Try removing this and see if any issues arise
-		shooter.periodic();
+//		shooter.periodic();
 		updateRGBIndicator();
 
 		// Performance monitoring
