@@ -30,6 +30,10 @@ import java.util.List;
 @Configurable
 @TeleOp
 public class OldTeleOp extends OpMode {
+	private static final long TELEMETRY_UPDATE_INTERVAL = 100_000_000; // 100ms (roughly 100 loop ticks at 10ms/loop)
+	private static final long MAX_LOOP_TIME_FOR_TELEMETRY = 25_000_000; // 25ms
+	// Telemetry throttling
+	public static boolean ENABLE_TELEMETRY = false;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -167,7 +171,7 @@ public class OldTeleOp extends OpMode {
 	 * Override this method in subclasses to set the starting pose
 	 */
 	protected Pose getStartingPose() {
-		return new Pose(0, 0, 0);
+		return new Pose(63.000, 9, Math.toRadians(270));
 	}
 
 	protected Team getTeam() {

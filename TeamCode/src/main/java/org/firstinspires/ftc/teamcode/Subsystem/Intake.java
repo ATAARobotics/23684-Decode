@@ -14,8 +14,8 @@ import java.util.Set;
 public class Intake extends SubsystemBase {
     DcMotor intake;
 
-    double INSPEED = 0.5;
-    double OUTSPEED = -0.5;
+    double INSPEED = 0.8;
+    double OUTSPEED = -0.8;
     double SLOWSPEED = 0.1;
     double SLOWSPEEDOUT = -0.1;
 
