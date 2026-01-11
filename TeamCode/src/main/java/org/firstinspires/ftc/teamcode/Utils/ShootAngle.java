@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Utills;
+package org.firstinspires.ftc.teamcode.Utils;
 
 /**
  * Utility class for calculating shot angles based on robot and goal positions

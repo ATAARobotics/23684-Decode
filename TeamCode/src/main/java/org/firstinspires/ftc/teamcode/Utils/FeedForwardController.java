@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Utills;
+package org.firstinspires.ftc.teamcode.Utils;
 
 /**
  * A simple feedforward controller that calculates motor power based on velocity and acceleration.

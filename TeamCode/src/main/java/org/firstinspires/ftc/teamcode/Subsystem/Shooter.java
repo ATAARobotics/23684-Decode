@@ -6,13 +6,12 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
-import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
-import org.firstinspires.ftc.teamcode.Utills.FeedForwardController;
-import org.firstinspires.ftc.teamcode.Utills.PIDFController;
+import org.firstinspires.ftc.teamcode.Utils.FeedForwardController;
+import org.firstinspires.ftc.teamcode.Utils.PIDFController;
 
 @Config
 @Configurable
