@@ -5,6 +5,9 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -15,7 +18,7 @@ import org.firstinspires.ftc.teamcode.Utils.DistanceFromTag;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Limelight{
+public class Limelight extends SubsystemBase {
     private final Limelight3A limelight;
     private final GoBildaPinpointDriver pinpoint;
     private double yawOffset = 0;
@@ -44,107 +47,92 @@ public class Limelight{
         );
     }
 
-    public void start() {
-        start(0);
+    public void init() {
+		init(0);
     }
 
-    public void start(double yawOffset) {
+    public void init(double yawOffset) {
         this.yawOffset = yawOffset;
         limelight.pipelineSwitch(0);
         limelight.start();
     }
 
-    public void update() {
-        // 1. Update Orientation (Fast hardware read)
-        limelight.updateRobotOrientation(pinpoint.getHeading(AngleUnit.DEGREES) + yawOffset);
+	public Command start() {
+		return new InstantCommand(this::init, this);
+	}
 
-        // 2. Get Result
-        LLResult llResult = limelight.getLatestResult();
+	public Command start(double yawOffset) {
+		return new InstantCommand(() -> this.init(yawOffset), this);
+	}
 
-        // 3. Reset State
-        distanceFromTags.clear();
-        validResult = false;
+    public void updateData() {
+		// 1. Update Orientation (Fast hardware read)
+		limelight.updateRobotOrientation(pinpoint.getHeading(AngleUnit.DEGREES) + yawOffset);
 
-        // 4. Validate and Process
-        if (llResult != null && llResult.isValid()) {
-            tags = llResult.getFiducialResults();
+		// 2. Get Result
+		LLResult llResult = limelight.getLatestResult();
 
-            if (llResult.getBotposeTagCount() > 0) {
-                validResult = true;
+		// 3. Reset State
+		distanceFromTags.clear();
+		validResult = false;
 
-                // OPTIMIZATION: Manually convert units to avoid 'toUnit()' object allocation
-                // MT2 usually returns meters. We apply the conversion to primitives directly.
-                Pose3D rawPose = llResult.getBotpose_MT2();
-                Position rawPos = rawPose.getPosition();
+		// 4. Validate and Process
+		if (llResult != null && llResult.isValid()) {
+			tags = llResult.getFiducialResults();
 
-                double robotX = rawPos.x * METERS_TO_INCHES;
-                double robotY = rawPos.y * METERS_TO_INCHES;
-                double robotZ = rawPos.z * METERS_TO_INCHES;
+			if (llResult.getBotposeTagCount() > 0) {
+				validResult = true;
 
-                // Update public pose
-                botPose = new Pose3D(
-                        new Position(DistanceUnit.INCH, robotX, robotY, robotZ, rawPos.acquisitionTime),
-                        rawPose.getOrientation()
-                );
+				// OPTIMIZATION: Manually convert units to avoid 'toUnit()' object allocation
+				// MT2 usually returns meters. We apply the conversion to primitives directly.
+				Pose3D rawPose = llResult.getBotpose_MT2();
+				Position rawPos = rawPose.getPosition();
 
-                // 5. Calculate Distances
-                int tagCount = tags.size();
-                for (int i = 0; i < tagCount; i++) {
-                    int id = tags.get(i).getFiducialId();
+				double robotX = rawPos.x * METERS_TO_INCHES;
+				double robotY = rawPos.y * METERS_TO_INCHES;
+				double robotZ = rawPos.z * METERS_TO_INCHES;
 
-                    double tagX, tagY;
-                    boolean calculate = true;
+				// Update public pose
+				botPose = new Pose3D(
+						new Position(DistanceUnit.INCH, robotX, robotY, robotZ, rawPos.acquisitionTime),
+						rawPose.getOrientation()
+				);
 
-                    // Hardcoded positions (Inches)
-                    switch (id) {
-                        case 20: // BlueTarget
-                            tagX = -58.3727;
-                            tagY = -55.6425;
-                            break;
-                        case 24: // RedTarget
-                            tagX = -58.3727;
-                            tagY = 55.6425;
-                            break;
-                        default:
-                            calculate = false;
-                            tagX = 0; tagY = 0;
-                    }
+				// 5. Calculate Distances
+				int tagCount = tags.size();
+				for (int i = 0; i < tagCount; i++) {
+					int id = tags.get(i).getFiducialId();
 
-                    if (calculate) {
-                        double dx = tagX - robotX;
-                        double dy = tagY - robotY;
-                        distanceFromTags.add(new DistanceFromTag(id, Math.sqrt(dx * dx + dy * dy)));
-                    }
-                }
-            }
-        }
-    }
+					double tagX, tagY;
+					boolean calculate = true;
 
-    public double TagXOffset(int tagID) {
+					// Hardcoded positions (Inches)
+					switch (id) {
+						case 20: // BlueTarget
+							tagX = -58.3727;
+							tagY = -55.6425;
+							break;
+						case 24: // RedTarget
+							tagX = -58.3727;
+							tagY = 55.6425;
+							break;
+						default:
+							calculate = false;
+							tagX = 0;
+							tagY = 0;
+					}
 
-        LLResult llResult = limelight.getLatestResult();
-        if (llResult != null && llResult.isValid()) {
+					if (calculate) {
+						double dx = tagX - robotX;
+						double dy = tagY - robotY;
+						distanceFromTags.add(new DistanceFromTag(id, Math.sqrt(dx * dx + dy * dy)));
+					}
+				}
+			}
+		}
+	}
 
-            List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
-            for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
-                if (fiducial.getFiducialId() == tagID) {
-                    return fiducial.getTargetXDegrees();
-                }else{
-                    return 0;
-                }
-            }
-            return 0;
-        }
-        return 0;
-    }
-
-    public boolean AreGoalsFound(){
-        LLResult llResult = limelight.getLatestResult();
-
-        if (llResult != null && llResult.isValid()) {
-            return true;
-        }
-        return false;
-    }
-
+	public Command update() {
+		return new InstantCommand(this::updateData, this);
+	}
 }

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.Subsystem;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -7,12 +8,18 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import java.util.Set;
 
+@Configurable
 public class Transfer extends SubsystemBase {
+    public static double SHOOTER_RPM_TOLERANCE = 61;
+    
     public final CRServo transferLeft;
 	public final CRServo transferRight;
 	public final CRServo intakeDoorRight;
 	public final CRServo intakeDoorLeft;
+	private Shooter shooter;
+	public boolean isTransferOutActive = false;
 
     public Transfer(HardwareMap hardwareMap) {
         transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
@@ -21,6 +28,10 @@ public class Transfer extends SubsystemBase {
         intakeDoorRight = hardwareMap.get(CRServo.class, "intakeDoorRight");
         intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
         intakeDoorRight.setDirection(DcMotorSimple.Direction.REVERSE);
+    }
+
+    public void setShooter(Shooter shooter) {
+        this.shooter = shooter;
     }
 
     public Command IntakeDoorIn(){
@@ -69,6 +80,22 @@ public class Transfer extends SubsystemBase {
             transferRight.setPower(0);
         }, this
         );
+    }
+
+    public boolean isShooterReady(double shooterRpm, double targetRpm) {
+        return Math.abs(shooterRpm - targetRpm) <= SHOOTER_RPM_TOLERANCE;
+    }
+
+    public void updateConditionalTransferOut() {
+        if (isTransferOutActive) {
+            if (shooter != null && shooter.isAtTargetRPM()) {
+                transferLeft.setPower(1);
+                transferRight.setPower(1);
+            } else {
+                transferLeft.setPower(0);
+                transferRight.setPower(0);
+            }
+        }
     }
 
 }

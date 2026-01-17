@@ -98,7 +98,7 @@ public class Shooter extends SubsystemBase {
 		double upperPower, lowerPower;
 
 		// UPPER MOTOR
-		if (upperTarget < 100) {
+		if (Math.abs(upperTarget) < 50) {
 			upperPower = STOP_POWER;
 		} else {
 			// Only calculate PID/FF when we actually want to move

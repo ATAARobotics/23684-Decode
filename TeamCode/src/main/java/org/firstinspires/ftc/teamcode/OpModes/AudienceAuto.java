@@ -12,9 +12,11 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
@@ -26,6 +28,9 @@ import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 @Autonomous
 @Configurable
 public class AudienceAuto extends OpMode {
+	// Configurable wait times (in milliseconds)
+	public static int SHOOT_DWELL_TIME = 2500; // Time to allow all artifacts to be shot
+	public static int SPIKE_COLLECTION_WAIT = 30; // Short wait during spike collection
 
 	public Follower follower; // Pedro Pathing follower instance
 	CommandScheduler scheduler;
@@ -64,11 +69,13 @@ public class AudienceAuto extends OpMode {
 		follower.setStartingPose(new Pose(63.000, 9, Math.toRadians(270)));
 
 		scheduler = CommandScheduler.getInstance();
+		scheduler.reset();
 
 		intake = new Intake(hardwareMap);
 		shooter = new Shooter(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
 		transfer = new Transfer(hardwareMap);
+		transfer.setShooter(shooter);
 		paths = new Paths(follower);
 		
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
@@ -85,14 +92,16 @@ public class AudienceAuto extends OpMode {
 						transfer.TransferIn(),
 						new FollowPathCommand(follower, paths.shootPreload),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
+						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorOut(),
 								intake.Slow()
 						),
-						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
-						transfer.TransferOut(), // Allow artifacts to leave the spindexer and be shot by the shooter
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new InstantCommand(() -> transfer.isTransferOutActive = true),
+						transfer.TransferOut(),
+						new WaitCommand(SHOOT_DWELL_TIME), // Wait for all artifacts to be shot
+						new InstantCommand(() -> transfer.isTransferOutActive = false),
 						transfer.IntakeDoorStop(),
 						new ParallelCommandGroup( // Turn off the transfers and shooter
 								spindexer.DirectPower(0),
@@ -107,9 +116,9 @@ public class AudienceAuto extends OpMode {
 							transfer.IntakeDoorOut(),
 							intake.In()
 						),
-						new WaitCommand(30), // 30 millisecond wait
+						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeOne),
-						new WaitCommand(30),
+						new WaitCommand(SPIKE_COLLECTION_WAIT),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
@@ -118,14 +127,16 @@ public class AudienceAuto extends OpMode {
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeOne),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
+						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
 						transfer.IntakeDoorOut(),
 						new ParallelCommandGroup(
-							transfer.TransferOut(),
 							intake.Slow(),
-							spindexer.DirectPower(0.3)		
+							spindexer.DirectPower(0.3)
 						),
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifacts to be shot
+						new InstantCommand(() -> transfer.isTransferOutActive = true),
+						transfer.TransferOut(),
+						new WaitCommand(SHOOT_DWELL_TIME), // Wait for all artifacts to be shot
+						new InstantCommand(() -> transfer.isTransferOutActive = false),
 						
 						// Spike 2
 						transfer.IntakeDoorStop(),
@@ -142,9 +153,9 @@ public class AudienceAuto extends OpMode {
 								transfer.IntakeDoorOut(),
 								intake.In()
 						),
-						new WaitCommand(30), // 30 millisecond wait
+						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeTwo),
-						new WaitCommand(30),
+						new WaitCommand(SPIKE_COLLECTION_WAIT),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
@@ -153,14 +164,16 @@ public class AudienceAuto extends OpMode {
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
+						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
 						transfer.IntakeDoorOut(),
 						new ParallelCommandGroup(
-								transfer.TransferOut(),
 								intake.Slow(),
 								spindexer.DirectPower(0.3)
 						),
-						new WaitCommand(2500), // Wait 2.5 seconds to allow for all three artifa
+						new InstantCommand(() -> transfer.isTransferOutActive = true),
+						transfer.TransferOut(),
+						new WaitCommand(SHOOT_DWELL_TIME), // Wait for all artifacts to be shot
+						new InstantCommand(() -> transfer.isTransferOutActive = false),
 
 						// Spike the third
 						transfer.IntakeDoorStop(),
@@ -177,9 +190,9 @@ public class AudienceAuto extends OpMode {
 								transfer.IntakeDoorOut(),
 								intake.In()
 						),
-						new WaitCommand(30), // 30 millisecond wait
+						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.toCollectSpikeThree),
-						new WaitCommand(30),
+						new WaitCommand(SPIKE_COLLECTION_WAIT),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
@@ -188,14 +201,15 @@ public class AudienceAuto extends OpMode {
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeThree),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						shooter.WaitForTarget().withTimeout(500), // Wait for the shooter to finish spinning up
+						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
 						transfer.IntakeDoorOut(),
 						new ParallelCommandGroup(
-								transfer.TransferOut(),
 								intake.Slow(),
 								spindexer.DirectPower(0.3)
 						),
-						new WaitCommand(2500) // Wait 2.5 seconds to allow for all three artifa
+						new InstantCommand(() -> transfer.isTransferOutActive = true),
+						transfer.TransferOut(),
+						new WaitCommand(SHOOT_DWELL_TIME) // Wait for all artifacts to be shot
 				)
 		);
 
@@ -207,6 +221,7 @@ public class AudienceAuto extends OpMode {
 		scheduler.run();
 		rgbServo.setPosition(indicatorValue());
 		shooter.periodic();
+		transfer.updateConditionalTransferOut();
 		
 
 
