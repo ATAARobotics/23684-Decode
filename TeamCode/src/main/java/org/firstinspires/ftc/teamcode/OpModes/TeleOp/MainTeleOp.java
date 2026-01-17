@@ -87,6 +87,8 @@ public class MainTeleOp extends OpMode {
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
+		// Set shooter dependency for conditional transfer
+		transfer.setShooter(shooter);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		limelight = new Limelight(hardwareMap);
@@ -128,6 +130,8 @@ public class MainTeleOp extends OpMode {
 //		scheduler.schedule(limelight.update());
 		handleDriveInput();
 		handleOperatorInput();
+		// Update conditional transfer based on shooter readiness
+		transfer.updateConditionalTransferOut();
 		updateRGBIndicator();
 		scheduler.run();
 
@@ -210,12 +214,14 @@ public class MainTeleOp extends OpMode {
 			leftTriggerPressed = false;
 		}
 
-		// Right Trigger
+		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
 			shooter.setTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM);
+			transfer.isTransferOutActive = true;
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);
+			transfer.isTransferOutActive = false;
 			rightTriggerPressed = false;
 		}
 
