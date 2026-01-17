@@ -5,6 +5,8 @@ import static org.firstinspires.ftc.teamcode.Utils.GamepadUtils.inDeadzone;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -37,7 +39,7 @@ public class MainTeleOp extends OpMode {
 	protected Transfer transfer;
 	protected Spindexer spindexer;
 	protected Limelight limelight;
-	protected List<LynxModule> allHubs;
+	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -93,6 +95,8 @@ public class MainTeleOp extends OpMode {
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		limelight = new Limelight(hardwareMap);
 
+		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
+
 		// TODO: Make subsystem
 		frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
 		rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
@@ -134,6 +138,9 @@ public class MainTeleOp extends OpMode {
 		transfer.updateConditionalTransferOut();
 		updateRGBIndicator();
 		scheduler.run();
+		shooter.periodic();
+
+		displayTelemetry();
 
 		// Performance monitoring
 		long loopTime = System.nanoTime() - startTime;
@@ -195,7 +202,7 @@ public class MainTeleOp extends OpMode {
 				follower.startTeleOpDrive(true);
 			}
 
-			follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, gamepad1.right_stick_x, false);
+			follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
 		}
 	}
 
@@ -222,6 +229,7 @@ public class MainTeleOp extends OpMode {
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);
 			transfer.isTransferOutActive = false;
+			scheduler.schedule(transfer.TransferStop());
 			rightTriggerPressed = false;
 		}
 
@@ -309,29 +317,32 @@ public class MainTeleOp extends OpMode {
 	 * Display telemetry information
 	 */
 	protected void displayTelemetry() {
-		telemetry.addLine("=== MAIN TELEOP ===");
-		telemetry.addData("Drive Mode", "Mecanum");
+		panelsTelemetry.addLine("=== MAIN TELEOP ===");
+		panelsTelemetry.addData("Drive Mode", "Mecanum");
 
-		telemetry.addLine("=== GAMEPAD 1 (Driver) ===");
-		telemetry.addData("Forward", String.format("%.2f", -gamepad1.left_stick_y));
-		telemetry.addData("Strafe", String.format("%.2f", gamepad1.left_stick_x));
-		telemetry.addData("Turn", String.format("%.2f", gamepad1.right_stick_x));
+		panelsTelemetry.addLine("=== GAMEPAD 1 (Driver) ===");
+		panelsTelemetry.addData("Forward", String.format("%.2f", -gamepad1.left_stick_y));
+		panelsTelemetry.addData("Strafe", String.format("%.2f", gamepad1.left_stick_x));
+		panelsTelemetry.addData("Turn", String.format("%.2f", gamepad1.right_stick_x));
 
-		telemetry.addData("Location", follower.getPose().toString());
+		panelsTelemetry.addData("Location", follower.getPose().toString());
 
-		telemetry.addLine("=== GAMEPAD 2 (Operator) ===");
-		telemetry.addData("Left Trigger", "Intake");
-		telemetry.addData("Right Trigger", "Shooter");
-		telemetry.addData("Left Joystick Y (Spindexer)", String.format("%.2f", -gamepad2.left_stick_y));
+		panelsTelemetry.addLine("=== GAMEPAD 2 (Operator) ===");
+		panelsTelemetry.addData("Left Trigger", "Intake");
+		panelsTelemetry.addData("Right Trigger", "Shooter");
+		panelsTelemetry.addData("Left Joystick Y (Spindexer)", String.format("%.2f", -gamepad2.left_stick_y));
 
-		telemetry.addLine("=== SHOOTER ===");
-		telemetry.addData("Upper RPM", String.format("%.2f", shooter.upperRPM));
-		telemetry.addData("Lower RPM", String.format("%.2f", shooter.lowerRPM));
-		telemetry.addData("Average RPM", String.format("%.2f", shooter.averageRPM));
+		panelsTelemetry.addLine("=== SHOOTER ===");
+		panelsTelemetry.addData("Upper RPM", String.format("%.2f", shooter.upperRPM));
+		panelsTelemetry.addData("Lower RPM", String.format("%.2f", shooter.lowerRPM));
+		panelsTelemetry.addData("Average RPM", String.format("%.2f", shooter.averageRPM));
 
-		telemetry.addLine("=== Transfer ===");
-//        telemetry.addData("Spindexer at Shooting Pos", Transfer.isSpindexerAtShootingPosition(spindexer));
-//        telemetry.addData("Shooter at Target RPM", Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM));
-//        telemetry.addData("Transfer Ready", Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM));
+		panelsTelemetry.addLine("=== TRANSFER ===");
+		panelsTelemetry.addData("Is Transfer Out Active?", transfer.isTransferOutActive);
+//		panelsTelemetry.addData("Lower At Target", transfer.reachedLowerTarget);
+//		panelsTelemetry.addData("Upper At Target", transfer.reachedUpperTarget);
+		panelsTelemetry.addData("At Target", transfer.reachedAverageTarget);
+
+		panelsTelemetry.update();
 	}
 }

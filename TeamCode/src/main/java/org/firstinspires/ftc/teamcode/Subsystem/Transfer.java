@@ -12,7 +12,7 @@ import java.util.Set;
 
 @Configurable
 public class Transfer extends SubsystemBase {
-    public static double SHOOTER_RPM_TOLERANCE = 61;
+    public static double SHOOTER_RPM_TOLERANCE = 150;
     
     public final CRServo transferLeft;
 	public final CRServo transferRight;
@@ -20,6 +20,9 @@ public class Transfer extends SubsystemBase {
 	public final CRServo intakeDoorLeft;
 	private Shooter shooter;
 	public boolean isTransferOutActive = false;
+	public boolean reachedUpperTarget;
+	public boolean reachedLowerTarget;
+	public boolean reachedAverageTarget;
 
     public Transfer(HardwareMap hardwareMap) {
         transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
@@ -88,14 +91,19 @@ public class Transfer extends SubsystemBase {
 
     public void updateConditionalTransferOut() {
         if (isTransferOutActive) {
-            if (shooter != null && shooter.isAtTargetRPM()) {
-                transferLeft.setPower(1);
-                transferRight.setPower(1);
-            } else {
-                transferLeft.setPower(0);
-                transferRight.setPower(0);
-            }
-        }
-    }
+            if (shooter != null){
+//				reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
+//				reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);
+				reachedAverageTarget = (shooter.lowerTarget >= 100) && (shooter.upperTarget >= 100) && (((Math.abs(shooter.lowerRPM - shooter.lowerTarget) + Math.abs(shooter.upperRPM - shooter.upperTarget)) / 2) <= SHOOTER_RPM_TOLERANCE);
 
+                if (reachedAverageTarget) {
+					transferLeft.setPower(1);
+                	transferRight.setPower(1);
+				} else {
+					transferLeft.setPower(-1);
+					transferRight.setPower(-1);
+				}
+			}
+        }
+	}
 }
