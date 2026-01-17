@@ -187,38 +187,11 @@ public class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad1.a) {
-//			if (inDeadzone(gamepad1.left_stick_y) && inDeadzone(gamepad1.left_stick_x) && inDeadzone(gamepad1.right_stick_x)) {
-//				// No driver movement
-////				follower.holdPoint(follower.getPose());
-//				scheduler.schedule(transfer.IntakeDoorOut());
-//			} else {
-//				if (follower.isBusy()) {
-//					follower.breakFollowing();
-//				}
-//
-//				double y = applyDeadzone(-gamepad1.left_stick_y); // Y stick value is reversed
-//				double x = applyDeadzone(gamepad1.left_stick_x * 1.1); // Counteract imperfect strafing
-//				double rx = applyDeadzone(gamepad1.right_stick_x);
-//
-//				// Denominator is the largest motor power (absolute value) or 1
-//				// This ensures all the powers maintain the same ratio,
-//				// but only if at least one is out of the range [-1, 1]
-//				double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
-//				double frontLeftPower = (y + x + rx) / denominator;
-//				double backLeftPower = (y - x + rx) / denominator;
-//				double frontRightPower = (y - x - rx) / denominator;
-//				double backRightPower = (y + x - rx) / denominator;
-//
-//				frontLeft.setPower(frontLeftPower);
-//				rearLeft.setPower(backLeftPower);
-//				frontRight.setPower(frontRightPower);
-//				rearRight.setPower(backRightPower);
-//			}
 			if (!follower.isTeleopDrive()){
 				follower.startTeleOpDrive(true);
 			}
 
-			follower.setTeleOpDrive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, false);
+			follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, gamepad1.right_stick_x, false);
 		}
 	}
 
