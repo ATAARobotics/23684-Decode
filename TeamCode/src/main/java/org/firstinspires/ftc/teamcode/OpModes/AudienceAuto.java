@@ -29,8 +29,8 @@ import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 @Configurable
 public class AudienceAuto extends OpMode {
 	// Configurable wait times (in milliseconds)
-	public static int SHOOT_DWELL_TIME = 2500; // Time to allow all artifacts to be shot
-	public static int SPIKE_COLLECTION_WAIT = 30; // Short wait during spike collection
+	public static int SHOOT_DWELL_TIME = 3200; // Time to allow all artifacts to be shot
+	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
 
 	public Follower follower; // Pedro Pathing follower instance
 	CommandScheduler scheduler;
