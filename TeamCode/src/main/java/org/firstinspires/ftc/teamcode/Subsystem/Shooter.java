@@ -19,11 +19,11 @@ import org.firstinspires.ftc.teamcode.Utils.PIDFController;
 public class Shooter extends SubsystemBase {
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
-	public static double UPPER_P = 0.0024, UPPER_I = 0, UPPER_D = 0;
-	public static double LOWER_P = 0.001, LOWER_I = 0, LOWER_D = 0;
+	public static double UPPER_P = 0.004, UPPER_I = 0, UPPER_D = 0;
+	public static double LOWER_P = 0.009, LOWER_I = 0, LOWER_D = 0;
 	// --- Feedforward Constants ---
-	public static double UPPER_KS = 0.15, UPPER_KV = 0.000074;
-	public static double LOWER_KS = 0.3, LOWER_KV = 0.00017;
+	public static double UPPER_KS = 0.14, UPPER_KV = 0.000149;
+	public static double LOWER_KS = 0.25, LOWER_KV = 0.000146;
 	// --- Only for Tuning ---
 	public static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
 	public static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;
@@ -37,8 +37,8 @@ public class Shooter extends SubsystemBase {
 	// --- Pre-calculated constants ---
 	private static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
 	private static final double HALF_DIVISOR = 0.5;
-	public static double AUDIENCE_RPM = 2310;
-	public static double GOAL_RPM = 2310;
+	public static double AUDIENCE_RPM = 2300;
+	public static double GOAL_RPM = 2300;
 
 	private final DcMotorEx upperShooter;
 	private final DcMotorEx lowerShooter;
@@ -70,8 +70,6 @@ public class Shooter extends SubsystemBase {
 		lowerController = new PIDFController(LOWER_P, LOWER_I, LOWER_D, 0);
 		upperFF = new FeedForwardController(UPPER_KS, UPPER_KV, 0);
 		lowerFF = new FeedForwardController(LOWER_KS, LOWER_KV, 0);
-
-//		upperShooter = new Motor(hardwareMap, "upperShooter", G);
 	}
 
 	@Override
@@ -81,35 +79,41 @@ public class Shooter extends SubsystemBase {
 	}
 
 	public void updatePIDCoefficients() {
-		if (UPPER_P != PREV_UPPER_P || UPPER_I != PREV_UPPER_I || UPPER_D != PREV_UPPER_D) {
-			upperController = new PIDFController(UPPER_P, UPPER_I, UPPER_D);
+		if (TUNING_MODE) {
+			if (UPPER_P != PREV_UPPER_P || UPPER_I != PREV_UPPER_I || UPPER_D != PREV_UPPER_D) {
+				upperController = new PIDFController(UPPER_P, UPPER_I, UPPER_D);
 
-			PREV_UPPER_P = UPPER_P;
-			PREV_UPPER_I = UPPER_I;
-			PREV_UPPER_D = UPPER_D;
+				PREV_UPPER_P = UPPER_P;
+				PREV_UPPER_I = UPPER_I;
+				PREV_UPPER_D = UPPER_D;
+			}
+
+			if (LOWER_P != PREV_LOWER_P || LOWER_I != PREV_LOWER_I || LOWER_D != PREV_LOWER_D) {
+				lowerController = new PIDFController(LOWER_P, LOWER_I, LOWER_D);
+
+				PREV_LOWER_P = LOWER_P;
+				PREV_LOWER_I = LOWER_I;
+				PREV_LOWER_D = LOWER_D;
+			}
+
+			if (UPPER_KS != PREV_UPPER_KS || UPPER_KV != PREV_UPPER_KV) {
+				upperFF = new FeedForwardController(UPPER_KS, UPPER_KV, 0);
+
+				PREV_UPPER_KS = UPPER_KS;
+				PREV_UPPER_KV = UPPER_KV;
+			}
+
+			if (LOWER_KS != PREV_LOWER_KS || LOWER_KV != PREV_LOWER_KV) {
+				lowerFF = new FeedForwardController(LOWER_KS, LOWER_KV, 0);
+
+				PREV_LOWER_KS = LOWER_KS;
+				PREV_LOWER_KV = LOWER_KV;
+			}
 		}
+	}
 
-		if (LOWER_P != PREV_LOWER_P || LOWER_I != PREV_LOWER_I || LOWER_D != PREV_LOWER_D) {
-			lowerController = new PIDFController(LOWER_P, LOWER_I, LOWER_D);
-
-			PREV_LOWER_P = LOWER_P;
-			PREV_LOWER_I = LOWER_I;
-			PREV_LOWER_D = LOWER_D;
-		}
-
-		if (UPPER_KS != PREV_UPPER_KS || UPPER_KV != PREV_UPPER_KV) {
-			upperFF = new FeedForwardController(UPPER_KS, UPPER_KV, 0);
-
-			PREV_UPPER_KS = UPPER_KS;
-			PREV_UPPER_KV = UPPER_KV;
-		}
-
-		if (LOWER_KS != PREV_LOWER_KS || LOWER_KV != PREV_LOWER_KV) {
-			lowerFF = new FeedForwardController(LOWER_KS, LOWER_KV, 0);
-
-			PREV_LOWER_KS = LOWER_KS;
-			PREV_LOWER_KV = LOWER_KV;
-		}
+	public void setTuningMode(boolean TUNING_MODE) {
+		Shooter.TUNING_MODE = TUNING_MODE;
 	}
 
 	private void updateRPM() {

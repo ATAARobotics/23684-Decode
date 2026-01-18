@@ -51,6 +51,8 @@ public class ShooterDistanceTuning extends OpMode {
 		scheduler.reset();
 		scheduler.run();
 
+		shooter.setTuningMode(true);
+
 		operatorGamepad = new GamepadEx(gamepad1);
     }
 
