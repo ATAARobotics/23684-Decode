@@ -33,7 +33,7 @@ public class ShooterDistanceTuning extends OpMode {
 	Transfer transfer;
 
 	GamepadEx operatorGamepad;
-	TelemetryManager.TelemetryWrapper panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
+	TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
     static double upperMotorRPM = 0;
 	static double lowerMotorRPM = 0;
@@ -56,6 +56,8 @@ public class ShooterDistanceTuning extends OpMode {
 
     @Override
     public void loop() {
+		shooter.updatePIDCoefficients();
+
         scheduler.schedule(limelight.update());
 		scheduler.schedule(shooter.SetTarget(upperMotorRPM, lowerMotorRPM));
 		scheduler.schedule(spindexer.DirectPower(gamepad2.left_stick_y * spindexerSpeed));
@@ -74,15 +76,15 @@ public class ShooterDistanceTuning extends OpMode {
 			scheduler.schedule(transfer.TransferOut());
 		}
 
-		panelsTelemetry.clearAll();
-		panelsTelemetry.addData("Upper RPM", String.format("%.2f", shooter.upperRPM));
-		panelsTelemetry.addData("Lower RPM", String.format("%.2f", shooter.lowerRPM));
-		panelsTelemetry.addData("Upper Target", String.format("%.2f", shooter.upperTarget));
-		panelsTelemetry.addData("Lower Target", String.format("%.2f", shooter.lowerTarget));
-		panelsTelemetry.addData("Length of Limelight Distance From Tags", limelight.distanceFromTags.size());
-		for (DistanceFromTag distanceFromTag : limelight.distanceFromTags) {
-			panelsTelemetry.addData(String.format("Distance From Tag %d", distanceFromTag.getTag()), distanceFromTag.getDistance());
-		}
+		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
+		panelsTelemetry.addData("Lower RPM", shooter.lowerRPM);
+		panelsTelemetry.addData("Upper Target", shooter.upperTarget);
+		panelsTelemetry.addData("Lower Target", shooter.lowerTarget);
+//		panelsTelemetry.addData("Length of Limelight Distance From Tags", limelight.distanceFromTags.size());
+//		for (DistanceFromTag distanceFromTag : limelight.distanceFromTags) {
+//			panelsTelemetry.addData(String.format("Distance From Tag %d", distanceFromTag.getTag()), distanceFromTag.getDistance());
+//		}
+
 		panelsTelemetry.update();
 
 		scheduler.run();
