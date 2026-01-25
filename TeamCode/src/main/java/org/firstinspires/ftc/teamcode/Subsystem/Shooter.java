@@ -32,7 +32,8 @@ public class Shooter extends SubsystemBase {
 	// --- Motor Power Constants ---
 	public static double STOP_POWER = 0.0;
 	// --- RPM & Control Constants ---
-	public static double RPM_TOLERANCE = 50; // 100 before
+	public static double RPM_TOLERANCE = 35;
+	public static double DROP_RPM_TOLERANCE = 150;
 	public static double TICKS_PER_REVOLUTION = 28.0;
 	// --- Pre-calculated constants ---
 	private static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
@@ -137,10 +138,10 @@ public class Shooter extends SubsystemBase {
 
 	public boolean isRPMDropped() {
 		// Check Upper: Must be a valid target (>100) AND within tolerance
-		boolean upperReady = (upperTarget >= 100) && (Math.abs(upperRPM - upperTarget) <= RPM_TOLERANCE * 2);
+		boolean upperReady = (upperTarget >= 100) && (Math.abs(upperRPM - upperTarget) <= DROP_RPM_TOLERANCE);
 
 		// Check Lower: Must be a valid target (>100) AND within tolerance
-		boolean lowerReady = (lowerTarget >= 100) && (Math.abs(lowerRPM - lowerTarget) <= RPM_TOLERANCE * 2);
+		boolean lowerReady = (lowerTarget >= 100) && (Math.abs(lowerRPM - lowerTarget) <= DROP_RPM_TOLERANCE);
 
 		return !(upperReady && lowerReady);
 	}

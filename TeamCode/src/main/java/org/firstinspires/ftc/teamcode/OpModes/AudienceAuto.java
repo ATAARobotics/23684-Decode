@@ -6,6 +6,7 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -13,11 +14,9 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
-import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
@@ -25,7 +24,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
-import org.firstinspires.ftc.teamcode.Utils.ShootThree;
+import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 
 @Autonomous
 @Configurable
@@ -33,7 +32,7 @@ public class AudienceAuto extends OpMode {
 	// Configurable wait times (in milliseconds)
 	public static int SHOOT_DWELL_TIME = 3200; // Time to allow all artifacts to be shot
 	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
-
+	private final ElapsedTime timer = new ElapsedTime();
 	public Follower follower;
 	public Servo rgbIndicator;
 	private CommandScheduler scheduler;
@@ -42,8 +41,6 @@ public class AudienceAuto extends OpMode {
 	private Spindexer spindexer;
 	private Transfer transfer;
 	private TelemetryManager panelsTelemetry;
-
-	private final ElapsedTime timer = new ElapsedTime();
 	private Paths paths;
 
 	double indicatorValue() {
@@ -98,36 +95,31 @@ public class AudienceAuto extends OpMode {
 				new SequentialCommandGroup(
 						new FollowPathCommand(follower, paths.shootPreload),
 
-						transfer.SetAutomaticTransfer(true),
-						new ShootThree(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						// Turn off the motors and servos
-						transfer.SetAutomaticTransfer(false),
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
 						new FollowPathCommand(follower, paths.toSpikeOne),
-						new ParallelCommandGroup(
-								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorOut(),
-								intake.In()
-						),
+
+						intake.In(),
+						spindexer.DirectPower(0.4),
+						transfer.IntakeDoorOut(),
+
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-						new FollowPathCommand(follower, paths.collectSpikeOne),
+						new FollowPathCommand(follower, paths.collectSpikeOne, true, 0.1),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
-						transfer.TransferStop(),
-						new ParallelCommandGroup(
-								spindexer.DirectPower(0),
-								transfer.IntakeDoorStop(),
-								intake.SlowOut()
-						),
+
 						new FollowPathCommand(follower, paths.toShootSpikeOne),
 
-						transfer.SetAutomaticTransfer(true),
-						new ShootThree(shooter, spindexer, transfer, intake),
+						transfer.IntakeDoorStop(),
+						intake.SlowOut(),
+						spindexer.DirectPower(0),
+
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						// Turn off the motors and servos
-						transfer.SetAutomaticTransfer(false),
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
 						transfer.TransferStop(),
@@ -150,10 +142,8 @@ public class AudienceAuto extends OpMode {
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 
-						transfer.SetAutomaticTransfer(true),
-						new ShootThree(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						// Turn off the motors and servos
-						transfer.SetAutomaticTransfer(false),
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
 						transfer.TransferStop(),
@@ -177,10 +167,8 @@ public class AudienceAuto extends OpMode {
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeThree),
 
-						transfer.SetAutomaticTransfer(true),
-						new ShootThree(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						// Turn off the motors and servos
-						transfer.SetAutomaticTransfer(false),
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
 						transfer.TransferStop(),
