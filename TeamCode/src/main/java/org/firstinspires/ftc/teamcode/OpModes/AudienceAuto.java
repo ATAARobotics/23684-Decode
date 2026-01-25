@@ -212,7 +212,6 @@ public class AudienceAuto extends OpMode {
 						new WaitCommand(SHOOT_DWELL_TIME) // Wait for all artifacts to be shot
 				)
 		);
-
 	}
 
 	@Override
@@ -221,15 +220,7 @@ public class AudienceAuto extends OpMode {
 		scheduler.run();
 		rgbServo.setPosition(indicatorValue());
 		shooter.periodic();
-		transfer.updateConditionalTransferOut();
-		
-
-
-//		// Log values to Panels and Driver Station
-//		panelsTelemetry.debug("X", follower.getPose().getX());
-//		panelsTelemetry.debug("Y", follower.getPose().getY());
-//		panelsTelemetry.debug("Heading", follower.getPose().getHeading());
-//		panelsTelemetry.update(telemetry);
+		transfer.updateAutomaticTransfer();
 	}
 
 	public static class Paths {

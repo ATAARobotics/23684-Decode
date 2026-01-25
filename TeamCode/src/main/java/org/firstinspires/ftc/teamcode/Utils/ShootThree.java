@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Utils;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
@@ -12,17 +13,19 @@ import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 
-public class ShootThree extends SubsystemBase {
+public class ShootThree extends CommandBase {
     Shooter shooter;
     Spindexer spindexer;
     Intake intake;
     Transfer transfer;
 
-    public ShootThree(HardwareMap hardwareMap){
-        shooter = new Shooter(hardwareMap);
-        spindexer = new Spindexer(hardwareMap);
-        transfer = new Transfer(hardwareMap);
-        intake = new Intake(hardwareMap);
+    public ShootThree(Shooter shooter, Spindexer spindexer, Transfer transfer, Intake intake) {
+        this.shooter = shooter;
+		this.spindexer = spindexer;
+		this.transfer = transfer;
+		this.intake = intake;
+
+		addRequirements(this.shooter, this.shooter, this.transfer, this.intake);
     }
 
     public Command ShootThreeArtifacts() {
@@ -36,7 +39,7 @@ public class ShootThree extends SubsystemBase {
 
                new WaitCommand(300),
                transfer.TransferIn(),
-               spindexer.NextSlot(),
+//               spindexer.NextSlot(),
                new ParallelCommandGroup(
                         shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                         shooter.WaitForTarget()
@@ -45,7 +48,7 @@ public class ShootThree extends SubsystemBase {
 
               new WaitCommand(300),
               transfer.TransferIn(),
-              spindexer.NextSlot(),
+//              spindexer.NextSlot(),
               new ParallelCommandGroup(
                       shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                       shooter.WaitForTarget()

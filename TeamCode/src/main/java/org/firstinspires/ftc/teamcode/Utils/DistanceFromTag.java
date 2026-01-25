@@ -16,4 +16,12 @@ public class DistanceFromTag {
     public double getDistance() {
         return distance;
     }
+
+	public void setId(int id) {
+		this.tag = id;
+	}
+
+	public void setDistance(double distance) {
+		this.distance = distance;
+	}
 }

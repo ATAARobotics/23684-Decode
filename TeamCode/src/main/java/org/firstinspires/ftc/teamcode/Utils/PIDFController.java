@@ -5,10 +5,10 @@ public class PIDFController {
     // Class private variables
     //**********************************
 
-    private double P = 0;
-    private double I = 0;
-    private double D = 0;
-    private double F = 0;
+    public double P = 0;
+	public double I = 0;
+	public double D = 0;
+	public double F = 0;
 
     private double maxIOutput = 0;
     private double maxError = 0;

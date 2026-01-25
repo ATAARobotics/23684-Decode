@@ -26,8 +26,6 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-import java.util.List;
-
 @Config
 @Configurable
 @TeleOp
@@ -47,6 +45,8 @@ public class MainTeleOp extends OpMode {
 	protected boolean xButtonPressed = false;
 	protected boolean aButtonPressed = false;
 	protected boolean bButtonPressed = false;
+	protected boolean dpadUpPressed = false;
+	protected boolean dpadDownPressed = false;
 	protected boolean spindexerUpCrossed = false;
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
@@ -56,6 +56,7 @@ public class MainTeleOp extends OpMode {
 	DcMotorEx rearLeft;
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
+	public static double spindexerPower = 0.5;
 
 	// Performance monitoring
 	private long maxLoopTime = 0;
@@ -91,6 +92,7 @@ public class MainTeleOp extends OpMode {
 		spindexer = new Spindexer(hardwareMap);
 		// Set shooter dependency for conditional transfer
 		transfer.setShooter(shooter);
+		transfer.setSpindexer(spindexer);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		limelight = new Limelight(hardwareMap);
@@ -134,8 +136,6 @@ public class MainTeleOp extends OpMode {
 //		scheduler.schedule(limelight.update());
 		handleDriveInput();
 		handleOperatorInput();
-		// Update conditional transfer based on shooter readiness
-		transfer.updateConditionalTransferOut();
 		updateRGBIndicator();
 		scheduler.run();
 		shooter.periodic();
@@ -224,11 +224,9 @@ public class MainTeleOp extends OpMode {
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
 			shooter.setTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM);
-			transfer.isTransferOutActive = true;
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);
-			transfer.isTransferOutActive = false;
 			scheduler.schedule(transfer.TransferStop());
 			rightTriggerPressed = false;
 		}
@@ -242,16 +240,9 @@ public class MainTeleOp extends OpMode {
 			xButtonPressed = false;
 		}
 
-		// Automatic transfer based on readiness (only if X button isn't held)
-//        if (!gamepad2.x) {
-//            boolean isReady = Transfer.isTransferReady(spindexer, shooter, Shooter.AUDIENCE_RPM);
-//            if (isReady && !transferAboveRPM) {
-//                scheduler.schedule(transfer.transferIn());
-//            } else if (!isReady && transferAboveRPM) {
-//                scheduler.schedule(transfer.transferOut());
-//            }
-//            transferAboveRPM = isReady;
-//        }
+		if (!gamepad2.x) {
+			transfer.updateAutomaticTransfer(!rightTriggerPressed);
+		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
 		if (gamepad2.b && !bButtonPressed) {
@@ -262,6 +253,13 @@ public class MainTeleOp extends OpMode {
 			scheduler.schedule(transfer.IntakeDoorStop());
 			scheduler.schedule(intake.Stop());
 			bButtonPressed = false;
+		}
+
+		if (gamepad2.dpad_up && !dpadUpPressed) {
+			scheduler.schedule(spindexer.NextTarget());
+			dpadUpPressed = true;
+		} else if (!gamepad2.dpad_up && dpadUpPressed) {
+			dpadUpPressed = false;
 		}
 
 		// Left joystick: Spindexer control with threshold crossing (inverted Y axis)
@@ -281,14 +279,6 @@ public class MainTeleOp extends OpMode {
 			}
 		}
 
-		double spindexerPower;
-
-		if (gamepad2.right_bumper) {
-			spindexerPower = 0.31;
-		} else {
-			spindexerPower = 0.37;
-		}
-
 		// Crosses 0.2 threshold going up (from lower to 0.2+)
 		if (leftJoystickY >= 0.2 && !spindexerUpCrossed) {
 			scheduler.schedule(spindexer.DirectPower(spindexerPower));
@@ -300,6 +290,7 @@ public class MainTeleOp extends OpMode {
 			spindexerMidCrossed = false;
 			spindexerDownCrossed = false;
 		}
+
 		// Crosses -0.2 threshold going down (to -0.2 or below)
 		else if (leftJoystickY <= -0.2 && !spindexerDownCrossed) {
 			scheduler.schedule(spindexer.DirectPower(-spindexerPower));
@@ -319,29 +310,18 @@ public class MainTeleOp extends OpMode {
 	protected void displayTelemetry() {
 		panelsTelemetry.addLine("=== MAIN TELEOP ===");
 		panelsTelemetry.addData("Drive Mode", "Mecanum");
-
-		panelsTelemetry.addLine("=== GAMEPAD 1 (Driver) ===");
-		panelsTelemetry.addData("Forward", String.format("%.2f", -gamepad1.left_stick_y));
-		panelsTelemetry.addData("Strafe", String.format("%.2f", gamepad1.left_stick_x));
-		panelsTelemetry.addData("Turn", String.format("%.2f", gamepad1.right_stick_x));
-
 		panelsTelemetry.addData("Location", follower.getPose().toString());
 
-		panelsTelemetry.addLine("=== GAMEPAD 2 (Operator) ===");
-		panelsTelemetry.addData("Left Trigger", "Intake");
-		panelsTelemetry.addData("Right Trigger", "Shooter");
-		panelsTelemetry.addData("Left Joystick Y (Spindexer)", String.format("%.2f", -gamepad2.left_stick_y));
-
 		panelsTelemetry.addLine("=== SHOOTER ===");
-		panelsTelemetry.addData("Upper RPM", String.format("%.2f", shooter.upperRPM));
-		panelsTelemetry.addData("Lower RPM", String.format("%.2f", shooter.lowerRPM));
-		panelsTelemetry.addData("Average RPM", String.format("%.2f", shooter.averageRPM));
+		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
+		panelsTelemetry.addData("Lower RPM", shooter.lowerRPM);
+		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
 
 		panelsTelemetry.addLine("=== TRANSFER ===");
-		panelsTelemetry.addData("Is Transfer Out Active?", transfer.isTransferOutActive);
-//		panelsTelemetry.addData("Lower At Target", transfer.reachedLowerTarget);
-//		panelsTelemetry.addData("Upper At Target", transfer.reachedUpperTarget);
-		panelsTelemetry.addData("At Target", transfer.reachedAverageTarget);
+		panelsTelemetry.addData("Shooter Lower At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedLowerTarget);
+		panelsTelemetry.addData("Shooter Upper At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedUpperTarget);
+		panelsTelemetry.addData("Shooter At Target (This may be inactive, you may need to refer to \"Lower At Target\" and \"Upper At Target\")", transfer.reachedAverageTarget);
+		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
 		panelsTelemetry.update();
 	}

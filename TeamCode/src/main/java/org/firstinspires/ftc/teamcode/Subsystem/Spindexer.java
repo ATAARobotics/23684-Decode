@@ -1,131 +1,127 @@
 package org.firstinspires.ftc.teamcode.Subsystem;
 
-import com.qualcomm.robotcore.hardware.CRServo;
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.Utils.FeedForwardController;
 import org.firstinspires.ftc.teamcode.Utils.PIDFController;
 import org.firstinspires.ftc.teamcode.Utils.SpindexerPosition;
 
+@Configurable
 public class Spindexer extends SubsystemBase {
 	public final DcMotor spindexerMotor;
+	PIDFController spindexerPIDF;
+	private double prevTarget = 0;
+	public static double P = 0.1;
+	public static double I = 0;
+	public static double D = 0;
+	public static double F = 0;
+	private double PREV_P = 0;
+	private double PREV_I = 0;
+	private double PREV_D = 0;
+	private double PREV_F = 0;
+	private double power = 0;
+	private boolean isAtTarget = true;
+	double targetTicks = 0;
+	double targetDegrees = 0;
 
-    PIDFController spidexerPIDF;
+	public Spindexer(HardwareMap hardwareMap) {
+		spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
+		spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-    private double prevtarget = 0;
+		spindexerPIDF = new PIDFController(P, I, D, F);
+		spindexerPIDF.setOutputLimits(1);
 
-    private double P = 0, I = 0, D = 0, F = 0;
+		prevTarget = 0;
+	}
 
-    public static boolean TUNING_MODE = false;
+	@Override
+	public void periodic() {
+		updatePIDFCoefficients();
+	}
 
+	public void updatePIDFCoefficients() {
+		if (P != PREV_P || I != PREV_I || D != PREV_D || F != PREV_F) {
+			spindexerPIDF = new PIDFController(P, I, D, F);
+			spindexerPIDF.setOutputLimits(1);
+			spindexerPIDF.setSetpoint(targetTicks);
+			spindexerPIDF.setSetpointRange(30);
+			PREV_P = P;
+			PREV_I = I;
+			PREV_D = D;
+			PREV_F = F;
+		}
+	}
 
+	public int getPosition() {
+		return spindexerMotor.getCurrentPosition();
+	}
 
-    public Spindexer(HardwareMap hardwareMap) {
-        spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
-        spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+	public Command DirectPower(double power) {
+		return new InstantCommand(
+				() -> spindexerMotor.setPower(power), this
+		);
+	}
 
-        spidexerPIDF = new PIDFController(P,I,D,F);
+	public Command NextTarget() {
+		return new CommandBase() {
+			@Override
+			public void initialize() {
+				targetDegrees = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				targetTicks = targetDegrees * 1.4936;
 
-    }
+				isAtTarget = false;
 
-    public void periodic(){
-        updatePIDCoefficients();
-    }
+				spindexerPIDF.setSetpoint(targetTicks);
+				spindexerPIDF.setSetpointRange(60);
 
-    public void updatePIDCoefficients() {
-        if (TUNING_MODE) {
-           spidexerPIDF = new PIDFController(P,I,D,F);
-        }
-    }
+				prevTarget = targetDegrees;
+			}
 
-    public void setTuningMode(boolean TUNING_MODE) {
-        Shooter.TUNING_MODE = TUNING_MODE;
-    }
+			@Override
+			public void execute() {
+				power = spindexerPIDF.getOutput(spindexerMotor.getCurrentPosition(), targetTicks);
+				spindexerMotor.setPower(power);
+			}
 
+			@Override
+			public void end(boolean interrupted) {
+				spindexerMotor.setPower(0);
+				isAtTarget = true;
+			}
 
+			@Override
+			public boolean isFinished() {
+				return Math.abs(spindexerMotor.getCurrentPosition() - targetTicks) < 40;
+			}
+		};
+	}
 
+	public void Telemetry(Telemetry telemetry) {
+		double currentPosTicks = spindexerMotor.getCurrentPosition();
 
+		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * 0.6695);
+		telemetry.addData("Spindexer Target (degrees)", targetDegrees);
+		telemetry.addData("Spindexer Power", power);
+		telemetry.addData("Tick Error", targetTicks - currentPosTicks);
+	}
 
-    public int getPosition() {
-        return spindexerMotor.getCurrentPosition();
-    }
+	public void Telemetry(TelemetryManager telemetry) {
+		double currentPosTicks = spindexerMotor.getCurrentPosition();
 
-    public Command DirectPower(double power){
-        return new InstantCommand(
-                ()-> spindexerMotor.setPower(power), this
-        );
-    }
+		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * 0.6695);
+		telemetry.addData("Spindexer Target (degrees)", targetDegrees);
+		telemetry.addData("Spindexer Power", power);
+		telemetry.addData("Tick Error", targetTicks - currentPosTicks);
+	}
 
-    public Command NextTarget(){
-        return new CommandBase() {
-            double target = 0;
-            @Override
-            public void initialize() {
-                target = SpindexerPosition.getNextShootPosition((int)prevtarget);
-                spidexerPIDF.setSetpoint(target * 22.755);
-                prevtarget = target;
-
-            }
-
-            @Override
-            public void execute() {
-                spidexerPIDF.getOutput(spindexerMotor.getCurrentPosition(),target);
-
-            }
-
-            @Override
-            public void end(boolean interrupted) {
-                spindexerMotor.setPower(0);
-
-            }
-
-            @Override
-            public boolean isFinished() {
-                return Math.abs(spindexerMotor.getCurrentPosition() - target) < 20;
-            }
-        };
-
-    }
-
-    public void Telemetry(Telemetry telemetry){
-        telemetry.addData("Spindexer Position", spindexerMotor.getCurrentPosition());
-        telemetry.addData("Spindexer Target", prevtarget);
-        telemetry.addData("error",prevtarget - (double)spindexerMotor.getCurrentPosition());
-    }
-
-    public Command NextSlot(){
-        return new CommandBase() {
-            double target = 0;
-            @Override
-            public void initialize() {
-               target = SpindexerPosition.getNextShootPosition((int)prevtarget);
-               prevtarget = target;
-            }
-
-            @Override
-            public void execute() {
-                spindexerMotor.setPower(1);
-            }
-
-            @Override
-            public void end(boolean interrupted) {
-                spindexerMotor.setPower(0);
-
-            }
-
-            @Override
-            public boolean isFinished() {
-                return spindexerMotor.getCurrentPosition() >= target;
-            }
-        };
-    }
+	public boolean isAtTarget() {
+		return isAtTarget;
+	}
 }

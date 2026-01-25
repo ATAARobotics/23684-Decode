@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.OpModes.Test;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -12,136 +13,115 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
-//import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.function.Supplier;
 
 @Configurable
 @TeleOp
 public class TestDrive extends OpMode {
-    private Follower follower;
+	public boolean checked = false;
+	Path path;
+	Pose holdpose;
+	private Follower follower;
+	private boolean automatedDrive;
+	private Supplier<PathChain> pathChain;
+	private TelemetryManager telemetryM;
+	private boolean slowMode = false;
+	private double slowModeMultiplier = 0.5;
 
-    ShootAngle shootAngle;
-
-       public static PathChain NowPose; //See ExampleAuto to understand how to use this
-
-    Path path;
-
-    public HeadingInterpolator heading;
-    private boolean automatedDrive;
-    private Supplier<PathChain> pathChain;
-    private TelemetryManager telemetryM;
-    private boolean slowMode = false;
-    private double slowModeMultiplier = 0.5;
-
-    public boolean checked = false;
-
-    Pose holdpose;
-
-    @Override
-    public void init() {
-       // follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(72,72,Math.toRadians(270)));
-        holdpose = new Pose(0,0,0);
-        follower.update();
-        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
-        pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
-                .addPath(new Path(new BezierLine(follower::getPose, new Pose(45, 98))))
-                .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(45), 0.8))
-                .build();
+	@Override
+	public void init() {
+		// follower = Constants.createFollower(hardwareMap);
+		follower.setStartingPose(new Pose(72, 72, Math.toRadians(270)));
+		holdpose = new Pose(0, 0, 0);
+		follower.update();
+		telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+		pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(45, 98))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(45), 0.8))
+				.build();
+	}
 
 
-    }
+	@Override
+	public void start() {
+		follower.startTeleopDrive();
+	}
 
+	@Override
+	public void loop() {
+		//Call this once per loop
+		follower.update();
+		telemetryM.update();
 
+		if (!automatedDrive) {
+			// Make the last parameter false for field-centric
+			// In case the drivers want to use a "slowMode" you can scale the vectors
 
-    @Override
-    public void start() {
-        //The parameter controls whether the Follower should use break mode on the motors (using it is recommended).
-        //In order to use float mode, add .useBrakeModeInTeleOp(true); to your Drivetrain Constants in Constant.java (for Mecanum)
-        //If you don't pass anything in, it uses the default (false)
-        follower.startTeleopDrive();
-    }
+			// This is the normal version to use in the TeleOp
+			if (!slowMode) follower.setTeleOpDrive(
+					-gamepad1.left_stick_y,
+					-gamepad1.left_stick_x,
+					-gamepad1.right_stick_x,
+					true // Robot Centric
+			);
 
-    @Override
-    public void loop() {
-        //Call this once per loop
-        follower.update();
-        telemetryM.update();
+			// This is how it looks with slowMode on
+			else follower.setTeleOpDrive(
+					-gamepad1.left_stick_y * slowModeMultiplier,
+					-gamepad1.left_stick_x * slowModeMultiplier,
+					-gamepad1.right_stick_x * slowModeMultiplier,
+					true // Robot Centric
+			);
 
-        if (!automatedDrive) {
-            //Make the last parameter false for field-centric
-            //In case the drivers want to use a "slowMode" you can scale the vectors
+			if (Math.abs(gamepad1.left_stick_y) + Math.abs(gamepad1.left_stick_x) + Math.abs(gamepad1.right_stick_x) == 0) {
+				if (!checked) {
+					holdpose = follower.getPose();
+					checked = true;
+				}
+				follower.holdPoint(holdpose);
+			} else {
+				checked = false;
+			}
+		}
 
-            //This is the normal version to use in the TeleOp
-            if (!slowMode) follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x,
-                    true // Robot Centric
-            );
+		if (gamepad1.yWasPressed()) {
+			follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144));
+		}
 
-                //This is how it looks with slowMode on
-            else follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y * slowModeMultiplier,
-                    -gamepad1.left_stick_x * slowModeMultiplier,
-                    -gamepad1.right_stick_x * slowModeMultiplier,
-                    true // Robot Centric
-            );
+		if (gamepad1.xWasPressed()) {
+			path.setHeadingInterpolation(HeadingInterpolator.facingPoint(0, 144));
+		}
 
-            if (Math.abs(gamepad1.left_stick_y) + Math.abs(gamepad1.left_stick_x) + Math.abs(gamepad1.right_stick_x) == 0){
-                if (!checked){
-                    holdpose = follower.getPose();
-                    checked = true;
-                }
-                follower.holdPoint(holdpose);
-            }else{
-                checked = false;
-            }
-        }
+		// Automated PathFollowing
+		if (gamepad1.aWasPressed()) {
+			follower.followPath(pathChain.get());
+			automatedDrive = true;
+		}
 
-        if (gamepad1.yWasPressed()){
-            follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144));
-        }
-        if (gamepad1.xWasPressed()){
-            path.setHeadingInterpolation(HeadingInterpolator.facingPoint(0,144));
-        }
+		// Stop automated following if the follower is done
+		if (automatedDrive && (gamepad1.bWasPressed() || !follower.isBusy())) {
+			follower.startTeleopDrive();
+			automatedDrive = false;
+		}
 
-        if (gamepad1.dpadDownWasPressed()){
-        }
+		// Slow Mode
+		if (gamepad1.rightBumperWasPressed()) {
+			slowMode = !slowMode;
+		}
 
-        //Automated PathFollowing
-        if (gamepad1.aWasPressed()) {
-            follower.followPath(pathChain.get());
-            automatedDrive = true;
-        }
+		// Optional way to change slow mode strength
+		if (gamepad1.xWasPressed()) {
+			slowModeMultiplier += 0.25;
+		}
 
-        //Stop automated following if the follower is done
-        if (automatedDrive && (gamepad1.bWasPressed() || !follower.isBusy())) {
-            follower.startTeleopDrive();
-            automatedDrive = false;
-        }
+		// Optional way to change slow mode strength
+		if (gamepad2.yWasPressed()) {
+			slowModeMultiplier -= 0.25;
+		}
 
-        //Slow Mode
-        if (gamepad1.rightBumperWasPressed()) {
-            slowMode = !slowMode;
-        }
-
-        //Optional way to change slow mode strength
-        if (gamepad1.xWasPressed()) {
-            slowModeMultiplier += 0.25;
-        }
-
-        //Optional way to change slow mode strength
-        if (gamepad2.yWasPressed()) {
-            slowModeMultiplier -= 0.25;
-        }
-
-
-
-
-        telemetryM.debug("position", follower.getPose());
-        telemetryM.debug("velocity", follower.getVelocity());
-        telemetryM.debug("automatedDrive", automatedDrive);
-    }
+		telemetryM.debug("position", follower.getPose());
+		telemetryM.debug("velocity", follower.getVelocity());
+		telemetryM.debug("automatedDrive", automatedDrive);
+	}
 }
