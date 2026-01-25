@@ -7,6 +7,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -19,11 +20,12 @@ import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
+import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
-import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Utils.ShootThree;
 
 @Autonomous
 @Configurable
@@ -32,32 +34,33 @@ public class AudienceAuto extends OpMode {
 	public static int SHOOT_DWELL_TIME = 3200; // Time to allow all artifacts to be shot
 	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
 
-	public Follower follower; // Pedro Pathing follower instance
-	CommandScheduler scheduler;
-	Intake intake;
-	Shooter shooter;
-	Spindexer spindexer;
-	Transfer transfer;
-	private TelemetryManager panelsTelemetry; // Panels Telemetry instance
-	private Paths paths; // Paths defined in the Paths class
-	
-	public Servo rgbServo;
-	
-	ElapsedTime timer = new ElapsedTime();
-	
+	public Follower follower;
+	public Servo rgbIndicator;
+	private CommandScheduler scheduler;
+	private Intake intake;
+	private Shooter shooter;
+	private Spindexer spindexer;
+	private Transfer transfer;
+	private TelemetryManager panelsTelemetry;
+
+	private final ElapsedTime timer = new ElapsedTime();
+	private Paths paths;
+
 	double indicatorValue() {
 		double x = timer.seconds();
 		double hz = 1;
-		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5){
+
+		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
 			hz = 2.5;
 		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
 			hz = 1;
-		}else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11 ) {
+		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
 			hz = 0.5;
-		}else{
+		} else {
 			hz = 0.5;
 		}
-		int state = Math.floorMod((int) Math.floor(x*hz), 2);
+
+		int state = Math.floorMod((int) Math.floor(x * hz), 2);
 		return 0.23 * state + 0.388;
 	}
 
@@ -70,15 +73,18 @@ public class AudienceAuto extends OpMode {
 
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
+		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 
 		intake = new Intake(hardwareMap);
 		shooter = new Shooter(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		transfer.setShooter(shooter);
+		transfer.setSpindexer(spindexer);
+
 		paths = new Paths(follower);
-		
-		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
+
+		rgbIndicator = hardwareMap.get(Servo.class, "rgbIndicator");
 
 		panelsTelemetry.debug("Status", "Initialized");
 		panelsTelemetry.update(telemetry);
@@ -86,35 +92,26 @@ public class AudienceAuto extends OpMode {
 
 	@Override
 	public void start() {
+		spindexer.zeroSpindexer();
 		timer.startTime();
 		scheduler.schedule(
 				new SequentialCommandGroup(
-						transfer.TransferIn(),
 						new FollowPathCommand(follower, paths.shootPreload),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
+
+						transfer.SetAutomaticTransfer(true),
+						new ShootThree(shooter, spindexer, transfer, intake),
+						// Turn off the motors and servos
+						transfer.SetAutomaticTransfer(false),
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
+						transfer.IntakeDoorStop(),
+
+						new FollowPathCommand(follower, paths.toSpikeOne),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorOut(),
-								intake.Slow()
-						),
-						new InstantCommand(() -> transfer.isTransferOutActive = true),
-						transfer.TransferOut(),
-						new WaitCommand(SHOOT_DWELL_TIME), // Wait for all artifacts to be shot
-						new InstantCommand(() -> transfer.isTransferOutActive = false),
-						transfer.IntakeDoorStop(),
-						new ParallelCommandGroup( // Turn off the transfers and shooter
-								spindexer.DirectPower(0),
-								shooter.SetTarget(0, 0),
-								intake.Stop(),
-								transfer.TransferStop()
-						),
-						new FollowPathCommand(follower, paths.toSpikeOne),
-						transfer.TransferIn(),
-						new ParallelCommandGroup(
-							spindexer.DirectPower(0.3),
-							transfer.IntakeDoorOut(),
-							intake.In()
+								intake.In()
 						),
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeOne),
@@ -126,27 +123,16 @@ public class AudienceAuto extends OpMode {
 								intake.SlowOut()
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeOne),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
-						transfer.IntakeDoorOut(),
-						new ParallelCommandGroup(
-							intake.Slow(),
-							spindexer.DirectPower(0.3)
-						),
-						new InstantCommand(() -> transfer.isTransferOutActive = true),
-						transfer.TransferOut(),
-						new WaitCommand(SHOOT_DWELL_TIME), // Wait for all artifacts to be shot
-						new InstantCommand(() -> transfer.isTransferOutActive = false),
-						
-						// Spike 2
+
+						transfer.SetAutomaticTransfer(true),
+						new ShootThree(shooter, spindexer, transfer, intake),
+						// Turn off the motors and servos
+						transfer.SetAutomaticTransfer(false),
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
-						new ParallelCommandGroup( // Turn off the transfers and shooter
-								spindexer.DirectPower(0),
-								shooter.SetTarget(0, 0),
-								intake.Stop(),
-								transfer.TransferStop()
-						),
-						new FollowPathCommand(follower, paths.toSpikeTwo),
+
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0.3),
@@ -163,26 +149,16 @@ public class AudienceAuto extends OpMode {
 								intake.SlowOut()
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
-						transfer.IntakeDoorOut(),
-						new ParallelCommandGroup(
-								intake.Slow(),
-								spindexer.DirectPower(0.3)
-						),
-						new InstantCommand(() -> transfer.isTransferOutActive = true),
-						transfer.TransferOut(),
-						new WaitCommand(SHOOT_DWELL_TIME), // Wait for all artifacts to be shot
-						new InstantCommand(() -> transfer.isTransferOutActive = false),
 
-						// Spike the third
+						transfer.SetAutomaticTransfer(true),
+						new ShootThree(shooter, spindexer, transfer, intake),
+						// Turn off the motors and servos
+						transfer.SetAutomaticTransfer(false),
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
-						new ParallelCommandGroup( // Turn off the transfers and shooter
-								spindexer.DirectPower(0),
-								shooter.SetTarget(0, 0),
-								intake.Stop(),
-								transfer.TransferStop()
-						),
+
 						new FollowPathCommand(follower, paths.toSpikeThree),
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
@@ -200,27 +176,43 @@ public class AudienceAuto extends OpMode {
 								intake.SlowOut()
 						),
 						new FollowPathCommand(follower, paths.toShootSpikeThree),
-						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM), // Start spinning up the shooter
-						new WaitUntilCommand(() -> transfer.isShooterReady(shooter.averageRPM, Shooter.AUDIENCE_RPM)),
-						transfer.IntakeDoorOut(),
-						new ParallelCommandGroup(
-								intake.Slow(),
-								spindexer.DirectPower(0.3)
-						),
-						new InstantCommand(() -> transfer.isTransferOutActive = true),
-						transfer.TransferOut(),
-						new WaitCommand(SHOOT_DWELL_TIME) // Wait for all artifacts to be shot
+
+						transfer.SetAutomaticTransfer(true),
+						new ShootThree(shooter, spindexer, transfer, intake),
+						// Turn off the motors and servos
+						transfer.SetAutomaticTransfer(false),
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
+						transfer.IntakeDoorStop()
 				)
 		);
+
+		scheduler.run();
 	}
 
 	@Override
 	public void loop() {
 		follower.update();
 		scheduler.run();
-		rgbServo.setPosition(indicatorValue());
-		shooter.periodic();
-		transfer.updateAutomaticTransfer();
+		shooter.periodic(); // TODO: Find out why it doesn't work without this
+		transfer.periodic(); // TODO: Find out why it doesn't work without this
+		rgbIndicator.setPosition(indicatorValue());
+
+		panelsTelemetry.addLine("=== SHOOTER ===");
+		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
+		panelsTelemetry.addData("Lower RPM", shooter.lowerRPM);
+		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
+
+		panelsTelemetry.addLine("=== TRANSFER ===");
+		panelsTelemetry.addData("Shooter Lower At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedLowerTarget);
+		panelsTelemetry.addData("Shooter Upper At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedUpperTarget);
+		panelsTelemetry.addData("Shooter At Target (This may be inactive, you may need to refer to \"Lower At Target\" and \"Upper At Target\")", transfer.reachedAverageTarget);
+		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
+		panelsTelemetry.addData("Automatic Transfer Running?", transfer.runAutomaticTransfer);
+
+		panelsTelemetry.update();
+		panelsTelemetry.update(telemetry);
 	}
 
 	public static class Paths {
@@ -243,7 +235,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(270),
-							Math.toRadians(294.935)
+							Math.toRadians(290)
 					)
 					.build();
 
@@ -273,7 +265,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(180),
-							Math.toRadians(294.935)
+							Math.toRadians(290)
 					)
 					.build();
 
@@ -303,7 +295,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(180),
-							Math.toRadians(294.935)
+							Math.toRadians(290)
 					)
 					.build();
 			toSpikeThree = follower
@@ -332,7 +324,7 @@ public class AudienceAuto extends OpMode {
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(180),
-							Math.toRadians(294.935)
+							Math.toRadians(290)
 					)
 					.build();
 		}

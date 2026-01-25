@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.Utils.SpindexerPosition;
 public class Spindexer extends SubsystemBase {
 	public final DcMotor spindexerMotor;
 	PIDFController spindexerPIDF;
+	private int offset = 0;
 	private double prevTarget = 0;
 	public static double P = 0.1;
 	public static double I = 0;
@@ -59,8 +60,12 @@ public class Spindexer extends SubsystemBase {
 		}
 	}
 
-	public int getPosition() {
-		return spindexerMotor.getCurrentPosition();
+	public void zeroSpindexer() {
+		offset = spindexerMotor.getCurrentPosition();
+	}
+
+	public double getPosition() {
+		return spindexerMotor.getCurrentPosition() - offset;
 	}
 
 	public Command DirectPower(double power) {
@@ -73,20 +78,21 @@ public class Spindexer extends SubsystemBase {
 		return new CommandBase() {
 			@Override
 			public void initialize() {
-				targetDegrees = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				double nextTarget = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				prevTarget = nextTarget;
+
+				targetDegrees = nextTarget - 20; // We subtract 20 as our algorithm overshoots (by design)
 				targetTicks = targetDegrees * 1.4936;
 
 				isAtTarget = false;
 
 				spindexerPIDF.setSetpoint(targetTicks);
 				spindexerPIDF.setSetpointRange(60);
-
-				prevTarget = targetDegrees;
 			}
 
 			@Override
 			public void execute() {
-				power = spindexerPIDF.getOutput(spindexerMotor.getCurrentPosition(), targetTicks);
+				power = spindexerPIDF.getOutput(getPosition(), targetTicks);
 				spindexerMotor.setPower(power);
 			}
 
@@ -98,13 +104,13 @@ public class Spindexer extends SubsystemBase {
 
 			@Override
 			public boolean isFinished() {
-				return Math.abs(spindexerMotor.getCurrentPosition() - targetTicks) < 40;
+				return Math.abs(getPosition() - targetTicks) < 40;
 			}
 		};
 	}
 
 	public void Telemetry(Telemetry telemetry) {
-		double currentPosTicks = spindexerMotor.getCurrentPosition();
+		double currentPosTicks = getPosition();
 
 		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * 0.6695);
 		telemetry.addData("Spindexer Target (degrees)", targetDegrees);
@@ -113,7 +119,7 @@ public class Spindexer extends SubsystemBase {
 	}
 
 	public void Telemetry(TelemetryManager telemetry) {
-		double currentPosTicks = spindexerMotor.getCurrentPosition();
+		double currentPosTicks = getPosition();
 
 		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * 0.6695);
 		telemetry.addData("Spindexer Target (degrees)", targetDegrees);

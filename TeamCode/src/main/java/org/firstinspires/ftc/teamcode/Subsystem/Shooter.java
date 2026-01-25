@@ -135,6 +135,16 @@ public class Shooter extends SubsystemBase {
 		return upperReady && lowerReady;
 	}
 
+	public boolean isRPMDropped() {
+		// Check Upper: Must be a valid target (>100) AND within tolerance
+		boolean upperReady = (upperTarget >= 100) && (Math.abs(upperRPM - upperTarget) <= RPM_TOLERANCE * 2);
+
+		// Check Lower: Must be a valid target (>100) AND within tolerance
+		boolean lowerReady = (lowerTarget >= 100) && (Math.abs(lowerRPM - lowerTarget) <= RPM_TOLERANCE * 2);
+
+		return !(upperReady && lowerReady);
+	}
+
 	private void updateMotors() {
 		double upperPower, lowerPower;
 
@@ -172,5 +182,9 @@ public class Shooter extends SubsystemBase {
 
 	public Command WaitForTarget() {
 		return new WaitUntilCommand(this::isAtTargetRPM);
+	}
+
+	public Command WaitForDrop() {
+		return new WaitUntilCommand(this::isRPMDropped);
 	}
 }

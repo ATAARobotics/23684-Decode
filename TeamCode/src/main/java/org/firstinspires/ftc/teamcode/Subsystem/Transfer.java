@@ -16,7 +16,7 @@ public class Transfer extends SubsystemBase {
 	public final CRServo transferRight;
 	public final CRServo intakeDoorRight;
 	public final CRServo intakeDoorLeft;
-	public boolean isTransferOutActive = false;
+	public boolean runAutomaticTransfer = false;
 	public boolean reachedUpperTarget;
 	public boolean reachedLowerTarget;
 	public boolean reachedAverageTarget;
@@ -31,6 +31,13 @@ public class Transfer extends SubsystemBase {
 		intakeDoorRight = hardwareMap.get(CRServo.class, "intakeDoorRight");
 		intakeDoorLeft = hardwareMap.get(CRServo.class, "intakeDoorLeft");
 		intakeDoorRight.setDirection(DcMotorSimple.Direction.REVERSE);
+	}
+
+	@Override
+	public void periodic() {
+		if (runAutomaticTransfer) {
+			updateAutomaticTransfer(false);
+		}
 	}
 
 	public void setShooter(Shooter shooter) {
@@ -87,6 +94,10 @@ public class Transfer extends SubsystemBase {
 			transferRight.setPower(0);
 		}, this
 		);
+	}
+
+	public Command SetAutomaticTransfer(boolean run) {
+		return new InstantCommand(() -> runAutomaticTransfer = run, this);
 	}
 
 	public boolean isShooterReady(double shooterRpm, double targetRpm) {

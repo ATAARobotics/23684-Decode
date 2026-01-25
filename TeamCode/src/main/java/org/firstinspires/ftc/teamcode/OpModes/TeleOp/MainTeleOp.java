@@ -47,6 +47,7 @@ public class MainTeleOp extends OpMode {
 	protected boolean bButtonPressed = false;
 	protected boolean dpadUpPressed = false;
 	protected boolean dpadDownPressed = false;
+	protected boolean yButtonPressed = false;
 	protected boolean spindexerUpCrossed = false;
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
@@ -118,6 +119,7 @@ public class MainTeleOp extends OpMode {
 	public void start() {
 		// Called when START is pressed
 //		limelight.start();
+		spindexer.zeroSpindexer();
 		timer.startTime();
 		scheduler.run();
 	}
@@ -260,6 +262,13 @@ public class MainTeleOp extends OpMode {
 			dpadUpPressed = true;
 		} else if (!gamepad2.dpad_up && dpadUpPressed) {
 			dpadUpPressed = false;
+		}
+
+		if (gamepad2.y && !yButtonPressed) {
+			spindexer.zeroSpindexer();
+			yButtonPressed = true;
+		} else if (!gamepad2.y && yButtonPressed) {
+			yButtonPressed = false;
 		}
 
 		// Left joystick: Spindexer control with threshold crossing (inverted Y axis)
