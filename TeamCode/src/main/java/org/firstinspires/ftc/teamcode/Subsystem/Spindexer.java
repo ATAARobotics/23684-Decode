@@ -18,7 +18,7 @@ public class Spindexer extends SubsystemBase {
 	public final DcMotor spindexerMotor;
 	PIDFController spindexerPIDF;
 	private int offset = 0;
-	private double prevTarget = 0;
+	private double prevTarget;
 	public static double P = 0.1;
 	public static double I = 0;
 	public static double D = 0;
@@ -62,6 +62,7 @@ public class Spindexer extends SubsystemBase {
 
 	public void zeroSpindexer() {
 		offset = spindexerMotor.getCurrentPosition();
+		prevTarget = 0;
 	}
 
 	public double getPosition() {

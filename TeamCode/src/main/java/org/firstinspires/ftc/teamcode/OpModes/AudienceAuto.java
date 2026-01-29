@@ -45,14 +45,12 @@ public class AudienceAuto extends OpMode {
 
 	double indicatorValue() {
 		double x = timer.seconds();
-		double hz = 1;
+		double hz;
 
 		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
 			hz = 2.5;
 		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
 			hz = 1;
-		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
-			hz = 0.5;
 		} else {
 			hz = 0.5;
 		}
@@ -66,7 +64,7 @@ public class AudienceAuto extends OpMode {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
 		follower = Constants.createFollower(hardwareMap);
-		follower.setStartingPose(new Pose(63.000, 9, Math.toRadians(270)));
+		follower.setStartingPose(new Pose(63.450, 9, Math.toRadians(270)));
 
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
@@ -140,39 +138,42 @@ public class AudienceAuto extends OpMode {
 								transfer.IntakeDoorStop(),
 								intake.SlowOut()
 						),
-						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 
-						new ShootArtifacts(shooter, spindexer, transfer, intake),
-						// Turn off the motors and servos
-						shooter.SetTarget(0, 0),
-						intake.Stop(),
-						transfer.TransferStop(),
-						transfer.IntakeDoorStop(),
+						new FollowPathCommand(follower, paths.toParkSpikeTwo)
 
-						new FollowPathCommand(follower, paths.toSpikeThree),
-						transfer.TransferIn(),
-						new ParallelCommandGroup(
-								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorOut(),
-								intake.In()
-						),
-						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-						new FollowPathCommand(follower, paths.toCollectSpikeThree),
-						new WaitCommand(SPIKE_COLLECTION_WAIT),
-						transfer.TransferStop(),
-						new ParallelCommandGroup(
-								spindexer.DirectPower(0),
-								transfer.IntakeDoorStop(),
-								intake.SlowOut()
-						),
-						new FollowPathCommand(follower, paths.toShootSpikeThree),
-
-						new ShootArtifacts(shooter, spindexer, transfer, intake),
-						// Turn off the motors and servos
-						shooter.SetTarget(0, 0),
-						intake.Stop(),
-						transfer.TransferStop(),
-						transfer.IntakeDoorStop()
+//						new FollowPathCommand(follower, paths.toShootSpikeTwo),
+//
+//						new ShootArtifacts(shooter, spindexer, transfer, intake),
+//						// Turn off the motors and servos
+//						shooter.SetTarget(0, 0),
+//						intake.Stop(),
+//						transfer.TransferStop(),
+//						transfer.IntakeDoorStop(),
+//
+//						new FollowPathCommand(follower, paths.toSpikeThree),
+//						transfer.TransferIn(),
+//						new ParallelCommandGroup(
+//								spindexer.DirectPower(0.3),
+//								transfer.IntakeDoorOut(),
+//								intake.In()
+//						),
+//						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
+//						new FollowPathCommand(follower, paths.toCollectSpikeThree),
+//						new WaitCommand(SPIKE_COLLECTION_WAIT),
+//						transfer.TransferStop(),
+//						new ParallelCommandGroup(
+//								spindexer.DirectPower(0),
+//								transfer.IntakeDoorStop(),
+//								intake.SlowOut()
+//						),
+//						new FollowPathCommand(follower, paths.toShootSpikeThree),
+//
+//						new ShootArtifacts(shooter, spindexer, transfer, intake),
+//						// Turn off the motors and servos
+//						shooter.SetTarget(0, 0),
+//						intake.Stop(),
+//						transfer.TransferStop(),
+//						transfer.IntakeDoorStop()
 				)
 		);
 
@@ -210,6 +211,7 @@ public class AudienceAuto extends OpMode {
 		public PathChain toShootSpikeOne;
 		public PathChain toSpikeTwo;
 		public PathChain collectSpikeTwo;
+		public PathChain toParkSpikeTwo;
 		public PathChain toShootSpikeTwo;
 		public PathChain toSpikeThree;
 		public PathChain toCollectSpikeThree;
@@ -219,7 +221,7 @@ public class AudienceAuto extends OpMode {
 			shootPreload = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(63.000, 9), new Pose(59.440, 17.328))
+							new BezierLine(new Pose(63.450, 9), new Pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
 							Math.toRadians(270),
@@ -274,6 +276,13 @@ public class AudienceAuto extends OpMode {
 							new BezierLine(new Pose(41.000, 65.500), new Pose(9.000, 65.500))
 					)
 					.setConstantHeadingInterpolation(Math.toRadians(180))
+					.build();
+
+			toParkSpikeTwo = follower
+					.pathBuilder()
+					.addPath(
+							new BezierLine(new Pose(9.000, 65.500), new Pose(38.2, 33.6))
+					)
 					.build();
 
 			toShootSpikeTwo = follower

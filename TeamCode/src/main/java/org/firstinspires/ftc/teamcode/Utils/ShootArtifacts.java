@@ -15,20 +15,20 @@ public class ShootArtifacts extends SequentialCommandGroup {
 
 				// Cycle 1
 				shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
-				shooter.WaitForTarget(),
-				shooter.WaitForDrop(),
+				shooter.WaitForTarget().withTimeout(2500L),
+				shooter.WaitForDrop().withTimeout(1000L),
 				new WaitCommand(300),
 
 				// Cycle 2
-				spindexer.NextTarget(),
-				shooter.WaitForTarget(),
-				shooter.WaitForDrop(),
+				spindexer.NextTarget().withTimeout(2500L),
+				shooter.WaitForTarget().withTimeout(2500L),
+				shooter.WaitForDrop().withTimeout(1000L),
 				new WaitCommand(300),
 
 				// Cycle 3
-				spindexer.NextTarget(),
-				shooter.WaitForTarget(),
-				shooter.WaitForDrop(),
+				spindexer.NextTarget().withTimeout(2500L),
+				shooter.WaitForTarget().withTimeout(2500L),
+				shooter.WaitForDrop().withTimeout(1000L),
 				new WaitCommand(300),
 
 				transfer.SetAutomaticTransfer(false)

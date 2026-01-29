@@ -8,6 +8,8 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -16,7 +18,11 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.pedroCommand.TurnToCommand;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
@@ -169,7 +175,7 @@ public class MainTeleOp extends OpMode {
 	 * Override this method in subclasses to set the starting pose
 	 */
 	protected Pose getStartingPose() {
-		return new Pose(63.000, 9, Math.toRadians(270));
+		return new Pose(63.450, 9, Math.toRadians(270));
 	}
 
 	protected Team getTeam() {
@@ -184,16 +190,35 @@ public class MainTeleOp extends OpMode {
 //        scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
 	}
 
+	private Pose getLimelightPose() {
+		return new Pose(0, 0, 0, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+	}
+
 	/**
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
 		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
-				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
+				scheduler.schedule(
+						new SequentialCommandGroup(
+								new InstantCommand(() -> follower.setPose(getLimelightPose())),
+								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144), AngleUnit.RADIANS),
+								new InstantCommand(() -> follower.setPose(getLimelightPose())),
+								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144), AngleUnit.RADIANS)
+						)
+				);
 			} else if (getTeam() == Team.BLUE) {
-				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144));
+				scheduler.schedule(
+						new SequentialCommandGroup(
+								new InstantCommand(() -> follower.setPose(getLimelightPose())),
+								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144), AngleUnit.RADIANS),
+								new InstantCommand(() -> follower.setPose(getLimelightPose())),
+								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144), AngleUnit.RADIANS)
+						)
+				);
 			}
+
 			aButtonPressed = true;
 		} else if (!gamepad1.a && aButtonPressed) {
 			aButtonPressed = false;
