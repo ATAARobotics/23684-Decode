@@ -25,10 +25,10 @@ import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
+import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous
 @Configurable
-public class AudienceAuto extends OpMode {
+public abstract class AudienceAuto extends OpMode {
 	// Configurable wait times (in milliseconds)
 	public static int SHOOT_DWELL_TIME = 3200; // Time to allow all artifacts to be shot
 	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
@@ -59,12 +59,15 @@ public class AudienceAuto extends OpMode {
 		return 0.23 * state + 0.388;
 	}
 
+	protected abstract Pose getStartingPose();
+	protected abstract Team getTeam();
+
 	@Override
 	public void init() {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
 		follower = Constants.createFollower(hardwareMap);
-		follower.setStartingPose(new Pose(63.450, 9, Math.toRadians(270)));
+		follower.setStartingPose(getStartingPose());
 
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
@@ -77,7 +80,7 @@ public class AudienceAuto extends OpMode {
 		transfer.setShooter(shooter);
 		transfer.setSpindexer(spindexer);
 
-		paths = new Paths(follower);
+		paths = new Paths(follower, getTeam());
 
 		rgbIndicator = hardwareMap.get(Servo.class, "rgbIndicator");
 
@@ -100,17 +103,17 @@ public class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
-						new FollowPathCommand(follower, paths.toSpikeOne),
+						new FollowPathCommand(follower, paths.toSpikeOne).setGlobalMaxPower(0.1),
 
 						intake.In(),
 						spindexer.DirectPower(0.4),
 						transfer.IntakeDoorOut(),
 
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-						new FollowPathCommand(follower, paths.collectSpikeOne, true, 0.1),
+						new FollowPathCommand(follower, paths.collectSpikeOne),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
 
-						new FollowPathCommand(follower, paths.toShootSpikeOne),
+						new FollowPathCommand(follower, paths.toShootSpikeOne).setGlobalMaxPower(1),
 
 						transfer.IntakeDoorStop(),
 						intake.SlowOut(),
@@ -125,18 +128,18 @@ public class AudienceAuto extends OpMode {
 
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
-								spindexer.DirectPower(0.3),
-								transfer.IntakeDoorOut(),
-								intake.In()
+							spindexer.DirectPower(0.3),
+							transfer.IntakeDoorOut(),
+							intake.In()
 						),
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeTwo),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
-								spindexer.DirectPower(0),
-								transfer.IntakeDoorStop(),
-								intake.SlowOut()
+							spindexer.DirectPower(0),
+							transfer.IntakeDoorStop(),
+							intake.SlowOut()
 						),
 
 						new FollowPathCommand(follower, paths.toParkSpikeTwo)
@@ -153,18 +156,18 @@ public class AudienceAuto extends OpMode {
 //						new FollowPathCommand(follower, paths.toSpikeThree),
 //						transfer.TransferIn(),
 //						new ParallelCommandGroup(
-//								spindexer.DirectPower(0.3),
-//								transfer.IntakeDoorOut(),
-//								intake.In()
+//							spindexer.DirectPower(0.3),
+//							transfer.IntakeDoorOut(),
+//							intake.In()
 //						),
 //						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 //						new FollowPathCommand(follower, paths.toCollectSpikeThree),
 //						new WaitCommand(SPIKE_COLLECTION_WAIT),
 //						transfer.TransferStop(),
 //						new ParallelCommandGroup(
-//								spindexer.DirectPower(0),
-//								transfer.IntakeDoorStop(),
-//								intake.SlowOut()
+//							spindexer.DirectPower(0),
+//							transfer.IntakeDoorStop(),
+//							intake.SlowOut()
 //						),
 //						new FollowPathCommand(follower, paths.toShootSpikeThree),
 //
@@ -216,114 +219,138 @@ public class AudienceAuto extends OpMode {
 		public PathChain toSpikeThree;
 		public PathChain toCollectSpikeThree;
 		public PathChain toShootSpikeThree;
+		
+		private final Team team;
 
-		public Paths(Follower follower) {
+		public Paths(Follower follower, Team team) {
+			this.team = team;
 			shootPreload = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(63.450, 9), new Pose(59.440, 17.328))
+							new BezierLine(pose(63.450, 9), pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(270),
-							Math.toRadians(290)
+							heading(270),
+							heading(290)
 					)
 					.build();
 
 			toSpikeOne = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(59.440, 17.328), new Pose(41.000, 40.50))
+							new BezierLine(pose(59.440, 17.328), pose(41.000, 40.50))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(294.935),
-							Math.toRadians(180)
+							heading(294.935),
+							heading(180)
 					)
 					.build();
 
 			collectSpikeOne = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(41.000, 40.50), new Pose(9.000, 40.50))
+							new BezierLine(pose(41.000, 40.50), pose(9.000, 40.50))
 					)
-					.setConstantHeadingInterpolation(Math.toRadians(180))
+					.setConstantHeadingInterpolation(heading(180))
 					.build();
 
 			toShootSpikeOne = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(9.000, 40.50), new Pose(59.440, 17.328))
+							new BezierLine(pose(9.000, 40.50), pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(180),
-							Math.toRadians(290)
+							heading(180),
+							heading(290)
 					)
 					.build();
 
 			toSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(59.44, 17.328), new Pose(41.000, 65.500))
+							new BezierLine(pose(59.44, 17.328), pose(41.000, 65.500))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(294.935),
-							Math.toRadians(180)
+							heading(294.935),
+							heading(180)
 					)
 					.build();
 
 			collectSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(41.000, 65.500), new Pose(9.000, 65.500))
+							new BezierLine(pose(41.000, 65.500), pose(9.000, 65.500))
 					)
-					.setConstantHeadingInterpolation(Math.toRadians(180))
+					.setConstantHeadingInterpolation(heading(180))
 					.build();
 
 			toParkSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(9.000, 65.500), new Pose(38.2, 33.6))
+							new BezierLine(pose(9.000, 65.500), pose(38.2, 33.6))
 					)
 					.build();
 
 			toShootSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(9.000, 65.500), new Pose(59.440, 17.328))
+							new BezierLine(pose(9.000, 65.500), pose(59.440, 17.328))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(180),
-							Math.toRadians(290)
+							heading(180),
+							heading(290)
 					)
 					.build();
 			toSpikeThree = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(59.44, 17.328), new Pose(41.000, 89.500))
+							new BezierLine(pose(59.44, 17.328), pose(41.000, 89.500))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(294.935),
-							Math.toRadians(180)
+							heading(294.935),
+							heading(180)
 					)
 					.build();
 
 			toCollectSpikeThree = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(41.000, 89.500), new Pose(15.000, 89.500))
+							new BezierLine(pose(41.000, 89.500), pose(15.000, 89.500))
 					)
-					.setConstantHeadingInterpolation(Math.toRadians(180))
+					.setConstantHeadingInterpolation(heading(180))
 					.build();
 
 			toShootSpikeThree = follower
 					.pathBuilder()
 					.addPath(
-							new BezierLine(new Pose(15.000, 89.500), new Pose(59.000, 17.328))
+							new BezierLine(pose(15.000, 89.500), pose(59.000, 17.328))
 					)
 					.setLinearHeadingInterpolation(
-							Math.toRadians(180),
-							Math.toRadians(290)
+							heading(180),
+							heading(290)
 					)
 					.build();
+		}
+		
+		private Pose pose(double x, double y) {
+			if (team == Team.RED) {
+				return new Pose(144 - x, y);
+			}
+			return new Pose(x, y);
+		}
+
+		private double heading(double degrees) {
+			double radians = Math.toRadians(degrees);
+			if (team == Team.RED) {
+				// Mirror angle across Y axis (flip X)
+				// 0 -> 180 (PI)
+				// 180 -> 0
+				// 90 -> 90
+				// 270 (-90) -> 270 (-90)
+				// Formula: PI - radians
+				return Math.PI - radians;
+			}
+			return radians;
 		}
 	}
 }

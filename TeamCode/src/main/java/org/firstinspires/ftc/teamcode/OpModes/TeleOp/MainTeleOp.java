@@ -34,8 +34,7 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 
 @Config
 @Configurable
-@TeleOp
-public class MainTeleOp extends OpMode {
+public abstract class MainTeleOp extends OpMode {
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -174,13 +173,9 @@ public class MainTeleOp extends OpMode {
 	/**
 	 * Override this method in subclasses to set the starting pose
 	 */
-	protected Pose getStartingPose() {
-		return new Pose(63.450, 9, Math.toRadians(270));
-	}
+	protected abstract Pose getStartingPose();
 
-	protected Team getTeam() {
-		return Team.BLUE;
-	}
+	protected abstract Team getTeam();
 
 	/**
 	 * Update RGB indicator color
