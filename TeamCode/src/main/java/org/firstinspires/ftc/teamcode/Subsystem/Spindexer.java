@@ -37,7 +37,7 @@ public class Spindexer extends SubsystemBase {
 		spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
 		spindexerPIDF = new PIDFController(P, I, D, F);
-		spindexerPIDF.setOutputLimits(1);
+		spindexerPIDF.setOutputLimits(-0.1,1);
 
 		prevTarget = 0;
 	}

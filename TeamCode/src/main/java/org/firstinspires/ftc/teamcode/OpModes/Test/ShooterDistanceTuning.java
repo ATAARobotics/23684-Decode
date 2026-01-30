@@ -14,7 +14,6 @@ import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
-import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -27,7 +26,6 @@ public class ShooterDistanceTuning extends OpMode {
     CommandScheduler scheduler;
 
 	Shooter shooter;
-    Limelight limelight;
 	Spindexer spindexer;
 	Intake intake;
 	Transfer transfer;
@@ -44,7 +42,6 @@ public class ShooterDistanceTuning extends OpMode {
         scheduler = CommandScheduler.getInstance();
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
         shooter = new Shooter(hardwareMap);
-        limelight = new Limelight(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
@@ -59,8 +56,6 @@ public class ShooterDistanceTuning extends OpMode {
     @Override
     public void loop() {
 		shooter.updatePIDCoefficients();
-
-        scheduler.schedule(limelight.update());
 		scheduler.schedule(shooter.SetTarget(upperMotorRPM, lowerMotorRPM));
 		scheduler.schedule(spindexer.DirectPower(gamepad2.left_stick_y * spindexerSpeed));
 
