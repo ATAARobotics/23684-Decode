@@ -276,17 +276,16 @@ public abstract class MainTeleOp extends OpMode {
 			bButtonPressed = false;
 		}
 
-		if (gamepad2.dpad_up && !dpadUpPressed) {
+		if (gamepad2.right_bumper && !dpadUpPressed) {
 			scheduler.schedule(
 					new RepeatCommand(
 							new SequentialCommandGroup(
 									spindexer.NextTarget(),
-									new WaitUntilCommand(() -> shooter.isAtTargetRPM()),
-									new WaitUntilCommand(() -> shooter.isRPMDropped()),
+									new WaitUntilCommand(()-> transfer.spindexerAtTarget && transfer.reachedAverageTarget),
 									new WaitCommand(300)
-							), () -> !gamepad2.dpad_up));
+							), () -> !gamepad2.dpad_up).interruptOn((() -> !gamepad2.dpad_up)));
 			dpadUpPressed = true;
-		} else if (!gamepad2.dpad_up && dpadUpPressed) {
+		} else if (!gamepad2.right_bumper && dpadUpPressed) {
 			dpadUpPressed = false;
 		}
 
