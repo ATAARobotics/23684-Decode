@@ -283,7 +283,7 @@ public abstract class MainTeleOp extends OpMode {
 									spindexer.NextTarget(),
 									new WaitUntilCommand(()-> transfer.spindexerAtTarget && transfer.reachedAverageTarget),
 									new WaitCommand(300)
-							), () -> !gamepad2.dpad_up).interruptOn((() -> !gamepad2.dpad_up)));
+							), () -> !gamepad2.dpad_up));
 			dpadUpPressed = true;
 		} else if (!gamepad2.right_bumper && dpadUpPressed) {
 			dpadUpPressed = false;
