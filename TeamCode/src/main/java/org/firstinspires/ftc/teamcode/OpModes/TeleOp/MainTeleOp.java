@@ -26,12 +26,16 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.TurnToCommand;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
+import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -47,7 +51,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
-	//protected Limelight limelight;
+	protected Limelight limelight;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 
 	// Button state tracking to prevent continuous input
@@ -99,6 +103,7 @@ public abstract class MainTeleOp extends OpMode {
 		follower.setStartingPose(getStartingPose());
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
+		limelight = new Limelight(hardwareMap);
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
 		intake = new Intake(hardwareMap);
@@ -140,6 +145,8 @@ public abstract class MainTeleOp extends OpMode {
 		spindexer.zeroSpindexer();
 		timer.startTime();
 		scheduler.run();
+		limelight.start();
+		limelight.StartHeading(Math.toDegrees(getStartingPose().getHeading()));
 	}
 
 	@Override
@@ -167,6 +174,11 @@ public abstract class MainTeleOp extends OpMode {
 
 		if (loopTime > maxLoopTime) {
 			maxLoopTime = loopTime;
+		}
+
+		limelight.updateIMU();
+		if(limelight.goalsFound()){
+			follower.setPose(limelight.PPVisionPose());
 		}
 
 		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
@@ -285,7 +297,14 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad2.dpad_up && !dpadUpPressed) {
-			scheduler.schedule(spindexer.NextTarget());
+			scheduler.schedule(
+					new RepeatCommand(
+							new SequentialCommandGroup(
+									spindexer.NextTarget(),
+									new WaitUntilCommand(()-> shooter.isAtTargetRPM()),
+									new WaitUntilCommand(()-> shooter.isRPMDropped()),
+									new WaitCommand(300)
+							), () -> !gamepad2.dpad_up));
 			dpadUpPressed = true;
 		} else if (!gamepad2.dpad_up && dpadUpPressed) {
 			dpadUpPressed = false;
@@ -347,6 +366,10 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addLine("=== MAIN TELEOP ===");
 		panelsTelemetry.addData("Drive Mode", "Mecanum");
 		panelsTelemetry.addData("Location", follower.getPose().toString());
+
+		panelsTelemetry.addLine("=== LimeLight ===");
+
+		limelight.Telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
