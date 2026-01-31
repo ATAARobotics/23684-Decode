@@ -15,9 +15,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 public class LimeLightTest extends OpMode {
 
 	Limelight limelight;
-
 	TelemetryManager telemetryManager;
-
 	Follower follower;
 
 	@Override
@@ -27,7 +25,6 @@ public class LimeLightTest extends OpMode {
 		follower = Constants.createFollower(hardwareMap);
 
 		follower.setStartingPose(new Pose(72, 72, 0));
-
 	}
 
 	@Override
@@ -39,6 +36,5 @@ public class LimeLightTest extends OpMode {
 	public void loop() {
 		limelight.setHeading(follower.getHeading());
 		limelight.Telemetry(telemetry);
-
 	}
 }
