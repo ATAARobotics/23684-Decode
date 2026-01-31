@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.OpModes;
+package org.firstinspires.ftc.teamcode.OpModes.Auto;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -23,7 +23,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 
 
 @Configurable // Panels
-public class GoalsideAuto extends OpMode {
+public class GoalAuto extends OpMode {
 
 	public Follower follower; // Pedro Pathing follower instance
 	CommandScheduler scheduler;
@@ -47,7 +47,6 @@ public class GoalsideAuto extends OpMode {
 		shooter = new Shooter(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
 		transfer = new Transfer(hardwareMap);
-
 
 		paths = new Paths(follower); // Build paths
 

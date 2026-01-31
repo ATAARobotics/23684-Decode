@@ -195,7 +195,7 @@ public abstract class MainTeleOp extends OpMode {
 	 */
 	private void updateRGBIndicator() {
 		if (rightTriggerPressed) {
-			rgbServo.setPosition(transfer.spindexerAtTarget && transfer.reachedAverageTarget ? 0.28 : 0.50);
+			rgbServo.setPosition(transfer.spindexerAtTarget && transfer.reachedAverageTarget ? 0.50 : 0.28);
 		} else {
 			rgbServo.setPosition(0.65);
 		}
