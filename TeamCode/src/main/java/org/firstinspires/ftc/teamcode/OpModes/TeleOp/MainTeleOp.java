@@ -9,11 +9,18 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.HeadingInterpolator;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.hardware.lynx.LynxNackException;
+import java.util.function.Supplier;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.exception.RobotCoreException;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -25,7 +32,6 @@ import com.seattlesolvers.solverslib.pedroCommand.TurnToCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
-import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -41,7 +47,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
-	protected Limelight limelight;
+	//protected Limelight limelight;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 
 	// Button state tracking to prevent continuous input
@@ -66,6 +72,8 @@ public abstract class MainTeleOp extends OpMode {
 
 	// Performance monitoring
 	private long maxLoopTime = 0;
+
+    private Supplier<PathChain> pathChain;
 
 	double indicatorValue() {
 		// TODO: Export to a util class and beautify
@@ -101,7 +109,7 @@ public abstract class MainTeleOp extends OpMode {
 		transfer.setSpindexer(spindexer);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
-		limelight = new Limelight(hardwareMap);
+		//limelight = new Limelight(hardwareMap);
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
@@ -118,6 +126,11 @@ public abstract class MainTeleOp extends OpMode {
 
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
+
+        pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
+                .addPath(new Path(new BezierLine(follower::getPose, new Pose(59.440, 17.328))))
+                .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(294.935), 0.8))
+                .build();
 	}
 
 	@Override
@@ -181,8 +194,15 @@ public abstract class MainTeleOp extends OpMode {
 	 * Update RGB indicator color
 	 */
 	private void updateRGBIndicator() {
-		rgbServo.setPosition(indicatorValue());
-//        scheduler.schedule(rgbIndicator.setColorAction(Transfer.isShooterAtTargetRPM(shooter, Shooter.AUDIENCE_RPM) ? "#00AB66" : "#FF2C2C"));
+        if (gamepad2.right_trigger < 0.1) {
+            rgbServo.setPosition(indicatorValue());
+        }else{
+            if(shooter.isAtTargetRPM()){
+                rgbServo.setPosition(0.5);
+            }else{
+                rgbServo.setPosition(0.277);
+            }
+        }
 	}
 
 	private Pose getLimelightPose() {
@@ -195,24 +215,11 @@ public abstract class MainTeleOp extends OpMode {
 	private void handleDriveInput() {
 		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
-				scheduler.schedule(
-						new SequentialCommandGroup(
-								new InstantCommand(() -> follower.setPose(getLimelightPose())),
-								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144), AngleUnit.RADIANS),
-								new InstantCommand(() -> follower.setPose(getLimelightPose())),
-								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144), AngleUnit.RADIANS)
-						)
-				);
+				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
 			} else if (getTeam() == Team.BLUE) {
-				scheduler.schedule(
-						new SequentialCommandGroup(
-								new InstantCommand(() -> follower.setPose(getLimelightPose())),
-								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144), AngleUnit.RADIANS),
-								new InstantCommand(() -> follower.setPose(getLimelightPose())),
-								new TurnToCommand(follower, ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144), AngleUnit.RADIANS)
-						)
-				);
-			}
+                follower.followPath(pathChain.get(), true);
+            }
+
 
 			aButtonPressed = true;
 		} else if (!gamepad1.a && aButtonPressed) {
@@ -224,7 +231,7 @@ public abstract class MainTeleOp extends OpMode {
 				follower.startTeleOpDrive(true);
 			}
 
-			follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
+			follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 		}
 	}
 
