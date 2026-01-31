@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.OpModes;
+package org.firstinspires.ftc.teamcode.OpModes.Auto;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -6,10 +6,8 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -342,12 +340,6 @@ public abstract class AudienceAuto extends OpMode {
 		private double heading(double degrees) {
 			double radians = Math.toRadians(degrees);
 			if (team == Team.RED) {
-				// Mirror angle across Y axis (flip X)
-				// 0 -> 180 (PI)
-				// 180 -> 0
-				// 90 -> 90
-				// 270 (-90) -> 270 (-90)
-				// Formula: PI - radians
 				return Math.PI - radians;
 			}
 			return radians;
