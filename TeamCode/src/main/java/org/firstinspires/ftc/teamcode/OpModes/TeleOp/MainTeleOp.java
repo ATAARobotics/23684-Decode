@@ -5,9 +5,7 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
@@ -69,22 +67,22 @@ public abstract class MainTeleOp extends OpMode {
 
 	private Supplier<PathChain> pathChain;
 
-	double indicatorValue() {
-		// TODO: Export to a util class and beautify
-		double x = timer.seconds();
-		double hz = 1;
-		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
-			hz = 2.5;
-		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
-			hz = 1;
-		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
-			hz = 0.5;
-		} else {
-			hz = 0.5;
-		}
-		int state = Math.floorMod((int) Math.floor(x * hz), 2);
-		return 0.23 * state + 0.388;
-	}
+//	double indicatorValue() {
+//		// TODO: Export to a util class and beautify
+//		double x = timer.seconds();
+//		double hz = 1;
+//		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
+//			hz = 2.5;
+//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
+//			hz = 1;
+//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
+//			hz = 0.5;
+//		} else {
+//			hz = 0.5;
+//		}
+//		int state = Math.floorMod((int) Math.floor(x * hz), 2);
+//		return 0.23 * state + 0.388;
+//	}
 
 	@Override
 	public void init() {
@@ -196,19 +194,11 @@ public abstract class MainTeleOp extends OpMode {
 	 * Update RGB indicator color
 	 */
 	private void updateRGBIndicator() {
-		if (gamepad2.right_trigger < 0.1) {
-			rgbServo.setPosition(indicatorValue());
+		if (rightTriggerPressed) {
+			rgbServo.setPosition(transfer.spindexerAtTarget && transfer.reachedAverageTarget ? 0.28 : 0.50);
 		} else {
-			if (shooter.isAtTargetRPM()) {
-				rgbServo.setPosition(0.5);
-			} else {
-				rgbServo.setPosition(0.277);
-			}
+			rgbServo.setPosition(0.65);
 		}
-	}
-
-	private Pose getLimelightPose() {
-		return new Pose(0, 0, 0, FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
 	}
 
 	/**
@@ -358,7 +348,7 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Location", follower.getPose().toString());
 
 		panelsTelemetry.addLine("=== LIMELIGHT ===");
-		limelight.Telemetry(panelsTelemety);
+		limelight.Telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
@@ -366,9 +356,7 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
 
 		panelsTelemetry.addLine("=== TRANSFER ===");
-		panelsTelemetry.addData("Shooter Lower At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedLowerTarget);
-		panelsTelemetry.addData("Shooter Upper At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedUpperTarget);
-		panelsTelemetry.addData("Shooter At Target (This may be inactive, you may need to refer to \"Lower At Target\" and \"Upper At Target\")", transfer.reachedAverageTarget);
+		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
 		panelsTelemetry.update();
