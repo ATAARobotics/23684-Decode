@@ -8,6 +8,7 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -39,7 +40,7 @@ public class Limelight {
 
     private Limelight3A limelight;
 
-    private PoseConverter poseConverter;
+    private GoBildaPinpointDriver pinpoint;
 
 
     Team team;
@@ -59,9 +60,7 @@ public class Limelight {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
 
-
-
-        poseConverter = new PoseConverter();
+        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
 
         imu = hardwareMap.get(IMU.class, "imu");
         RevHubOrientationOnRobot orientation = new RevHubOrientationOnRobot(
@@ -74,19 +73,64 @@ public class Limelight {
         team = Team.BLUE;
     }
 
-    public void start() {
-        limelight.start();
+    public void StartHeading(double heading){
+        pinpoint.setHeading(heading,AngleUnit.DEGREES);
     }
 
-    public void setHeading(double heading){
+    public void start() {
+        limelight.start();
+        setHeading(pinpoint.getHeading(AngleUnit.DEGREES));
+    }
+    public void updateIMU(){
+        pinpoint.update();
+    }
+
+    public void setHeading(double heading) {
         heading = heading;
     }
 
-    public void Update(){
+    public void Update() {
         limelight.getLatestResult();
 
     }
 
+
+    public void Telemetry(Telemetry telemetry) {
+
+
+        YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
+
+        limelight.updateRobotOrientation(heading);
+        LLResult llResult = limelight.getLatestResult();
+
+        if (llResult != null && llResult.isValid()) {
+            Pose3D botPose = llResult.getBotpose_MT2();
+            telemetry.addData("Tx", llResult.getTx());
+            telemetry.addData("Ty", llResult.getTy());
+            telemetry.addData("Ta", llResult.getTa());
+            telemetry.addData("BotPose", botPose.toString());
+            telemetry.addData("Orientation", botPose.getOrientation().toString());
+            telemetry.addData("imuing", imu.getRobotYawPitchRollAngles());
+
+
+            List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+            for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+                int id = fiducial.getFiducialId();
+                double distance = fiducial.getRobotPoseTargetSpace().getPosition().y;
+                double x = fiducial.getRobotPoseTargetSpace().getPosition().x;
+                double z = fiducial.getRobotPoseTargetSpace().getPosition().z;
+                VectorF target = AprilTagGameDatabase.getDecodeTagLibrary().lookupTag(id).fieldPosition.multiplied(0.0254f);
+                VectorF robotPose = new VectorF((float) botPose.getPosition().x, (float) botPose.getPosition().y, 0.7493f);
+                VectorF targetDis = target.subtracted(robotPose);
+                telemetry.addLine("Id:" + id + "distance" + targetDis.magnitude());
+                //telemetry.addLine("ID: " + id + " x " + x + " y: " + distance + " z: " + z);
+            }
+
+
+        }
+
+        telemetry.update();
+    }
 
     public void Telemetry(TelemetryManager telemetry) {
 
@@ -131,9 +175,9 @@ public class Limelight {
         limelight.updateRobotOrientation(heading);
 
         if (llResult != null && llResult.isValid()) {
-            Pose3D botPose = llResult.getBotpose();
+            Pose3D botPose = llResult.getBotpose_MT2();
 
-            Pose finalPose = PoseConverter.pose2DToPose(new Pose2D(DistanceUnit.METER, botPose.getPosition().x, botPose.getPosition().y, AngleUnit.DEGREES, botPose.getOrientation().getYaw(AngleUnit.DEGREES)), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+            Pose finalPose = PoseConverter.pose2DToPose(new Pose2D(DistanceUnit.INCH , botPose.getPosition().x * 39.3701, botPose.getPosition().y * 39.3701, AngleUnit.RADIANS, botPose.getOrientation().getYaw(AngleUnit.RADIANS)), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
 
             return finalPose;
         }
@@ -161,8 +205,7 @@ public class Limelight {
                         VectorF targetDis = target.subtracted(robotPose);
                         return targetDis.magnitude();
                     }
-                }
-                else if (team == team.RED) {
+                } else if (team == team.RED) {
                     if (fiducial.getFiducialId() == 24) {
                         int id = fiducial.getFiducialId();
                         VectorF target = AprilTagGameDatabase.getDecodeTagLibrary().lookupTag(id).fieldPosition.multiplied(0.0254f);
@@ -170,8 +213,9 @@ public class Limelight {
                         VectorF targetDis = target.subtracted(robotPose);
                         return targetDis.magnitude();
                     }
+                } else {
+                    return 0;
                 }
-                else{return 0;}
 
             }
 
@@ -179,5 +223,24 @@ public class Limelight {
         }
 
         return 0;
+    }
+
+
+    public boolean goalsFound() {
+
+        LLResult llResult = limelight.getLatestResult();
+
+        if (llResult != null && llResult.isValid()) {
+            Pose3D botPose = llResult.getBotpose();
+
+            List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+            for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+                if (fiducial.getFiducialId() == 20 || fiducial.getFiducialId() == 24){
+                    return true;
+                }
+            }
+
+        }
+        return  false;
     }
 }
