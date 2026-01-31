@@ -12,8 +12,8 @@ import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 public class TestSpindexer extends OpMode {
 	CommandScheduler scheduler;
 	boolean spindexerPressed;
-	private Spindexer spindexer;
 	TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+	private Spindexer spindexer;
 
 	@Override
 	public void init() {

@@ -8,40 +8,33 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
-import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
-import com.seattlesolvers.solverslib.command.button.GamepadButton;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
-import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
-import org.firstinspires.ftc.teamcode.Utils.DistanceFromTag;
 
 @Config
 @Configurable
 @TeleOp
 public class ShooterDistanceTuning extends OpMode {
-    CommandScheduler scheduler;
-
+	static double upperMotorRPM = 0;
+	static double lowerMotorRPM = 0;
+	static double spindexerSpeed = 0;
+	CommandScheduler scheduler;
 	Shooter shooter;
 	Spindexer spindexer;
 	Intake intake;
 	Transfer transfer;
-
 	GamepadEx operatorGamepad;
 	TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
-    static double upperMotorRPM = 0;
-	static double lowerMotorRPM = 0;
-	static double spindexerSpeed = 0;
-
-    @Override
-    public void init() {
-        scheduler = CommandScheduler.getInstance();
+	@Override
+	public void init() {
+		scheduler = CommandScheduler.getInstance();
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
-        shooter = new Shooter(hardwareMap);
+		shooter = new Shooter(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
@@ -51,10 +44,10 @@ public class ShooterDistanceTuning extends OpMode {
 		shooter.setTuningMode(true);
 
 		operatorGamepad = new GamepadEx(gamepad1);
-    }
+	}
 
-    @Override
-    public void loop() {
+	@Override
+	public void loop() {
 		shooter.updatePIDCoefficients();
 		scheduler.schedule(shooter.SetTarget(upperMotorRPM, lowerMotorRPM));
 		scheduler.schedule(spindexer.DirectPower(gamepad2.left_stick_y * spindexerSpeed));
@@ -85,5 +78,5 @@ public class ShooterDistanceTuning extends OpMode {
 		panelsTelemetry.update();
 
 		scheduler.run();
-    }
+	}
 }

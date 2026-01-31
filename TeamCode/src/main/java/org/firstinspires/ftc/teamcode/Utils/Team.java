@@ -11,16 +11,16 @@ package org.firstinspires.ftc.teamcode.Utils;
  * </ul>
  */
 public enum Team {
-    /**
-     * Blue alliance team
-     */
-    BLUE,
-    /**
-     * Red alliance team
-     */
-    RED,
-    /**
-     * Team color unknown or not set
-     */
-    UNKNOWN
+	/**
+	 * Blue alliance team
+	 */
+	BLUE,
+	/**
+	 * Red alliance team
+	 */
+	RED,
+	/**
+	 * Team color unknown or not set
+	 */
+	UNKNOWN
 }

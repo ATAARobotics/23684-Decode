@@ -9,7 +9,6 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
-import com.seattlesolvers.solverslib.hardware.motors.Motor;
 
 import org.firstinspires.ftc.teamcode.Utils.FeedForwardController;
 import org.firstinspires.ftc.teamcode.Utils.PIDFController;
@@ -17,6 +16,7 @@ import org.firstinspires.ftc.teamcode.Utils.PIDFController;
 @Config
 @Configurable
 public class Shooter extends SubsystemBase {
+	private static final double HALF_DIVISOR = 0.5;
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
 	public static double UPPER_P = 0.004, UPPER_I = 0, UPPER_D = 0;
@@ -37,7 +37,6 @@ public class Shooter extends SubsystemBase {
 	public static double TICKS_PER_REVOLUTION = 28.0;
 	// --- Pre-calculated constants ---
 	private static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
-	private static final double HALF_DIVISOR = 0.5;
 	public static double AUDIENCE_RPM = 2300;
 	public static double GOAL_RPM = 2300;
 

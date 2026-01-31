@@ -3,56 +3,51 @@ package org.firstinspires.ftc.teamcode.Subsystem;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
-import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
-import java.util.Collections;
-import java.util.Set;
-
 public class Intake extends SubsystemBase {
-    DcMotor intake;
+	DcMotor intake;
 
-    double INSPEED = 0.8;
-    double OUTSPEED = -0.8;
-    double SLOWSPEED = 0.1;
-    double SLOWSPEEDOUT = -0.1;
+	double INSPEED = 0.8;
+	double OUTSPEED = -0.8;
+	double SLOWSPEED = 0.1;
+	double SLOWSPEEDOUT = -0.1;
 
-    public Intake(HardwareMap hardwareMap){
-        intake = hardwareMap.get(DcMotor.class, "intake");
-        intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+	public Intake(HardwareMap hardwareMap) {
+		intake = hardwareMap.get(DcMotor.class, "intake");
+		intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-    }
+	}
 
-   public Command In(){
-        return new InstantCommand(
-                ()-> intake.setPower(INSPEED), this
-        );
-    }
+	public Command In() {
+		return new InstantCommand(
+				() -> intake.setPower(INSPEED), this
+		);
+	}
 
-    public Command Slow(){
-        return new InstantCommand(
-                ()-> intake.setPower(SLOWSPEED), this
-        );
-    }
+	public Command Slow() {
+		return new InstantCommand(
+				() -> intake.setPower(SLOWSPEED), this
+		);
+	}
 
-    public Command SlowOut(){
-        return new InstantCommand(
-                ()-> intake.setPower(SLOWSPEEDOUT), this
-        );
-    }
+	public Command SlowOut() {
+		return new InstantCommand(
+				() -> intake.setPower(SLOWSPEEDOUT), this
+		);
+	}
 
 
-    public Command Out(){
-        return new InstantCommand(
-                ()-> intake.setPower(OUTSPEED), this
-        );
-    }
+	public Command Out() {
+		return new InstantCommand(
+				() -> intake.setPower(OUTSPEED), this
+		);
+	}
 
-    public Command Stop(){
-        return new InstantCommand(
-                ()-> intake.setPower(0), this
-        );
-    }
+	public Command Stop() {
+		return new InstantCommand(
+				() -> intake.setPower(0), this
+		);
+	}
 }

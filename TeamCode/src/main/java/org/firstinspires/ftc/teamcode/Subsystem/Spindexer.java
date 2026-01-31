@@ -15,29 +15,29 @@ import org.firstinspires.ftc.teamcode.Utils.SpindexerPosition;
 
 @Configurable
 public class Spindexer extends SubsystemBase {
-	public final DcMotor spindexerMotor;
-	PIDFController spindexerPIDF;
-	private int offset = 0;
-	private double prevTarget;
 	public static double P = 0.1;
 	public static double I = 0;
 	public static double D = 0;
 	public static double F = 0;
+	public final DcMotor spindexerMotor;
+	PIDFController spindexerPIDF;
+	double targetTicks = 0;
+	double targetDegrees = 0;
+	private int offset = 0;
+	private double prevTarget;
 	private double PREV_P = 0;
 	private double PREV_I = 0;
 	private double PREV_D = 0;
 	private double PREV_F = 0;
 	private double power = 0;
 	private boolean isAtTarget = true;
-	double targetTicks = 0;
-	double targetDegrees = 0;
 
 	public Spindexer(HardwareMap hardwareMap) {
 		spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
 		spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
 		spindexerPIDF = new PIDFController(P, I, D, F);
-		spindexerPIDF.setOutputLimits(-0.1,1);
+		spindexerPIDF.setOutputLimits(-0.3, 1);
 
 		prevTarget = 0;
 	}

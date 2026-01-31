@@ -14,30 +14,31 @@ import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 @TeleOp
 public class LimeLightTest extends OpMode {
 
-    Limelight limelight;
+	Limelight limelight;
 
-    TelemetryManager telemetryManager;
+	TelemetryManager telemetryManager;
 
-    Follower follower;
+	Follower follower;
 
-    @Override
-    public void init() {
-        limelight = new Limelight(hardwareMap);
-        telemetryManager =  PanelsTelemetry.INSTANCE.getTelemetry();
-        follower = Constants.createFollower(hardwareMap);
+	@Override
+	public void init() {
+		limelight = new Limelight(hardwareMap);
+		telemetryManager = PanelsTelemetry.INSTANCE.getTelemetry();
+		follower = Constants.createFollower(hardwareMap);
 
-        follower.setStartingPose(new Pose(72,72,0));
+		follower.setStartingPose(new Pose(72, 72, 0));
 
-    }
-    @Override
-    public void start(){
-        limelight.start();
-    }
+	}
 
-    @Override
-    public void loop() {
-        limelight.setHeading(follower.getHeading());
-        limelight.Telemetry(telemetry);
+	@Override
+	public void start() {
+		limelight.start();
+	}
 
-    }
+	@Override
+	public void loop() {
+		limelight.setHeading(follower.getHeading());
+		limelight.Telemetry(telemetry);
+
+	}
 }

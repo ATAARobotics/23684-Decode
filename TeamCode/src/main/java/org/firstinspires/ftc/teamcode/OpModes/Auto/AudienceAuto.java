@@ -58,6 +58,7 @@ public abstract class AudienceAuto extends OpMode {
 	}
 
 	protected abstract Pose getStartingPose();
+
 	protected abstract Team getTeam();
 
 	@Override
@@ -126,18 +127,18 @@ public abstract class AudienceAuto extends OpMode {
 
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
-							spindexer.DirectPower(0.3),
-							transfer.IntakeDoorOut(),
-							intake.In()
+								spindexer.DirectPower(0.3),
+								transfer.IntakeDoorOut(),
+								intake.In()
 						),
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeTwo),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
-							spindexer.DirectPower(0),
-							transfer.IntakeDoorStop(),
-							intake.SlowOut()
+								spindexer.DirectPower(0),
+								transfer.IntakeDoorStop(),
+								intake.SlowOut()
 						),
 
 						new FollowPathCommand(follower, paths.toParkSpikeTwo)
@@ -206,6 +207,7 @@ public abstract class AudienceAuto extends OpMode {
 	}
 
 	public static class Paths {
+		private final Team team;
 		public PathChain shootPreload;
 		public PathChain toSpikeOne;
 		public PathChain collectSpikeOne;
@@ -217,8 +219,6 @@ public abstract class AudienceAuto extends OpMode {
 		public PathChain toSpikeThree;
 		public PathChain toCollectSpikeThree;
 		public PathChain toShootSpikeThree;
-		
-		private final Team team;
 
 		public Paths(Follower follower, Team team) {
 			this.team = team;
@@ -329,7 +329,7 @@ public abstract class AudienceAuto extends OpMode {
 					)
 					.build();
 		}
-		
+
 		private Pose pose(double x, double y) {
 			if (team == Team.RED) {
 				return new Pose(144 - x, y);

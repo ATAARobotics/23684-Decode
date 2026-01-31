@@ -1,7 +1,8 @@
 package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
 @TeleOp(name = "Blue Goal TeleOp", group = "Blue")
