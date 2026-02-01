@@ -32,7 +32,7 @@ public class ShooterDistanceTuning extends OpMode {
 	public static double upperMotorRPM = 0;
 	public static double lowerMotorRPM = 0;
 	public static double spindexerSpeed = 0;
-	public static Team team = Team.RED;
+	public static Team team = Team.BLUE;
 
 	CommandScheduler scheduler;
 	Shooter shooter;
