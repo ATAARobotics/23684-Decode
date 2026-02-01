@@ -129,7 +129,6 @@ public abstract class MainTeleOp extends OpMode {
 		spindexer.zeroSpindexer();
 		timer.startTime();
 		scheduler.run();
-		limelight.start();
 		//limelight.StartHeading(Math.toDegrees(getStartingPose().getHeading()));
 	}
 
@@ -144,7 +143,6 @@ public abstract class MainTeleOp extends OpMode {
 
 		// CRITICAL - Must complete quickly for responsive driving
 		follower.update();
-//		scheduler.schedule(limelight.update());
 		handleDriveInput();
 		handleOperatorInput();
 		updateRGBIndicator();
@@ -160,11 +158,13 @@ public abstract class MainTeleOp extends OpMode {
 			maxLoopTime = loopTime;
 		}
 
-		limelight.updateLoPass(follower.getHeading());
+		limelight.updateLowPass(follower.getHeading());
 		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
+			Pose botPose = limelight.PPVisionPoseRaw();
+
 			follower.setPose(new Pose(
-					limelight.PPVisionPoseRaw().getX(),
-					limelight.PPVisionPoseRaw().getY(),
+					botPose.getX(),
+					botPose.getY(),
 					follower.getHeading()
 			));
 		}

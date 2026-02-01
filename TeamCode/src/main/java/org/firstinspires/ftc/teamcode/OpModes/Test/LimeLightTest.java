@@ -28,11 +28,6 @@ public class LimeLightTest extends OpMode {
 	}
 
 	@Override
-	public void start() {
-		limelight.start();
-	}
-
-	@Override
 	public void loop() {
 		limelight.Telemetry(telemetry);
 	}
