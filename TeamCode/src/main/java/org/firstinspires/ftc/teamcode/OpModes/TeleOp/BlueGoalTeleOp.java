@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@TeleOp(name = "Blue Goal TeleOp", group = "Blue")
+@TeleOp(name = "Blue Goal TeleOp", group = " 1COMP")
 public class BlueGoalTeleOp extends MainTeleOp {
 	@Override
 	protected Pose getStartingPose() {
