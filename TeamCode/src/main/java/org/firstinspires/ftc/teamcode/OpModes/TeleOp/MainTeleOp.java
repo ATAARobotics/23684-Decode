@@ -16,10 +16,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
-import com.seattlesolvers.solverslib.command.RepeatCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
@@ -121,8 +117,8 @@ public abstract class MainTeleOp extends OpMode {
 		telemetry.update();
 
 		pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(59.440, 17.328))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(294.935), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 11))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(295), 0.8))
 				.build();
 	}
 
@@ -134,7 +130,7 @@ public abstract class MainTeleOp extends OpMode {
 		timer.startTime();
 		scheduler.run();
 		limelight.start();
-		limelight.StartHeading(Math.toDegrees(getStartingPose().getHeading()));
+		//limelight.StartHeading(Math.toDegrees(getStartingPose().getHeading()));
 	}
 
 	@Override
@@ -164,9 +160,13 @@ public abstract class MainTeleOp extends OpMode {
 			maxLoopTime = loopTime;
 		}
 
-		limelight.updateIMU();
-		if (limelight.goalsFound()) {
-			follower.setPose(limelight.PPVisionPose());
+		limelight.updateLoPass(follower.getHeading());
+		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
+			follower.setPose(new Pose(
+					limelight.PPVisionPose().getX(),
+					limelight.PPVisionPose().getY(),
+					follower.getHeading()
+			));
 		}
 
 		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
@@ -253,16 +253,17 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		// X Button: Override transfer forward - manual control
-		if (gamepad2.x && !xButtonPressed) {
+		if (gamepad2.y && !xButtonPressed) {
 			scheduler.schedule(transfer.TransferOut());
 			xButtonPressed = true;
-		} else if (!gamepad2.x && xButtonPressed) {
+		} else if (!gamepad2.y && xButtonPressed) {
 			scheduler.schedule(transfer.TransferStop());
 			xButtonPressed = false;
 		}
 
-		if (!gamepad2.x) {
+		if (!gamepad2.y) {
 			transfer.updateAutomaticTransfer(!rightTriggerPressed);
+
 		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
@@ -276,25 +277,33 @@ public abstract class MainTeleOp extends OpMode {
 			bButtonPressed = false;
 		}
 
-		if (gamepad2.right_bumper && !dpadUpPressed) {
-			scheduler.schedule(
-					new RepeatCommand(
-							new SequentialCommandGroup(
-									spindexer.NextTarget(),
-									new WaitUntilCommand(()-> transfer.spindexerAtTarget && transfer.reachedAverageTarget),
-									new WaitCommand(300)
-							), () -> !gamepad2.dpad_up));
+//		if (gamepad2.right_bumper && !dpadUpPressed) {
+//			scheduler.schedule(
+//					new RepeatCommand(
+//							new SequentialCommandGroup(
+//									spindexer.NextTarget(),
+//									shooter.WaitForTarget().withTimeout(2500L),
+//									shooter.WaitForDrop().withTimeout(1000L),
+//									new WaitCommand(300)
+//							), () -> !gamepad2.dpad_up));
+//			dpadUpPressed = true;
+//		} else if (!gamepad2.right_bumper && dpadUpPressed) {
+//			dpadUpPressed = false;
+//		}
+
+		if (gamepad2.x && !dpadUpPressed) {
+			scheduler.schedule(spindexer.NextTarget());
 			dpadUpPressed = true;
-		} else if (!gamepad2.right_bumper && dpadUpPressed) {
+		} else if (!gamepad2.x && dpadUpPressed) {
 			dpadUpPressed = false;
 		}
 
-		if (gamepad2.y && !yButtonPressed) {
-			spindexer.zeroSpindexer();
-			yButtonPressed = true;
-		} else if (!gamepad2.y && yButtonPressed) {
-			yButtonPressed = false;
-		}
+//		if (gamepad2.y && !yButtonPressed) {
+//			spindexer.zeroSpindexer();
+//			yButtonPressed = true;
+//		} else if (!gamepad2.y && yButtonPressed) {
+//			yButtonPressed = false;
+//		}
 
 		// Left joystick: Spindexer control with threshold crossing (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;

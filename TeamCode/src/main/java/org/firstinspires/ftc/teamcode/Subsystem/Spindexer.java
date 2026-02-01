@@ -24,12 +24,14 @@ public class Spindexer extends SubsystemBase {
 	double targetTicks = 0;
 	double targetDegrees = 0;
 	private int offset = 0;
+	private double prevTarget;
 	private double PREV_P = 0;
 	private double PREV_I = 0;
 	private double PREV_D = 0;
 	private double PREV_F = 0;
 	private double power = 0;
 	private boolean isAtTarget = true;
+	private boolean overrided= false;
 
 	public Spindexer(HardwareMap hardwareMap) {
 		spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
@@ -37,6 +39,8 @@ public class Spindexer extends SubsystemBase {
 
 		spindexerPIDF = new PIDFController(P, I, D, F);
 		spindexerPIDF.setOutputLimits(-0.3, 1);
+
+		prevTarget = 0;
 	}
 
 	@Override
@@ -59,6 +63,7 @@ public class Spindexer extends SubsystemBase {
 
 	public void zeroSpindexer() {
 		offset = spindexerMotor.getCurrentPosition();
+		prevTarget = 0;
 	}
 
 	public double getPosition() {
@@ -67,7 +72,9 @@ public class Spindexer extends SubsystemBase {
 
 	public Command DirectPower(double power) {
 		return new InstantCommand(
-				() -> spindexerMotor.setPower(power), this
+				() -> {spindexerMotor.setPower(power);
+					overrided = true;
+				}, this
 		);
 	}
 
@@ -75,12 +82,14 @@ public class Spindexer extends SubsystemBase {
 		return new CommandBase() {
 			@Override
 			public void initialize() {
-				double nextTarget = SpindexerPosition.getNextShootPosition((int) getPosition());
+				double nextTarget = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				prevTarget = nextTarget;
 
 				targetDegrees = nextTarget - 20; // We subtract 20 as our algorithm overshoots (by design)
 				targetTicks = targetDegrees * 1.4936;
 
 				isAtTarget = false;
+				overrided = false;
 
 				spindexerPIDF.setSetpoint(targetTicks);
 				spindexerPIDF.setSetpointRange(60);
@@ -100,7 +109,7 @@ public class Spindexer extends SubsystemBase {
 
 			@Override
 			public boolean isFinished() {
-				return Math.abs(getPosition() - targetTicks) < 40;
+				return Math.abs(getPosition() - targetTicks) < 40 || overrided;
 			}
 		};
 	}

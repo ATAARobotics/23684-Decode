@@ -34,7 +34,6 @@ public class LimeLightTest extends OpMode {
 
 	@Override
 	public void loop() {
-		limelight.setHeading(follower.getHeading());
 		limelight.Telemetry(telemetry);
 	}
 }
