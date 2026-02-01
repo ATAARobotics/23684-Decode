@@ -68,8 +68,8 @@ public class Limelight {
 
         team = Team.BLUE;
 
-        xLowPass = new LowPassFilter(0.8);
-        yLowPass = new LowPassFilter(0.8);
+        xLowPass = new LowPassFilter(0.4);
+        yLowPass = new LowPassFilter(0.4);
     }
 
     public void StartHeading(double heading){
@@ -168,7 +168,7 @@ public class Limelight {
         telemetry.update();
     }
 
-	private Pose PPVisionPoseRaw() {
+	public Pose PPVisionPoseRaw() {
         double theta = -Math.PI / 2;
         double newHeading = MathFunctions.normalizeAngle(heading + theta);
         limelight.updateRobotOrientation(Math.toDegrees(newHeading));

@@ -163,8 +163,8 @@ public abstract class MainTeleOp extends OpMode {
 		limelight.updateLoPass(follower.getHeading());
 		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
 			follower.setPose(new Pose(
-					limelight.PPVisionPose().getX(),
-					limelight.PPVisionPose().getY(),
+					limelight.PPVisionPoseRaw().getX(),
+					limelight.PPVisionPoseRaw().getY(),
 					follower.getHeading()
 			));
 		}
