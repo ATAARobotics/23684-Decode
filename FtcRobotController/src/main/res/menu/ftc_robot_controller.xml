@@ -39,6 +39,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     android:orderInCategory="100"
     app:showAsAction="never"
     android:title="@string/settings_menu_item"/>
+
+  <item
+    android:id="@+id/action_wifi_channel"
+    android:orderInCategory="150"
+    app:showAsAction="never"
+    android:title="@string/wifi_channel_menu_item"/>
+
   <item
     android:id="@+id/action_restart_robot"
     android:orderInCategory="200"

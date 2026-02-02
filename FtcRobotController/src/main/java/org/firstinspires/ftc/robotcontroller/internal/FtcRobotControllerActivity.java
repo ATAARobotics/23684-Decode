@@ -34,8 +34,10 @@ package org.firstinspires.ftc.robotcontroller.internal;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -128,6 +130,7 @@ import org.firstinspires.inspection.RcInspectionActivity;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -582,6 +585,10 @@ public class FtcRobotControllerActivity extends Activity
       startActivityForResult(settingsIntent, RequestCode.SETTINGS_ROBOT_CONTROLLER.ordinal());
       return true;
     }
+    else if (id == R.id.action_wifi_channel) {
+       showWifiChannelSelector();
+       return true;
+    }
     else if (id == R.id.action_about) {
       Intent intent = new Intent(AppUtil.getDefContext(), FtcAboutActivity.class);
       startActivity(intent);
@@ -615,6 +622,42 @@ public class FtcRobotControllerActivity extends Activity
 
    return super.onOptionsItemSelected(item);
   }
+
+    private void showWifiChannelSelector() {
+        List<Integer> channelList = new ArrayList<>();
+        channelList.add(0); // Auto
+        // 2.4 GHz
+        for (int i = 1; i <= 13; i++) {
+            channelList.add(i);
+        }
+        // Expanded range for 5GHz and other frequencies (overlapping)
+        // Includes 72-96 range specifically requested
+        for (int i = 32; i <= 177; i++) {
+            channelList.add(i);
+        }
+
+        final Integer[] channels = channelList.toArray(new Integer[0]);
+        String[] channelLabels = new String[channels.length];
+        for (int i = 0; i < channels.length; i++) {
+            channelLabels[i] = channels[i] == 0 ? "Auto" : String.valueOf(channels[i]);
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select WiFi Channel (Incl. Non-standard)");
+        builder.setItems(channelLabels, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int selectedChannel = channels[which];
+                preferencesHelper.writeInt(getString(com.qualcomm.ftccommon.R.string.pref_wifip2p_channel), selectedChannel);
+                if (wifiDirectChannelChanger == null) {
+                    wifiDirectChannelChanger = new WifiDirectChannelChanger();
+                }
+                wifiDirectChannelChanger.changeToChannel(selectedChannel);
+                AppUtil.getInstance().showToast(UILocation.BOTH, "Channel set to " + (selectedChannel == 0 ? "Auto" : selectedChannel));
+            }
+        });
+        builder.show();
+    }
 
   @Override
   public void onConfigurationChanged(Configuration newConfig) {
