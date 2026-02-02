@@ -134,6 +134,8 @@ public abstract class AudienceAuto extends OpMode {
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeTwo),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
+
+						shooter.SetTarget(0, 0),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),

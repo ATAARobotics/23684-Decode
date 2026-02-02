@@ -90,6 +90,7 @@ public abstract class MainTeleOp extends OpMode {
 		limelight = new Limelight(hardwareMap);
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
+		scheduler.schedule(shooter.SetTarget(0, 0));
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
@@ -98,7 +99,6 @@ public abstract class MainTeleOp extends OpMode {
 		transfer.setSpindexer(spindexer);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
-		// limelight = new Limelight(hardwareMap);
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
@@ -116,24 +116,24 @@ public abstract class MainTeleOp extends OpMode {
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
 
-		pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
+		pathChain = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 11))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(295), 0.8))
 				.build();
+
+		scheduler.run();
+	}
+
+	@Override
+	public void init_loop() {
+		scheduler.run();
 	}
 
 	@Override
 	public void start() {
 		// Called when START is pressed
-//		limelight.start();
 		spindexer.zeroSpindexer();
 		timer.startTime();
-		scheduler.run();
-		//limelight.StartHeading(Math.toDegrees(getStartingPose().getHeading()));
-	}
-
-	@Override
-	public void init_loop() {
 		scheduler.run();
 	}
 
@@ -263,7 +263,6 @@ public abstract class MainTeleOp extends OpMode {
 
 		if (!gamepad2.y) {
 			transfer.updateAutomaticTransfer(!rightTriggerPressed);
-
 		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
