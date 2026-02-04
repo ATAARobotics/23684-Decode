@@ -66,7 +66,7 @@ public class GoalAuto extends OpMode {
 				new SequentialCommandGroup(
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.shootPreload),
-								shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
 								shooter.WaitForTarget(),
 								spindexer.DirectPower(1),
 								transfer.IntakeDoorIn(),
@@ -85,7 +85,7 @@ public class GoalAuto extends OpMode {
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeOne),
 								intake.Out(),
-								shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
 								shooter.WaitForTarget()
 						),
 						transfer.TransferOut(),
@@ -100,7 +100,7 @@ public class GoalAuto extends OpMode {
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeTwo),
 								intake.Out(),
-								shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
 								shooter.WaitForTarget()
 						),
 						transfer.TransferOut(),
@@ -115,7 +115,7 @@ public class GoalAuto extends OpMode {
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeThree),
 								intake.Out(),
-								shooter.SetTarget(Shooter.GOAL_RPM, Shooter.GOAL_RPM),
+								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
 								shooter.WaitForTarget()
 						),
 						transfer.TransferOut()

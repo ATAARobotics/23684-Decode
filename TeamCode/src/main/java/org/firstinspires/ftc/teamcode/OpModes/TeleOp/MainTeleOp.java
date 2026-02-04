@@ -72,6 +72,8 @@ public abstract class MainTeleOp extends OpMode {
 
 	private Supplier<PathChain> pathFrontBlue;
 
+	private Supplier<PathChain> redGoalShootingPath;
+
 	private Supplier<PathChain> redAudienceShootingPath;
 
 	double upperShooterSpeed = 0;
@@ -146,6 +148,11 @@ public abstract class MainTeleOp extends OpMode {
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70, 103))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(334), 0.8))
+				.build();
+
+		redGoalShootingPath = () -> follower.pathBuilder()
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70, 103))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210), 0.8))
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
@@ -262,7 +269,7 @@ public abstract class MainTeleOp extends OpMode {
 			lowershooterSpeed = Shooter.GOAL_RPM_UPPER;
 
 			if (getTeam() == Team.RED) {
-				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
+				follower.followPath(redGoalShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
 				follower.followPath(pathFrontBlue.get(), true);
 			}
