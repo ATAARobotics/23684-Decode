@@ -16,6 +16,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
@@ -25,7 +26,6 @@ import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
 import org.firstinspires.ftc.teamcode.Utils.Team;
-import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 
 import java.util.function.Supplier;
 
@@ -46,7 +46,8 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean rightTriggerPressed = false;
 	protected boolean xButtonPressed = false;
 	protected boolean aButtonPressed = false;
-	protected boolean bButtonPressed = false;
+	protected boolean b1ButtonPressed = false;
+	protected boolean b2ButtonPressed = false;
 	protected boolean dpadUpPressed = false;
 	protected boolean dpadDownPressed = false;
 	protected boolean yButtonPressed = false;
@@ -62,8 +63,28 @@ public abstract class MainTeleOp extends OpMode {
 	// Performance monitoring
 	private long maxLoopTime = 0;
 
-	private Supplier<PathChain> blueAudienceShootingPath;
-	private Supplier<PathChain> redAudienceShootingPath;
+	private Supplier<PathChain> pathBackBlue;
+
+	private Supplier<PathChain> pathFrontBlue;
+
+
+
+//	double indicatorValue() {
+//		// TODO: Export to a util class and beautify
+//		double x = timer.seconds();
+//		double hz = 1;
+//		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
+//			hz = 2.5;
+//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
+//			hz = 1;
+//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
+//			hz = 0.5;
+//		} else {
+//			hz = 0.5;
+//		}
+//		int state = Math.floorMod((int) Math.floor(x * hz), 2);
+//		return 0.23 * state + 0.388;
+//	}
 
 	@Override
 	public void init() {
@@ -89,6 +110,7 @@ public abstract class MainTeleOp extends OpMode {
 		transfer.setSpindexer(spindexer);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
+		// limelight = new Limelight(hardwareMap);
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
@@ -106,14 +128,14 @@ public abstract class MainTeleOp extends OpMode {
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
 
-		blueAudienceShootingPath = () -> follower.pathBuilder()
+		pathBackBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 11))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(295), 0.8))
 				.build();
 
-		redAudienceShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
+		pathFrontBlue = () -> follower.pathBuilder()
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70, 103))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(334), 0.8))
 				.build();
 
 		scheduler.run();
@@ -127,6 +149,7 @@ public abstract class MainTeleOp extends OpMode {
 	@Override
 	public void start() {
 		// Called when START is pressed
+//		limelight.start();
 		spindexer.zeroSpindexer();
 		timer.startTime();
 		scheduler.run();
@@ -154,14 +177,20 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		limelight.updateLowPass(follower.getHeading());
-		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
-			Pose botPose = limelight.PPVisionPoseRaw();
+//		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
+//			Pose botPose = limelight.PPVisionPoseRaw();
+//
+//			follower.setPose(new Pose(
+//					botPose.getX(),
+//					botPose.getY(),
+//					follower.getHeading()
+//			));
+//		}
 
-			follower.setPose(new Pose(
-					botPose.getX(),
-					botPose.getY(),
-					follower.getHeading()
-			));
+
+		if (gamepad1.xWasPressed()){
+			gamepad1.rumble(300);
+			follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
 		}
 
 		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
@@ -176,10 +205,6 @@ public abstract class MainTeleOp extends OpMode {
 	public void stop() {
 		// Called when OpMode is stopped
 		// TODO: Stop all motors and disable the follower and scheduler
-		if (follower != null) {
-			RobotPosition.robotPose = follower.getPose();
-			RobotPosition.isPoseSet = true;
-		}
 	}
 
 	/**
@@ -204,19 +229,28 @@ public abstract class MainTeleOp extends OpMode {
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
-		if (gamepad1.a && !aButtonPressed) {
+		if (gamepad1.cross && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
-				follower.followPath(redAudienceShootingPath.get(), true);
+				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
 			} else if (getTeam() == Team.BLUE) {
-				follower.followPath(blueAudienceShootingPath.get(), true);
+				follower.followPath(pathBackBlue.get(), true);
 			}
-
 			aButtonPressed = true;
-		} else if (!gamepad1.a && aButtonPressed) {
+		} else if (!gamepad1.cross && aButtonPressed) {
 			aButtonPressed = false;
 		}
+		else if (gamepad1.circle && !b1ButtonPressed) {
+			if (getTeam() == Team.RED) {
+				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
+			} else if (getTeam() == Team.BLUE) {
+				follower.followPath(pathFrontBlue.get(), true);
+			}
+			b1ButtonPressed = true;
+		} else if (!gamepad1.circle && b1ButtonPressed) {
+			b1ButtonPressed = false;
+		}
 
-		if (!gamepad1.a) {
+		if (!gamepad1.circle && !gamepad1.cross) {
 			if (!follower.isTeleopDrive()) {
 				follower.startTeleOpDrive(true);
 			}
@@ -264,14 +298,14 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
-		if (gamepad2.b && !bButtonPressed) {
+		if (gamepad2.b && !b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorIn());
 			scheduler.schedule(intake.Out());
-			bButtonPressed = true;
-		} else if (!gamepad2.b && bButtonPressed) {
+			b2ButtonPressed = true;
+		} else if (!gamepad2.b && b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorStop());
 			scheduler.schedule(intake.Stop());
-			bButtonPressed = false;
+			b2ButtonPressed = false;
 		}
 
 //		if (gamepad2.right_bumper && !dpadUpPressed) {
@@ -295,12 +329,12 @@ public abstract class MainTeleOp extends OpMode {
 			dpadUpPressed = false;
 		}
 
-//		if (gamepad2.y && !yButtonPressed) {
-//			spindexer.zeroSpindexer();
-//			yButtonPressed = true;
-//		} else if (!gamepad2.y && yButtonPressed) {
-//			yButtonPressed = false;
-//		}
+		if (gamepad2.y && !yButtonPressed) {
+			transfer.SetAutomaticTransfer(false);
+			scheduler.schedule(transfer.TransferOut());
+		} else if (!gamepad2.y && yButtonPressed) {
+			yButtonPressed = false;
+		}
 
 		// Left joystick: Spindexer control with threshold crossing (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;

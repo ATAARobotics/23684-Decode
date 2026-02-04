@@ -14,7 +14,7 @@ public class ShootArtifacts extends SequentialCommandGroup {
 				shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
 				shooter.WaitForTarget().withTimeout(3000L),
 				transfer.TransferOut(),
-				spindexer.DirectPower(-1),
+				spindexer.DirectPower(0.5),
 				shooter.WaitForDrop().withTimeout(2500),
 				shooter.WaitForTarget().withTimeout(2500),
 				shooter.WaitForDrop().withTimeout(2500),

@@ -111,21 +111,21 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
-						new FollowPathCommand(follower, paths.toSpikeOne).setGlobalMaxPower(0.1),
+						new FollowPathCommand(follower, paths.toSpikeOne),
 
 						intake.In(),
-						spindexer.DirectPower(0.4),
+						spindexer.DirectPower(0.5),
 						transfer.IntakeDoorOut(),
 
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeOne),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
+						transfer.IntakeDoorIn(),
 
-						new FollowPathCommand(follower, paths.toShootSpikeOne).setGlobalMaxPower(1),
-
-						transfer.IntakeDoorStop(),
 						intake.SlowOut(),
 						spindexer.DirectPower(0),
+						new FollowPathCommand(follower, paths.toShootSpikeOne).setGlobalMaxPower(1),
+						transfer.IntakeDoorOut(),
 
 						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						// Turn off the motors and servos
@@ -134,9 +134,11 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
+						new FollowPathCommand(follower, paths.toSpikeTwo),
+
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
-								spindexer.DirectPower(0.3),
+								spindexer.DirectPower(0.5),
 								transfer.IntakeDoorOut(),
 								intake.In()
 						),
@@ -148,30 +150,29 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
-								transfer.IntakeDoorStop(),
+								transfer.IntakeDoorIn(),
 								intake.SlowOut()
 						),
 
-						new FollowPathCommand(follower, paths.toParkSpikeTwo)
+						new WaitCommand(SPIKE_COLLECTION_WAIT),
+						new FollowPathCommand(follower, paths.toShootSpikeTwo),
+						transfer.IntakeDoorOut(),
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						// Turn off the motors and servos
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
+						transfer.IntakeDoorStop(),
 
-//						new FollowPathCommand(follower, paths.toShootSpikeTwo),
-//
-//						new ShootArtifacts(shooter, spindexer, transfer, intake),
-//						// Turn off the motors and servos
-//						shooter.SetTarget(0, 0),
-//						intake.Stop(),
-//						transfer.TransferStop(),
-//						transfer.IntakeDoorStop(),
-//
-//						new FollowPathCommand(follower, paths.toSpikeThree),
-//						transfer.TransferIn(),
-//						new ParallelCommandGroup(
-//							spindexer.DirectPower(0.3),
-//							transfer.IntakeDoorOut(),
-//							intake.In()
-//						),
-//						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-//						new FollowPathCommand(follower, paths.toCollectSpikeThree),
+						new FollowPathCommand(follower, paths.toSpikeThree),
+						transfer.TransferIn(),
+						new ParallelCommandGroup(
+							spindexer.DirectPower(0.3),
+							transfer.IntakeDoorOut(),
+							intake.In()
+						),
+						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
+						new FollowPathCommand(follower, paths.toCollectSpikeThree),
 //						new WaitCommand(SPIKE_COLLECTION_WAIT),
 //						transfer.TransferStop(),
 //						new ParallelCommandGroup(
@@ -183,10 +184,11 @@ public abstract class AudienceAuto extends OpMode {
 //
 //						new ShootArtifacts(shooter, spindexer, transfer, intake),
 //						// Turn off the motors and servos
-//						shooter.SetTarget(0, 0),
-//						intake.Stop(),
-//						transfer.TransferStop(),
-//						transfer.IntakeDoorStop()
+						spindexer.DirectPower(0),
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
+						transfer.IntakeDoorStop()
 				)
 		);
 

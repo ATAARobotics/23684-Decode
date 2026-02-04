@@ -100,6 +100,8 @@ public class ShooterDistanceTuning extends OpMode {
 		panelsTelemetry.addData("Upper Target", shooter.upperTarget);
 		panelsTelemetry.addData("Lower Target", shooter.lowerTarget);
 
+		panelsTelemetry.addData("xyz", follower.getPose());
+
 		panelsTelemetry.update();
 
 		scheduler.run();
