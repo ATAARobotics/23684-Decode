@@ -115,7 +115,7 @@ public class Transfer extends SubsystemBase {
 			reachedAverageTarget = (shooter.lowerTarget >= 100) && (shooter.upperTarget >= 100) && (((Math.abs(shooter.lowerRPM - shooter.lowerTarget) + Math.abs(shooter.upperRPM - shooter.upperTarget)) / 2) <= SHOOTER_RPM_TOLERANCE);
 			spindexerAtTarget = spindexer.isAtTarget();
 
-			if (reachedAverageTarget && spindexerAtTarget) {
+			if (reachedAverageTarget) {// && spindexerAtTarget) {
 				transferLeft.setPower(1);
 				transferRight.setPower(1);
 			} else if (!passive) {

@@ -78,8 +78,8 @@ public abstract class MainTeleOp extends OpMode {
 
 	private Supplier<PathChain> redAudienceShootingPath;
 
-	double upperShooterSpeed = 0;
-	double lowerShooterSpeed = 0;
+	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
+	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
 
 
 
@@ -148,12 +148,12 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		pathFrontBlue = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70, 103))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(334), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 96.361))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210.627), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70, 103))))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(63, 96.361))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210), 0.8))
 				.build();
 
@@ -324,6 +324,10 @@ public abstract class MainTeleOp extends OpMode {
 			xButtonPressed = false;
 		}
 
+		if (!gamepad2.x) {
+			transfer.updateAutomaticTransfer(!rightTriggerPressed);
+		}
+
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
 		if (gamepad2.b && !b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorIn());
@@ -337,13 +341,26 @@ public abstract class MainTeleOp extends OpMode {
 
 		// Dpad Up: Run spindexer while held, go to next target on release
 		if (gamepad2.dpad_up && !dpadUpPressed) {
-			scheduler.schedule(spindexer.DirectPower(spindexerPower));
+			scheduler.schedule(spindexer.NextTarget());
 			scheduler.schedule(transfer.IntakeDoorOut());
 			dpadUpPressed = true;
 		} else if (!gamepad2.dpad_up && dpadUpPressed) {
-			scheduler.schedule(spindexer.NextTarget());
 			scheduler.schedule(transfer.IntakeDoorStop());
 			dpadUpPressed = false;
+			spindexerMidCrossed = true;
+			spindexerUpCrossed = false;
+			spindexerDownCrossed = false;
+		}
+
+
+		if (gamepad2.dpad_down && !dpadDownPressed) {
+			scheduler.schedule(spindexer.DirectPower(spindexerPower));
+			scheduler.schedule(transfer.IntakeDoorOut());
+			dpadUpPressed = true;
+		} else if (!gamepad2.dpad_down && dpadDownPressed) {
+			scheduler.schedule(spindexer.NextTarget());
+			scheduler.schedule(transfer.IntakeDoorStop());
+			dpadDownPressed = false;
 			spindexerMidCrossed = true;
 			spindexerUpCrossed = false;
 			spindexerDownCrossed = false;
@@ -370,14 +387,6 @@ public abstract class MainTeleOp extends OpMode {
 //		} else if (!gamepad2.right_bumper && dpadUpPressed) {
 //			dpadUpPressed = false;
 //		}
-
-		if (gamepad2.y && !yButtonPressed) {
-			transfer.SetAutomaticTransfer(false);
-			scheduler.schedule(transfer.TransferOut());
-			yButtonPressed = true;
-		} else if (!gamepad2.y && yButtonPressed) {
-			yButtonPressed = false;
-		}
 
 		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;
@@ -424,8 +433,8 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Drive Mode", "Mecanum");
 		panelsTelemetry.addData("Location", follower.getPose().toString());
 
-		panelsTelemetry.addLine("=== LIMELIGHT ===");
-		limelight.Telemetry(panelsTelemetry);
+//		panelsTelemetry.addLine("=== LIMELIGHT ===");
+//		limelight.Telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
