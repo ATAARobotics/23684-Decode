@@ -22,7 +22,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 
-@Configurable // Panels
+@Configurable
 public class GoalAuto extends OpMode {
 	public Follower follower; // Pedro Pathing follower instance
 	CommandScheduler scheduler;
@@ -30,7 +30,7 @@ public class GoalAuto extends OpMode {
 	Shooter shooter;
 	Spindexer spindexer;
 	Transfer transfer;
-	private TelemetryManager panelsTelemetry; // Panels Telemetry instance
+	private TelemetryManager panelsTelemetry;
 	private Paths paths; // Paths defined in the Paths class
 
 	@Override
