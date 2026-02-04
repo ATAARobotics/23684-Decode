@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
@@ -66,6 +67,11 @@ public abstract class MainTeleOp extends OpMode {
 	private Supplier<PathChain> pathBackBlue;
 
 	private Supplier<PathChain> pathFrontBlue;
+
+	private Supplier<PathChain> redAudienceShootingPath;
+
+	double upperShooterSpeed = 0;
+	double lowershooterSpeed = 0;
 
 
 
@@ -136,6 +142,11 @@ public abstract class MainTeleOp extends OpMode {
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70, 103))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(334), 0.8))
+				.build();
+
+		redAudienceShootingPath = () -> follower.pathBuilder()
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
 				.build();
 
 		scheduler.run();
@@ -230,8 +241,10 @@ public abstract class MainTeleOp extends OpMode {
 	 */
 	private void handleDriveInput() {
 		if (gamepad1.cross && !aButtonPressed) {
+			upperShooterSpeed = Shooter.AUDIENCE_RPM;
+			lowershooterSpeed = Shooter.AUDIENCE_RPM;
 			if (getTeam() == Team.RED) {
-				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
+				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
 				follower.followPath(pathBackBlue.get(), true);
 			}
@@ -240,6 +253,9 @@ public abstract class MainTeleOp extends OpMode {
 			aButtonPressed = false;
 		}
 		else if (gamepad1.circle && !b1ButtonPressed) {
+			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
+			lowershooterSpeed = Shooter.GOAL_RPM_UPPER;
+
 			if (getTeam() == Team.RED) {
 				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
 			} else if (getTeam() == Team.BLUE) {
@@ -276,7 +292,7 @@ public abstract class MainTeleOp extends OpMode {
 
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
-			shooter.setTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM);
+			shooter.setTarget(upperShooterSpeed,lowershooterSpeed);
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);

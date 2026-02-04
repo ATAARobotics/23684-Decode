@@ -16,4 +16,5 @@ public class BlueAudienceAuto extends AudienceAuto {
 	protected Team getTeam() {
 		return Team.BLUE;
 	}
+
 }

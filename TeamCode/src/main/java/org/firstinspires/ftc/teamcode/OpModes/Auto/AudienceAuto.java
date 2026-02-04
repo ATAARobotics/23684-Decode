@@ -40,7 +40,7 @@ public abstract class AudienceAuto extends OpMode {
 	private Spindexer spindexer;
 	private Transfer transfer;
 	private TelemetryManager panelsTelemetry;
-	private Paths paths;
+	public Paths paths;
 
 	double indicatorValue() {
 		double x = timer.seconds();
@@ -75,7 +75,12 @@ public abstract class AudienceAuto extends OpMode {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
 		follower = Constants.createFollower(hardwareMap);
-		follower.setStartingPose(getStartingPose());
+
+		if(getTeam().equals(Team.RED)){
+			follower.setStartingPose(getStartingPose().mirror());
+		}else{
+			follower.setStartingPose(getStartingPose());
+		}
 
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
