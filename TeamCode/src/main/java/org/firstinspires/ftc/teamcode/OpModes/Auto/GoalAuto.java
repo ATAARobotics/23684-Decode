@@ -20,11 +20,10 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
-
+import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 
 @Configurable // Panels
 public class GoalAuto extends OpMode {
-
 	public Follower follower; // Pedro Pathing follower instance
 	CommandScheduler scheduler;
 	Intake intake;
@@ -32,8 +31,15 @@ public class GoalAuto extends OpMode {
 	Spindexer spindexer;
 	Transfer transfer;
 	private TelemetryManager panelsTelemetry; // Panels Telemetry instance
-	private int pathState; // Current autonomous path state (state machine)
 	private Paths paths; // Paths defined in the Paths class
+
+	@Override
+	public void stop() {
+		if (follower != null) {
+			RobotPosition.robotPose = follower.getPose();
+			RobotPosition.isPoseSet = true;
+		}
+	}
 
 	@Override
 	public void init() {
@@ -52,7 +58,6 @@ public class GoalAuto extends OpMode {
 
 		panelsTelemetry.debug("Status", "Initialized");
 		panelsTelemetry.update(telemetry);
-
 	}
 
 	@Override
@@ -91,7 +96,7 @@ public class GoalAuto extends OpMode {
 								new FollowPathCommand(follower, paths.toSpikeTwo)
 						),
 						new WaitCommand(30),
-						new FollowPathCommand(follower, paths.collectSpiketwo),
+						new FollowPathCommand(follower, paths.collectSpikeTwo),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, paths.toShootSpikeTwo),
 								intake.Out(),
@@ -120,9 +125,8 @@ public class GoalAuto extends OpMode {
 
 	@Override
 	public void loop() {
-		follower.update(); // Update Pedro Pathin
+		follower.update(); // Update Pedro Pathing
 		scheduler.run();
-		panelsTelemetry.debug("Path State", pathState);
 		panelsTelemetry.debug("X", follower.getPose().getX());
 		panelsTelemetry.debug("Y", follower.getPose().getY());
 		panelsTelemetry.debug("Heading", follower.getPose().getHeading());
@@ -130,19 +134,16 @@ public class GoalAuto extends OpMode {
 	}
 
 	public static class Paths {
-
 		public PathChain shootPreload;
 		public PathChain toSpikeOne;
 		public PathChain collectSpikeOne;
 		public PathChain toShootSpikeOne;
 		public PathChain toSpikeTwo;
-		public PathChain collectSpiketwo;
+		public PathChain collectSpikeTwo;
 		public PathChain toShootSpikeTwo;
 		public PathChain toSpikeThree;
 		public PathChain collectSpikeThree;
 		public PathChain toShootSpikeThree;
-
-		public PathChain toAmongus;
 
 		public Paths(Follower follower) {
 			shootPreload = follower
@@ -185,7 +186,7 @@ public class GoalAuto extends OpMode {
 					.setLinearHeadingInterpolation(Math.toRadians(307), Math.toRadians(180))
 					.build();
 
-			collectSpiketwo = follower
+			collectSpikeTwo = follower
 					.pathBuilder()
 					.addPath(
 							new BezierLine(new Pose(41.678, 59.707), new Pose(8.663, 59.239))
@@ -230,8 +231,6 @@ public class GoalAuto extends OpMode {
 					)
 					.setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(307))
 					.build();
-
-
 		}
 	}
 }

@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 import org.firstinspires.ftc.teamcode.Utils.Team;
+import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 
 @Configurable
 public abstract class AudienceAuto extends OpMode {
@@ -55,6 +56,14 @@ public abstract class AudienceAuto extends OpMode {
 
 		int state = Math.floorMod((int) Math.floor(x * hz), 2);
 		return 0.23 * state + 0.388;
+	}
+
+	@Override
+	public void stop() {
+		if (follower != null) {
+			RobotPosition.robotPose = follower.getPose();
+			RobotPosition.isPoseSet = true;
+		}
 	}
 
 	protected abstract Pose getStartingPose();

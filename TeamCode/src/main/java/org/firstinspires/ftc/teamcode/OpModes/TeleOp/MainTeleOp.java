@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
 import org.firstinspires.ftc.teamcode.Utils.Team;
+import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 
 import java.util.function.Supplier;
 
@@ -61,30 +62,19 @@ public abstract class MainTeleOp extends OpMode {
 	// Performance monitoring
 	private long maxLoopTime = 0;
 
-	private Supplier<PathChain> pathChain;
-
-//	double indicatorValue() {
-//		// TODO: Export to a util class and beautify
-//		double x = timer.seconds();
-//		double hz = 1;
-//		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
-//			hz = 2.5;
-//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
-//			hz = 1;
-//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
-//			hz = 0.5;
-//		} else {
-//			hz = 0.5;
-//		}
-//		int state = Math.floorMod((int) Math.floor(x * hz), 2);
-//		return 0.23 * state + 0.388;
-//	}
+	private Supplier<PathChain> blueAudienceShootingPath;
+	private Supplier<PathChain> redAudienceShootingPath;
 
 	@Override
 	public void init() {
 		// Initialize hardware
 		follower = Constants.createFollower(hardwareMap);
-		follower.setStartingPose(getStartingPose());
+		if (RobotPosition.isPoseSet) {
+			follower.setStartingPose(RobotPosition.robotPose);
+			RobotPosition.isPoseSet = false;
+		} else {
+			follower.setStartingPose(getStartingPose());
+		}
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
 		limelight = new Limelight(hardwareMap);
@@ -116,9 +106,14 @@ public abstract class MainTeleOp extends OpMode {
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
 
-		pathChain = () -> follower.pathBuilder()
+		blueAudienceShootingPath = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 11))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(295), 0.8))
+				.build();
+
+		redAudienceShootingPath = () -> follower.pathBuilder()
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
 				.build();
 
 		scheduler.run();
@@ -181,6 +176,10 @@ public abstract class MainTeleOp extends OpMode {
 	public void stop() {
 		// Called when OpMode is stopped
 		// TODO: Stop all motors and disable the follower and scheduler
+		if (follower != null) {
+			RobotPosition.robotPose = follower.getPose();
+			RobotPosition.isPoseSet = true;
+		}
 	}
 
 	/**
@@ -207,11 +206,10 @@ public abstract class MainTeleOp extends OpMode {
 	private void handleDriveInput() {
 		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
-				follower.turnTo(ShootAngle.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 144, 144));
+				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
-				follower.followPath(pathChain.get(), true);
+				follower.followPath(blueAudienceShootingPath.get(), true);
 			}
-
 
 			aButtonPressed = true;
 		} else if (!gamepad1.a && aButtonPressed) {

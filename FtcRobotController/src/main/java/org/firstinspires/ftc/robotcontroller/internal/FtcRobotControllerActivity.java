@@ -644,18 +644,15 @@ public class FtcRobotControllerActivity extends Activity
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select WiFi Channel (Incl. Non-standard)");
-        builder.setItems(channelLabels, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                int selectedChannel = channels[which];
-                preferencesHelper.writeInt(getString(com.qualcomm.ftccommon.R.string.pref_wifip2p_channel), selectedChannel);
-                if (wifiDirectChannelChanger == null) {
-                    wifiDirectChannelChanger = new WifiDirectChannelChanger();
-                }
-                wifiDirectChannelChanger.changeToChannel(selectedChannel);
-                AppUtil.getInstance().showToast(UILocation.BOTH, "Channel set to " + (selectedChannel == 0 ? "Auto" : selectedChannel));
-            }
-        });
+        builder.setItems(channelLabels, (dialog, which) -> {
+			int selectedChannel = channels[which];
+			preferencesHelper.writeIntPrefIfDifferent(getString(com.qualcomm.ftccommon.R.string.pref_wifip2p_channel), selectedChannel);
+			if (wifiDirectChannelChanger == null) {
+				wifiDirectChannelChanger = new WifiDirectChannelChanger();
+			}
+			wifiDirectChannelChanger.changeToChannel(selectedChannel);
+			AppUtil.getInstance().showToast(UILocation.BOTH, "Channel set to " + (selectedChannel == 0 ? "Auto" : selectedChannel));
+		});
         builder.show();
     }
 
