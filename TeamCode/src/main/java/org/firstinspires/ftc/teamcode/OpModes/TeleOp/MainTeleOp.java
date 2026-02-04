@@ -55,6 +55,10 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean spindexerUpCrossed = false;
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
+	// Rumble state tracking
+	protected boolean wasShooterAtTarget = false;
+	protected boolean wasPathBusy = false;
+
 	DcMotorEx frontRight;
 	DcMotorEx rearRight;
 	DcMotorEx frontLeft;
@@ -175,6 +179,7 @@ public abstract class MainTeleOp extends OpMode {
 		handleDriveInput();
 		handleOperatorInput();
 		updateRGBIndicator();
+		handleRumbleFeedback();
 		scheduler.run();
 		shooter.periodic();
 
@@ -415,5 +420,23 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
 		panelsTelemetry.update();
+	}
+
+	/**
+	 * Handle controller rumble feedback
+	 */
+	private void handleRumbleFeedback() {
+		// Driver 1: Rumble when path following (A button) is complete
+		boolean isPathBusy = follower.isBusy();
+		if (gamepad1.a && wasPathBusy && !isPathBusy) {
+			gamepad1.rumble(500);
+		}
+		wasPathBusy = isPathBusy;
+
+		// Driver 2: Rumble when shooter reaches target RPM
+		if (transfer.reachedAverageTarget && !wasShooterAtTarget) {
+			gamepad2.rumble(500);
+		}
+		wasShooterAtTarget = transfer.reachedAverageTarget;
 	}
 }
