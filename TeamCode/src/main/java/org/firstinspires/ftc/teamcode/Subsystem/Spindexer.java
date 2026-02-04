@@ -74,6 +74,7 @@ public class Spindexer extends SubsystemBase {
 		return new InstantCommand(
 				() -> {spindexerMotor.setPower(power);
 					overrided = true;
+					isAtTarget = false;
 				}, this
 		);
 	}
@@ -82,6 +83,12 @@ public class Spindexer extends SubsystemBase {
 		return new CommandBase() {
 			@Override
 			public void initialize() {
+				double currentDegrees = getPosition() / 1.4936;
+				// Fast-forward prevTarget if we are already past the next derived target
+				while (SpindexerPosition.getNextShootPosition((int) prevTarget) <= currentDegrees + 10) {
+					prevTarget = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				}
+
 				double nextTarget = SpindexerPosition.getNextShootPosition((int) prevTarget);
 				prevTarget = nextTarget;
 

@@ -16,6 +16,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
@@ -47,6 +48,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean rightTriggerPressed = false;
 	protected boolean xButtonPressed = false;
 	protected boolean aButtonPressed = false;
+	protected boolean g2AButtonPressed = false;
 	protected boolean b1ButtonPressed = false;
 	protected boolean b2ButtonPressed = false;
 	protected boolean dpadUpPressed = false;
@@ -77,7 +79,7 @@ public abstract class MainTeleOp extends OpMode {
 	private Supplier<PathChain> redAudienceShootingPath;
 
 	double upperShooterSpeed = 0;
-	double lowershooterSpeed = 0;
+	double lowerShooterSpeed = 0;
 
 
 
@@ -254,19 +256,20 @@ public abstract class MainTeleOp extends OpMode {
 	private void handleDriveInput() {
 		if (gamepad1.cross && !aButtonPressed) {
 			upperShooterSpeed = Shooter.AUDIENCE_RPM;
-			lowershooterSpeed = Shooter.AUDIENCE_RPM;
+			lowerShooterSpeed = Shooter.AUDIENCE_RPM;
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
 				follower.followPath(pathBackBlue.get(), true);
 			}
+
 			aButtonPressed = true;
 		} else if (!gamepad1.cross && aButtonPressed) {
 			aButtonPressed = false;
 		}
 		else if (gamepad1.circle && !b1ButtonPressed) {
 			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
-			lowershooterSpeed = Shooter.GOAL_RPM_UPPER;
+			lowerShooterSpeed = Shooter.GOAL_RPM_UPPER;
 
 			if (getTeam() == Team.RED) {
 				follower.followPath(redGoalShootingPath.get(), true);
@@ -304,7 +307,7 @@ public abstract class MainTeleOp extends OpMode {
 
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
-			shooter.setTarget(upperShooterSpeed,lowershooterSpeed);
+			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);
@@ -313,16 +316,12 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		// X Button: Override transfer forward - manual control
-		if (gamepad2.y && !xButtonPressed) {
+		if (gamepad2.x && !xButtonPressed) {
 			scheduler.schedule(transfer.TransferOut());
 			xButtonPressed = true;
-		} else if (!gamepad2.y && xButtonPressed) {
+		} else if (!gamepad2.x && xButtonPressed) {
 			scheduler.schedule(transfer.TransferStop());
 			xButtonPressed = false;
-		}
-
-		if (!gamepad2.y) {
-			transfer.updateAutomaticTransfer(!rightTriggerPressed);
 		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
@@ -334,6 +333,28 @@ public abstract class MainTeleOp extends OpMode {
 			scheduler.schedule(transfer.IntakeDoorStop());
 			scheduler.schedule(intake.Stop());
 			b2ButtonPressed = false;
+		}
+
+		// Dpad Up: Run spindexer while held, go to next target on release
+		if (gamepad2.dpad_up && !dpadUpPressed) {
+			scheduler.schedule(spindexer.DirectPower(spindexerPower));
+			scheduler.schedule(transfer.IntakeDoorOut());
+			dpadUpPressed = true;
+		} else if (!gamepad2.dpad_up && dpadUpPressed) {
+			scheduler.schedule(spindexer.NextTarget());
+			scheduler.schedule(transfer.IntakeDoorStop());
+			dpadUpPressed = false;
+			spindexerMidCrossed = true;
+			spindexerUpCrossed = false;
+			spindexerDownCrossed = false;
+		}
+
+		// A Button: Reset spindexer position
+		if (gamepad2.a && !g2AButtonPressed) {
+			scheduler.schedule(new InstantCommand(spindexer::zeroSpindexer));
+			g2AButtonPressed = true;
+		} else if (!gamepad2.a && g2AButtonPressed) {
+			g2AButtonPressed = false;
 		}
 
 //		if (gamepad2.right_bumper && !dpadUpPressed) {
@@ -350,25 +371,19 @@ public abstract class MainTeleOp extends OpMode {
 //			dpadUpPressed = false;
 //		}
 
-		if (gamepad2.x && !dpadUpPressed) {
-			scheduler.schedule(spindexer.NextTarget());
-			dpadUpPressed = true;
-		} else if (!gamepad2.x && dpadUpPressed) {
-			dpadUpPressed = false;
-		}
-
 		if (gamepad2.y && !yButtonPressed) {
 			transfer.SetAutomaticTransfer(false);
 			scheduler.schedule(transfer.TransferOut());
+			yButtonPressed = true;
 		} else if (!gamepad2.y && yButtonPressed) {
 			yButtonPressed = false;
 		}
 
-		// Left joystick: Spindexer control with threshold crossing (inverted Y axis)
+		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;
 
 		// Dead zone: stop spindexer
-		if (leftJoystickY > -0.2 && leftJoystickY < 0.2) {
+		if (Math.abs(leftJoystickY) < 0.1) {
 			if (!spindexerMidCrossed) {
 				scheduler.schedule(spindexer.DirectPower(0));
 				scheduler.schedule(transfer.IntakeDoorStop());
@@ -379,30 +394,25 @@ public abstract class MainTeleOp extends OpMode {
 				spindexerUpCrossed = false;
 				spindexerDownCrossed = false;
 			}
-		}
-
-		// Crosses 0.2 threshold going up (from lower to 0.2+)
-		if (leftJoystickY >= 0.2 && !spindexerUpCrossed) {
-			scheduler.schedule(spindexer.DirectPower(spindexerPower));
-			scheduler.schedule(transfer.IntakeDoorOut());
-			if (!gamepad2.x) {
-				scheduler.schedule(transfer.TransferIn());
+		} else {
+			// Proportional control: power is proportional to joystick position
+			scheduler.schedule(spindexer.DirectPower(leftJoystickY * spindexerPower));
+			
+			if (leftJoystickY > 0) {
+				scheduler.schedule(transfer.IntakeDoorOut());
+				if (!gamepad2.x) {
+					scheduler.schedule(transfer.TransferIn());
+				}
+			} else {
+				scheduler.schedule(transfer.IntakeDoorIn());
+				if (!gamepad2.x) {
+					scheduler.schedule(transfer.TransferIn());
+				}
 			}
-			spindexerUpCrossed = true;
-			spindexerMidCrossed = false;
-			spindexerDownCrossed = false;
-		}
-
-		// Crosses -0.2 threshold going down (to -0.2 or below)
-		else if (leftJoystickY <= -0.2 && !spindexerDownCrossed) {
-			scheduler.schedule(spindexer.DirectPower(-spindexerPower));
-			scheduler.schedule(transfer.IntakeDoorIn());
-			if (!gamepad2.x) {
-				scheduler.schedule(transfer.TransferIn());
-			}
-			spindexerDownCrossed = true;
+			
 			spindexerMidCrossed = false;
 			spindexerUpCrossed = false;
+			spindexerDownCrossed = false;
 		}
 	}
 

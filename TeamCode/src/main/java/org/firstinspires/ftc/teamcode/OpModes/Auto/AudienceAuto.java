@@ -33,7 +33,6 @@ public abstract class AudienceAuto extends OpMode {
 	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
 	private final ElapsedTime timer = new ElapsedTime();
 	public Follower follower;
-	public Servo rgbIndicator;
 	private CommandScheduler scheduler;
 	private Intake intake;
 	private Shooter shooter;
@@ -41,22 +40,6 @@ public abstract class AudienceAuto extends OpMode {
 	private Transfer transfer;
 	private TelemetryManager panelsTelemetry;
 	public Paths paths;
-
-	double indicatorValue() {
-		double x = timer.seconds();
-		double hz;
-
-		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
-			hz = 2.5;
-		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
-			hz = 1;
-		} else {
-			hz = 0.5;
-		}
-
-		int state = Math.floorMod((int) Math.floor(x * hz), 2);
-		return 0.23 * state + 0.388;
-	}
 
 	@Override
 	public void stop() {
@@ -94,8 +77,6 @@ public abstract class AudienceAuto extends OpMode {
 		transfer.setSpindexer(spindexer);
 
 		paths = new Paths(follower, getTeam());
-
-		rgbIndicator = hardwareMap.get(Servo.class, "rgbIndicator");
 
 		panelsTelemetry.debug("Status", "Initialized");
 		panelsTelemetry.update(telemetry);
@@ -189,7 +170,7 @@ public abstract class AudienceAuto extends OpMode {
 //
 //						new ShootArtifacts(shooter, spindexer, transfer, intake),
 //						// Turn off the motors and servos
-						spindexer.DirectPower(0),
+						spindexer.NextTarget(),
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
 						transfer.TransferStop(),
@@ -206,7 +187,6 @@ public abstract class AudienceAuto extends OpMode {
 		scheduler.run();
 		shooter.periodic(); // TODO: Find out why it doesn't work without this
 		transfer.periodic(); // TODO: Find out why it doesn't work without this
-		rgbIndicator.setPosition(indicatorValue());
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
