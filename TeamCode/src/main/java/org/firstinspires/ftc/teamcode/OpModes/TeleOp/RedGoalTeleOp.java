@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@TeleOp(name = "Red Goal TeleOp", group = " 1COMP")
+
+@Disabled
+@TeleOp(name = "Red TeleOp", group = " 1COMP")
 public class RedGoalTeleOp extends MainTeleOp {
 	@Override
 	protected Pose getStartingPose() {

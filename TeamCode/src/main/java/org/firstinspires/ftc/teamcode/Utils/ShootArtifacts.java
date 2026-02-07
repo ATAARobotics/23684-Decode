@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Utils;
 
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
@@ -13,15 +14,14 @@ public class ShootArtifacts extends SequentialCommandGroup {
 		addCommands(
 				shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
 				shooter.WaitForTarget().withTimeout(3000L),
-				transfer.TransferOut(),
-				spindexer.DirectPower(0.5),
-				shooter.WaitForDrop().withTimeout(2500),
-				shooter.WaitForTarget().withTimeout(2500),
-				shooter.WaitForDrop().withTimeout(2500),
-				shooter.WaitForTarget().withTimeout(2500),
-				shooter.WaitForDrop().withTimeout(2500),
-				transfer.TransferStop(),
-				shooter.SetTarget(0, 0)
+				spindexer.DirectPower(1),
+                new WaitCommand(2800),
+//				shooter.WaitForDrop().withTimeout(560),
+//				shooter.WaitForTarget().withTimeout(560),
+//				shooter.WaitForDrop().withTimeout(560),
+//				shooter.WaitForTarget().withTimeout(560),
+//				shooter.WaitForDrop().withTimeout(560),
+				spindexer.DirectPower(0)
 		);
 
 		addRequirements(shooter, spindexer, transfer, intake);

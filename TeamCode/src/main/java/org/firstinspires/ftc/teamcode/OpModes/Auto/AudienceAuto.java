@@ -59,11 +59,9 @@ public abstract class AudienceAuto extends OpMode {
 
 		follower = Constants.createFollower(hardwareMap);
 
-		if(getTeam().equals(Team.RED)){
-			follower.setStartingPose(getStartingPose().mirror());
-		}else{
-			follower.setStartingPose(getStartingPose());
-		}
+
+		follower.setStartingPose(getStartingPose());
+
 
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
@@ -89,8 +87,9 @@ public abstract class AudienceAuto extends OpMode {
 		scheduler.schedule(
 				new SequentialCommandGroup(
 						new FollowPathCommand(follower, paths.shootPreload),
-
+						transfer.SetAutomaticTransfer(true),
 						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
@@ -100,20 +99,21 @@ public abstract class AudienceAuto extends OpMode {
 						new FollowPathCommand(follower, paths.toSpikeOne),
 
 						intake.In(),
-						spindexer.DirectPower(0.5),
+						spindexer.DirectPower(1),
 						transfer.IntakeDoorOut(),
 
 						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
 						new FollowPathCommand(follower, paths.collectSpikeOne),
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
-						transfer.IntakeDoorIn(),
 
 						intake.SlowOut(),
 						spindexer.DirectPower(0),
-						new FollowPathCommand(follower, paths.toShootSpikeOne).setGlobalMaxPower(1),
+						new FollowPathCommand(follower, paths.toShootSpikeOne),
 						transfer.IntakeDoorOut(),
 
+						transfer.SetAutomaticTransfer(true),
 						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
@@ -124,7 +124,7 @@ public abstract class AudienceAuto extends OpMode {
 
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
-								spindexer.DirectPower(0.5),
+								spindexer.DirectPower(1),
 								transfer.IntakeDoorOut(),
 								intake.In()
 						),
@@ -136,14 +136,16 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
-								transfer.IntakeDoorIn(),
+
 								intake.SlowOut()
 						),
 
 						new WaitCommand(SPIKE_COLLECTION_WAIT),
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 						transfer.IntakeDoorOut(),
+						transfer.SetAutomaticTransfer(true),
 						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
 						intake.Stop(),
@@ -153,7 +155,7 @@ public abstract class AudienceAuto extends OpMode {
 						new FollowPathCommand(follower, paths.toSpikeThree),
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
-							spindexer.DirectPower(0.3),
+							spindexer.DirectPower(1),
 							transfer.IntakeDoorOut(),
 							intake.In()
 						),
@@ -205,7 +207,6 @@ public abstract class AudienceAuto extends OpMode {
 	}
 
 	public static class Paths {
-		private final Team team;
 		public PathChain shootPreload;
 		public PathChain toSpikeOne;
 		public PathChain collectSpikeOne;
@@ -218,129 +219,225 @@ public abstract class AudienceAuto extends OpMode {
 		public PathChain toCollectSpikeThree;
 		public PathChain toShootSpikeThree;
 
-		public Paths(Follower follower, Team team) {
-			this.team = team;
-			shootPreload = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(63.450, 9), pose(59.440, 17.328))
-					)
-					.setLinearHeadingInterpolation(
-							heading(270),
-							heading(290)
-					)
-					.build();
+		public Paths(Follower follower,Team team) {
+			if (team.equals(Team.BLUE)) {
+				shootPreload = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(63.000, 9), new Pose(59.440, 17.328))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(270),
+								Math.toRadians(294.935)
+						)
+						.build();
 
-			toSpikeOne = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(59.440, 17.328), pose(41.000, 40.50))
-					)
-					.setLinearHeadingInterpolation(
-							heading(294.935),
-							heading(180)
-					)
-					.build();
+				toSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(59.440, 17.328), new Pose(46.000, 40.50))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(294.935),
+								Math.toRadians(180)
+						)
+						.build();
 
-			collectSpikeOne = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(41.000, 40.50), pose(9.000, 40.50))
-					)
-					.setConstantHeadingInterpolation(heading(180))
-					.build();
+				collectSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(46.000, 40.50), new Pose(9.000, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
 
-			toShootSpikeOne = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(9.000, 40.50), pose(59.440, 17.328))
-					)
-					.setLinearHeadingInterpolation(
-							heading(180),
-							heading(290)
-					)
-					.build();
+				toShootSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(9.000, 40.50), new Pose(59.440, 17.328))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(180),
+								Math.toRadians(294.935)
+						)
+						.build();
 
-			toSpikeTwo = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(59.44, 17.328), pose(41.000, 65.500))
-					)
-					.setLinearHeadingInterpolation(
-							heading(294.935),
-							heading(180)
-					)
-					.build();
+				toSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(59.44, 17.328), new Pose(46.000, 65.500))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(294.935),
+								Math.toRadians(180)
+						)
+						.build();
 
-			collectSpikeTwo = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(41.000, 65.500), pose(9.000, 65.500))
-					)
-					.setConstantHeadingInterpolation(heading(180))
-					.build();
+				collectSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(46.000, 65.500), new Pose(9.000, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
 
-			toParkSpikeTwo = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(9.000, 65.500), pose(38.2, 33.6))
-					)
-					.build();
+				toShootSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(9.000, 65.500), new Pose(59.440, 17.328))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(180),
+								Math.toRadians(294.935)
+						)
+						.build();
+				toSpikeThree = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(59.44, 17.328), new Pose(46.000, 89.500))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(294.935),
+								Math.toRadians(180)
+						)
+						.build();
 
-			toShootSpikeTwo = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(9.000, 65.500), pose(59.440, 17.328))
-					)
-					.setLinearHeadingInterpolation(
-							heading(180),
-							heading(290)
-					)
-					.build();
-			toSpikeThree = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(59.44, 17.328), pose(41.000, 89.500))
-					)
-					.setLinearHeadingInterpolation(
-							heading(294.935),
-							heading(180)
-					)
-					.build();
+				toCollectSpikeThree = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(46.000, 89.500), new Pose(15.000, 89.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
 
-			toCollectSpikeThree = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(41.000, 89.500), pose(15.000, 89.500))
-					)
-					.setConstantHeadingInterpolation(heading(180))
-					.build();
+				toShootSpikeThree = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(15.000, 89.500), new Pose(59.000, 17.328))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(180),
+								Math.toRadians(294.935)
+						)
+						.build();
+			} else if (team.equals(Team.RED)) {
+				shootPreload = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(81.000, 9.000),
 
-			toShootSpikeThree = follower
-					.pathBuilder()
-					.addPath(
-							new BezierLine(pose(15.000, 89.500), pose(59.000, 17.328))
-					)
-					.setLinearHeadingInterpolation(
-							heading(180),
-							heading(290)
-					)
-					.build();
-		}
+										new Pose(83.000, 17.328)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(-90), Math.toRadians(-120))
 
-		private Pose pose(double x, double y) {
-			if (team == Team.RED) {
-				return new Pose(144 - x, y);
+						.build();
+
+				toSpikeOne = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(83.000, 17.328),
+
+										new Pose(98.000, 35.000)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(-120), Math.toRadians(0))
+
+						.build();
+
+				collectSpikeOne = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(98.000, 40.50),
+
+										new Pose(135.000, 40.50)
+								)
+						).setConstantHeadingInterpolation(Math.toRadians(0))
+
+						.build();
+
+				toShootSpikeOne = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(135.000, 40.50),
+
+										new Pose(83.000, 11.000)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
+
+						.build();
+
+
+				toSpikeTwo = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(83.000, 11.000),
+
+										new Pose(98.000, 60.000)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(-120), Math.toRadians(0))
+
+						.build();
+
+				collectSpikeTwo = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(98.000, 60.000),
+
+										new Pose(135.000, 60.000)
+								)
+						).setConstantHeadingInterpolation(Math.toRadians(0))
+
+						.build();
+
+				toShootSpikeTwo = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(135.000, 60.000),
+
+										new Pose(83.000, 11.000)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
+
+						.build();
+
+
+				toSpikeThree = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(83.000, 11.000),
+
+										new Pose(98.000, 84.000)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(-120), Math.toRadians(0))
+
+						.build();
+
+				toCollectSpikeThree = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(98.000, 84.000),
+
+										new Pose(129.000, 84.000)
+								)
+						).setConstantHeadingInterpolation(Math.toRadians(0))
+
+						.build();
+
+				toShootSpikeThree = follower.pathBuilder().addPath(
+								new BezierLine(
+										new Pose(129.000, 84.000),
+
+										new Pose(83.000, 11.000)
+								)
+						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
+
+						.build();
 			}
-			return new Pose(x, y);
 		}
 
-		private double heading(double degrees) {
-			double radians = Math.toRadians(degrees);
-			if (team == Team.RED) {
-				return Math.PI - radians;
-			}
-			return radians;
-		}
+//		private Pose pose(double x, double y) {
+//			if (team == Team.RED) {
+//				return new Pose(144 - x, y);
+//			}
+//			return new Pose(x, y);
+//		}
+//
+//		private double heading(double degrees) {
+//			double radians = Math.toRadians(degrees);
+//			if (team == Team.RED) {
+//				return Math.PI - radians;
+//			}
+//			return radians;
+//		}
 	}
 }

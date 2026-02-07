@@ -9,7 +9,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 
-@Disabled
+
 @TeleOp
 public class TestSpindexer extends OpMode {
 	CommandScheduler scheduler;
@@ -21,6 +21,8 @@ public class TestSpindexer extends OpMode {
 	public void init() {
 		spindexer = new Spindexer(hardwareMap);
 		scheduler = CommandScheduler.getInstance();
+
+		spindexer.zeroSpindexer();
 	}
 
 	@Override

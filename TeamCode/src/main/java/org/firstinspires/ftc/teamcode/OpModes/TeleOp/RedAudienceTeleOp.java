@@ -10,7 +10,7 @@ public class RedAudienceTeleOp extends MainTeleOp {
 	@Override
 	protected Pose getStartingPose() {
 		// Mirrored X for Red Alliance
-		return new Pose(144 - 63.450, 9, Math.toRadians(270));
+		return new Pose(81.00, 9, Math.toRadians(270));
 	}
 
 	@Override

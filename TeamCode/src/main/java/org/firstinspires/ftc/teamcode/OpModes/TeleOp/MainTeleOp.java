@@ -13,12 +13,17 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
@@ -26,7 +31,6 @@ import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
-import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
 import java.util.function.Supplier;
@@ -34,14 +38,14 @@ import java.util.function.Supplier;
 @Config
 @Configurable
 public abstract class MainTeleOp extends OpMode {
-	public static double spindexerPower = 0.5;
+	public  double spindexerPower = 1;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
-	protected Limelight limelight;
+	//protected Limelight limelight;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -60,6 +64,10 @@ public abstract class MainTeleOp extends OpMode {
 	// Rumble state tracking
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
+
+	boolean ArtifactFound = false;
+	boolean ToggleDistance = false;
+
 
 	DcMotorEx frontRight;
 	DcMotorEx rearRight;
@@ -80,6 +88,7 @@ public abstract class MainTeleOp extends OpMode {
 
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+	DistanceSensor distanceSensor;
 
 
 
@@ -112,7 +121,7 @@ public abstract class MainTeleOp extends OpMode {
 		}
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
-		limelight = new Limelight(hardwareMap);
+		//light = new Limelight(hardwareMap);
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
 		scheduler.schedule(shooter.SetTarget(0, 0));
@@ -124,6 +133,7 @@ public abstract class MainTeleOp extends OpMode {
 		transfer.setSpindexer(spindexer);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
+		distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
 		// limelight = new Limelight(hardwareMap);
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
@@ -149,7 +159,7 @@ public abstract class MainTeleOp extends OpMode {
 
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 96.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210.627), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(330), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
@@ -201,7 +211,7 @@ public abstract class MainTeleOp extends OpMode {
 			maxLoopTime = loopTime;
 		}
 
-		limelight.updateLowPass(follower.getHeading());
+		//limelight.updateLowPass(follower.getHeading());
 //		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
 //			Pose botPose = limelight.PPVisionPoseRaw();
 //
@@ -215,7 +225,13 @@ public abstract class MainTeleOp extends OpMode {
 
 		if (gamepad1.xWasPressed()){
 			gamepad1.rumble(300);
+
+			if(getTeam().equals(Team.BLUE)){
 			follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
+			}
+			else if (getTeam().equals(Team.RED)){
+				follower.setPose(new Pose(1.2797255628690891,7.36770930252676, 180));
+			}
 		}
 
 		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
@@ -254,9 +270,17 @@ public abstract class MainTeleOp extends OpMode {
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
-		if (gamepad1.cross && !aButtonPressed) {
+
+		if(follower.getPose().getY() >= 72.0) {
+			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
+			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
+		}else{
 			upperShooterSpeed = Shooter.AUDIENCE_RPM;
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+		}
+
+		if (gamepad1.cross && !aButtonPressed) {
+
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -268,9 +292,6 @@ public abstract class MainTeleOp extends OpMode {
 			aButtonPressed = false;
 		}
 		else if (gamepad1.circle && !b1ButtonPressed) {
-			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
-			lowerShooterSpeed = Shooter.GOAL_RPM_UPPER;
-
 			if (getTeam() == Team.RED) {
 				follower.followPath(redGoalShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -352,6 +373,12 @@ public abstract class MainTeleOp extends OpMode {
 			spindexerDownCrossed = false;
 		}
 
+		if(gamepad2.right_bumper){
+			spindexerPower = 0.5;
+		}else{
+			spindexerPower = 1;
+		}
+
 
 		if (gamepad2.dpad_down && !dpadDownPressed) {
 			scheduler.schedule(spindexer.DirectPower(spindexerPower));
@@ -387,6 +414,21 @@ public abstract class MainTeleOp extends OpMode {
 //		} else if (!gamepad2.right_bumper && dpadUpPressed) {
 //			dpadUpPressed = false;
 //		}
+
+		if(Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up){
+			ToggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
+
+			if(ToggleDistance && !ArtifactFound){
+				scheduler.schedule(new SequentialCommandGroup(
+						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
+						spindexer.DirectPower(0)));
+				ArtifactFound = true;
+			}if(!ToggleDistance && ArtifactFound){
+				//scheduler.schedule(spindexer.DirectPower(0));
+				ArtifactFound = false;
+			}
+
+		}
 
 		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;

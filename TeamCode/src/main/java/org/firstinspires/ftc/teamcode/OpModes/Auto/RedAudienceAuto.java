@@ -11,7 +11,7 @@ public class RedAudienceAuto extends AudienceAuto {
 	@Override
 	protected Pose getStartingPose() {
 		// Mirrored X for Red Alliance
-		return new Pose(63.450, 9, Math.toRadians(270));
+		return new Pose(81.00, 9, Math.toRadians(270));
 	}
 
 	@Override
