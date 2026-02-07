@@ -68,7 +68,6 @@ public abstract class MainTeleOp extends OpMode {
 	boolean ArtifactFound = false;
 	boolean ToggleDistance = false;
 
-
 	DcMotorEx frontRight;
 	DcMotorEx rearRight;
 	DcMotorEx frontLeft;
@@ -79,18 +78,13 @@ public abstract class MainTeleOp extends OpMode {
 	private long maxLoopTime = 0;
 
 	private Supplier<PathChain> pathBackBlue;
-
 	private Supplier<PathChain> pathFrontBlue;
-
 	private Supplier<PathChain> redGoalShootingPath;
-
 	private Supplier<PathChain> redAudienceShootingPath;
 
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
 	DistanceSensor distanceSensor;
-
-
 
 //	double indicatorValue() {
 //		// TODO: Export to a util class and beautify
@@ -171,13 +165,12 @@ public abstract class MainTeleOp extends OpMode {
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
 				.build();
-
-		scheduler.reset();
-
 	}
 
 	@Override
-	public void init_loop() {}
+	public void init_loop() {
+
+	}
 
 	@Override
 	public void start() {
@@ -202,7 +195,6 @@ public abstract class MainTeleOp extends OpMode {
 		shooter.periodic();
 
 		displayTelemetry();
-
 		// Performance monitoring
 		long loopTime = System.nanoTime() - startTime;
 
@@ -246,7 +238,6 @@ public abstract class MainTeleOp extends OpMode {
 		// Called when OpMode is stopped
 		// TODO: Stop all motors and disable the follower and scheduler
 	}
-
 	/**
 	 * Override this method in subclasses to set the starting pose
 	 */

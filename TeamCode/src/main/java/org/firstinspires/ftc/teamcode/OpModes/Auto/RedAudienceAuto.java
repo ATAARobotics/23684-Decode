@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Red Audience Auto", group = "Red")
+@Autonomous(name = "Red Audience Auto", group = "Red", preselectTeleOp = "Red Audience TeleOp")
 public class RedAudienceAuto extends AudienceAuto {
 	@Override
 	protected Pose getStartingPose() {
@@ -18,5 +18,4 @@ public class RedAudienceAuto extends AudienceAuto {
 	protected Team getTeam() {
 		return Team.RED;
 	}
-
 }

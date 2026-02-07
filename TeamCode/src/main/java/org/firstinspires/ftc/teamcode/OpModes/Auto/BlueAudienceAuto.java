@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Blue Audience Auto", group = "Blue")
+@Autonomous(name = "Blue Audience Auto", group = "Blue", preselectTeleOp = "Blue TeleOp")
 public class BlueAudienceAuto extends AudienceAuto {
 	@Override
 	protected Pose getStartingPose() {

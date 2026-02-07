@@ -47,6 +47,7 @@ public abstract class AudienceAuto extends OpMode {
 			RobotPosition.robotPose = follower.getPose();
 			RobotPosition.isPoseSet = true;
 		}
+		CommandScheduler.getInstance().reset();
 	}
 
 	protected abstract Pose getStartingPose();
@@ -58,10 +59,7 @@ public abstract class AudienceAuto extends OpMode {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
 		follower = Constants.createFollower(hardwareMap);
-
-
 		follower.setStartingPose(getStartingPose());
-
 
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
@@ -152,31 +150,33 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
-						new FollowPathCommand(follower, paths.toSpikeThree),
-						transfer.TransferIn(),
-						new ParallelCommandGroup(
-							spindexer.DirectPower(1),
-							transfer.IntakeDoorOut(),
-							intake.In()
-						),
-						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-						new FollowPathCommand(follower, paths.toCollectSpikeThree),
-//						new WaitCommand(SPIKE_COLLECTION_WAIT),
-//						transfer.TransferStop(),
+						new FollowPathCommand(follower, paths.toParkSpikeTwo)
+
+//						new FollowPathCommand(follower, paths.toSpikeThree),
+//						transfer.TransferIn(),
 //						new ParallelCommandGroup(
-//							spindexer.DirectPower(0),
-//							transfer.IntakeDoorStop(),
-//							intake.SlowOut()
+//							spindexer.DirectPower(1),
+//							transfer.IntakeDoorOut(),
+//							intake.In()
 //						),
-//						new FollowPathCommand(follower, paths.toShootSpikeThree),
-//
-//						new ShootArtifacts(shooter, spindexer, transfer, intake),
-//						// Turn off the motors and servos
-						spindexer.NextTarget(),
-						shooter.SetTarget(0, 0),
-						intake.Stop(),
-						transfer.TransferStop(),
-						transfer.IntakeDoorStop()
+//						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
+//						new FollowPathCommand(follower, paths.toCollectSpikeThree),
+////						new WaitCommand(SPIKE_COLLECTION_WAIT),
+////						transfer.TransferStop(),
+////						new ParallelCommandGroup(
+////							spindexer.DirectPower(0),
+////							transfer.IntakeDoorStop(),
+////							intake.SlowOut()
+////						),
+////						new FollowPathCommand(follower, paths.toShootSpikeThree),
+////
+////						new ShootArtifacts(shooter, spindexer, transfer, intake),
+////						// Turn off the motors and servos
+//						spindexer.NextTarget(),
+//						shooter.SetTarget(0, 0),
+//						intake.Stop(),
+//						transfer.TransferStop(),
+//						transfer.IntakeDoorStop()
 				)
 		);
 
@@ -291,6 +291,18 @@ public abstract class AudienceAuto extends OpMode {
 								Math.toRadians(294.935)
 						)
 						.build();
+
+				toParkSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(59.440, 17.328), new Pose(40, 34))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(294.935),
+								Math.toRadians(180)
+						)
+						.build();
+
 				toSpikeThree = follower
 						.pathBuilder()
 						.addPath(
@@ -389,9 +401,18 @@ public abstract class AudienceAuto extends OpMode {
 										new Pose(83.000, 11.000)
 								)
 						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
-
 						.build();
 
+				toParkSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(83, 11), new Pose(105, 34))
+						)
+						.setLinearHeadingInterpolation(
+								Math.toRadians(-120),
+								Math.toRadians(0)
+						)
+						.build();
 
 				toSpikeThree = follower.pathBuilder().addPath(
 								new BezierLine(

@@ -38,14 +38,14 @@ public abstract class GoalAuto extends OpMode {
 
 	protected abstract Team getTeam();
 
-	@Override
-	public void stop() {
-		if (follower != null) {
-			RobotPosition.robotPose = follower.getPose();
-			RobotPosition.isPoseSet = true;
-		}
-	}
-
+	    @Override
+	    public void stop() {
+	        if (follower != null) {
+	            RobotPosition.robotPose = follower.getPose();
+	            RobotPosition.isPoseSet = true;
+	        }
+	        CommandScheduler.getInstance().reset();
+	    }
 	@Override
 	public void init() {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
