@@ -172,13 +172,12 @@ public abstract class MainTeleOp extends OpMode {
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
 				.build();
 
-		scheduler.run();
+		scheduler.reset();
+
 	}
 
 	@Override
-	public void init_loop() {
-		scheduler.run();
-	}
+	public void init_loop() {}
 
 	@Override
 	public void start() {
@@ -186,7 +185,7 @@ public abstract class MainTeleOp extends OpMode {
 //		limelight.start();
 		spindexer.zeroSpindexer();
 		timer.startTime();
-		scheduler.run();
+		//scheduler.run();
 	}
 
 	@Override
@@ -230,7 +229,7 @@ public abstract class MainTeleOp extends OpMode {
 			follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
 			}
 			else if (getTeam().equals(Team.RED)){
-				follower.setPose(new Pose(1.2797255628690891,7.36770930252676, 180));
+				follower.setPose(new Pose(6.2797255628690891,7.36770930252676, Math.toRadians(180)));
 			}
 		}
 
