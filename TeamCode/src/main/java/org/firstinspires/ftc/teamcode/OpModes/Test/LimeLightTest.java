@@ -14,16 +14,15 @@ import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 @TeleOp
 public class LimeLightTest extends OpMode {
 
-	Limelight limelight;
-	TelemetryManager telemetryManager;
-	Follower follower;
+	private Limelight limelight;
+	private TelemetryManager telemetryManager;
+	private Follower follower;
 
 	@Override
 	public void init() {
 		limelight = new Limelight(hardwareMap);
 		telemetryManager = PanelsTelemetry.INSTANCE.getTelemetry();
 		follower = Constants.createFollower(hardwareMap);
-
 		follower.setStartingPose(new Pose(72, 72, 0));
 	}
 

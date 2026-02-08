@@ -9,7 +9,6 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
@@ -22,9 +21,9 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 import org.firstinspires.ftc.teamcode.Utils.Team;
-import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 
 @Configurable
 public abstract class AudienceAuto extends OpMode {
@@ -33,13 +32,13 @@ public abstract class AudienceAuto extends OpMode {
 	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
 	private final ElapsedTime timer = new ElapsedTime();
 	public Follower follower;
+	public Paths paths;
 	private CommandScheduler scheduler;
 	private Intake intake;
 	private Shooter shooter;
 	private Spindexer spindexer;
 	private Transfer transfer;
 	private TelemetryManager panelsTelemetry;
-	public Paths paths;
 
 	@Override
 	public void stop() {
@@ -151,32 +150,6 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.IntakeDoorStop(),
 
 						new FollowPathCommand(follower, paths.toParkSpikeTwo)
-
-//						new FollowPathCommand(follower, paths.toSpikeThree),
-//						transfer.TransferIn(),
-//						new ParallelCommandGroup(
-//							spindexer.DirectPower(1),
-//							transfer.IntakeDoorOut(),
-//							intake.In()
-//						),
-//						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-//						new FollowPathCommand(follower, paths.toCollectSpikeThree),
-////						new WaitCommand(SPIKE_COLLECTION_WAIT),
-////						transfer.TransferStop(),
-////						new ParallelCommandGroup(
-////							spindexer.DirectPower(0),
-////							transfer.IntakeDoorStop(),
-////							intake.SlowOut()
-////						),
-////						new FollowPathCommand(follower, paths.toShootSpikeThree),
-////
-////						new ShootArtifacts(shooter, spindexer, transfer, intake),
-////						// Turn off the motors and servos
-//						spindexer.NextTarget(),
-//						shooter.SetTarget(0, 0),
-//						intake.Stop(),
-//						transfer.TransferStop(),
-//						transfer.IntakeDoorStop()
 				)
 		);
 
@@ -187,8 +160,8 @@ public abstract class AudienceAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
-		shooter.periodic(); // TODO: Find out why it doesn't work without this
-		transfer.periodic(); // TODO: Find out why it doesn't work without this
+		shooter.periodic();
+		transfer.periodic();
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
@@ -196,11 +169,11 @@ public abstract class AudienceAuto extends OpMode {
 		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
 
 		panelsTelemetry.addLine("=== TRANSFER ===");
-		panelsTelemetry.addData("Shooter Lower At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedLowerTarget);
-		panelsTelemetry.addData("Shooter Upper At Target (This may be inactive, you may need to refer to \"At Target\")", transfer.reachedUpperTarget);
-		panelsTelemetry.addData("Shooter At Target (This may be inactive, you may need to refer to \"Lower At Target\" and \"Upper At Target\")", transfer.reachedAverageTarget);
+		panelsTelemetry.addData("Shooter Lower At Target", transfer.reachedLowerTarget);
+		panelsTelemetry.addData("Shooter Upper At Target", transfer.reachedUpperTarget);
+		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
-		panelsTelemetry.addData("Automatic Transfer Running?", transfer.runAutomaticTransfer);
+		panelsTelemetry.addData("Automatic Transfer Running", transfer.runAutomaticTransfer);
 
 		panelsTelemetry.update();
 		panelsTelemetry.update(telemetry);
@@ -219,7 +192,7 @@ public abstract class AudienceAuto extends OpMode {
 		public PathChain toCollectSpikeThree;
 		public PathChain toShootSpikeThree;
 
-		public Paths(Follower follower,Team team) {
+		public Paths(Follower follower, Team team) {
 			if (team.equals(Team.BLUE)) {
 				shootPreload = follower
 						.pathBuilder()
