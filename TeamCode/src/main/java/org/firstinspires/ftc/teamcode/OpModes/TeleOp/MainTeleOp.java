@@ -162,13 +162,14 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 3))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
 				.build();
 	}
 
 	@Override
 	public void init_loop() {
+
 
 	}
 
@@ -308,7 +309,7 @@ public abstract class MainTeleOp extends OpMode {
 		// Left Trigger: run intake
 		if (gamepad2.left_trigger > 0.5 && !leftTriggerPressed) {
 			scheduler.schedule(intake.In());
-			scheduler.schedule(transfer.IntakeDoorOut());
+			scheduler.schedule(transfer.IntakeDoorIn());
 			leftTriggerPressed = true;
 		} else if (gamepad2.left_trigger <= 0.5 && leftTriggerPressed) {
 			scheduler.schedule(intake.Stop());
