@@ -7,13 +7,13 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 
 @Autonomous(name = "Red Goal Auto", group = "Red")
 public class RedGoalAuto extends GoalAuto {
-    @Override
-    protected Pose getStartingPose() {
-        return new Pose(122.693, 124.098, Math.toRadians(-144));
-    }
+	@Override
+	protected Pose getStartingPose() {
+		return new Pose(122.693, 124.098, Math.toRadians(-144));
+	}
 
-    @Override
-    protected Team getTeam() {
-        return Team.RED;
-    }
+	@Override
+	protected Team getTeam() {
+		return Team.RED;
+	}
 }

@@ -25,27 +25,28 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 
 @Configurable
 public abstract class GoalAuto extends OpMode {
-	public Follower follower; // Pedro Pathing follower instance
-	CommandScheduler scheduler;
-	Intake intake;
-	Shooter shooter;
-	Spindexer spindexer;
-	Transfer transfer;
+	public Follower follower;
+	private CommandScheduler scheduler;
+	private Intake intake;
+	private Shooter shooter;
+	private Spindexer spindexer;
+	private Transfer transfer;
 	private TelemetryManager panelsTelemetry;
-	private Paths paths; // Paths defined in the Paths class
+	private Paths paths;
 
 	protected abstract Pose getStartingPose();
 
 	protected abstract Team getTeam();
 
-	    @Override
-	    public void stop() {
-	        if (follower != null) {
-	            RobotPosition.robotPose = follower.getPose();
-	            RobotPosition.isPoseSet = true;
-	        }
-	        CommandScheduler.getInstance().reset();
-	    }
+	@Override
+	public void stop() {
+		if (follower != null) {
+			RobotPosition.robotPose = follower.getPose();
+			RobotPosition.isPoseSet = true;
+		}
+		CommandScheduler.getInstance().reset();
+	}
+
 	@Override
 	public void init() {
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -59,7 +60,7 @@ public abstract class GoalAuto extends OpMode {
 		spindexer = new Spindexer(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 
-		paths = new Paths(follower, getTeam()); // Build paths
+		paths = new Paths(follower, getTeam());
 
 		panelsTelemetry.debug("Status", "Initialized");
 		panelsTelemetry.update(telemetry);
@@ -71,7 +72,7 @@ public abstract class GoalAuto extends OpMode {
 				new SequentialCommandGroup(
 						new FollowPathCommand(follower, paths.shootPreload),
 						transfer.SetAutomaticTransfer(true),
-					    new ShootArtifacts(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						transfer.SetAutomaticTransfer(false),
 
 						new ParallelCommandGroup(
@@ -124,8 +125,9 @@ public abstract class GoalAuto extends OpMode {
 
 	@Override
 	public void loop() {
-		follower.update(); // Update Pedro Pathing
+		follower.update();
 		scheduler.run();
+
 		panelsTelemetry.debug("X", follower.getPose().getX());
 		panelsTelemetry.debug("Y", follower.getPose().getY());
 		panelsTelemetry.debug("Heading", follower.getPose().getHeading());
@@ -144,9 +146,8 @@ public abstract class GoalAuto extends OpMode {
 		public PathChain collectSpikeThree;
 		public PathChain toShootSpikeThree;
 
-
 		public Paths(Follower follower, Team team) {
-			if(team.equals(Team.BLUE)){
+			if (team.equals(Team.BLUE)) {
 				shootPreload = follower.pathBuilder().addPath(
 								new BezierLine(
 										new Pose(21.307, 124.098),
@@ -187,93 +188,5 @@ public abstract class GoalAuto extends OpMode {
 						.build();
 			}
 		}
-
-//		public Paths(Follower follower) {
-//			shootPreload = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(21.073, 123.863), new Pose(48.000, 84.527))
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(-36), Math.toRadians(307))
-//					.build();
-//
-//			toSpikeOne = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(48.000, 84.527), new Pose(42.146, 83.590))
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(307), Math.toRadians(180))
-//					.build();
-//
-//			collectSpikeOne = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(42.146, 83.590), new Pose(14.751, 83.590))
-//					)
-//					.setConstantHeadingInterpolation(Math.toRadians(180))
-//					.build();
-//
-//			toShootSpikeOne = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(14.751, 83.590), new Pose(48.000, 84.059))
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(307))
-//					.build();
-//
-//			toSpikeTwo = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(48.000, 84.059), new Pose(41.678, 59.707))
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(307), Math.toRadians(180))
-//					.build();
-//
-//			collectSpikeTwo = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(41.678, 59.707), new Pose(8.663, 59.239))
-//					)
-//					.setConstantHeadingInterpolation(Math.toRadians(180))
-//					.build();
-//
-//			toShootSpikeTwo = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierCurve(
-//									new Pose(8.663, 59.239),
-//									new Pose(53.151, 64.156),
-//									new Pose(45.424, 46.127),
-//									new Pose(49.405, 70.946),
-//									new Pose(48.000, 84.293)
-//							)
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(307))
-//					.build();
-//
-//			toSpikeThree = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(48.000, 84.293), new Pose(40.507, 35.824))
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(307), Math.toRadians(180))
-//					.build();
-//
-//			collectSpikeThree = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(40.507, 35.824), new Pose(8.898, 34.888))
-//					)
-//					.setConstantHeadingInterpolation(Math.toRadians(180))
-//					.build();
-//
-//			toShootSpikeThree = follower
-//					.pathBuilder()
-//					.addPath(
-//							new BezierLine(new Pose(8.898, 34.888), new Pose(48.000, 84.761))
-//					)
-//					.setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(307))
-//					.build();
-//		}
 	}
 }

@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.OpModes.Auto;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
 @Autonomous(name = "Red Audience Auto", group = "Red", preselectTeleOp = "Red Audience TeleOp")

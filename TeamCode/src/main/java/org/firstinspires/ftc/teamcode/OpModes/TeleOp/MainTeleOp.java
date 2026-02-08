@@ -20,13 +20,11 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
-import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -38,7 +36,7 @@ import java.util.function.Supplier;
 @Config
 @Configurable
 public abstract class MainTeleOp extends OpMode {
-	public  double spindexerPower = 1;
+	public double spindexerPower = 1;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -65,43 +63,24 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
 
-	boolean ArtifactFound = false;
-	boolean ToggleDistance = false;
+	protected boolean artifactFound = false;
+	protected boolean toggleDistance = false;
 
-	DcMotorEx frontRight;
-	DcMotorEx rearRight;
-	DcMotorEx frontLeft;
-	DcMotorEx rearLeft;
-	ElapsedTime timer = new ElapsedTime();
-	private Servo rgbServo;
+	protected DcMotorEx frontRight;
+	protected DcMotorEx rearRight;
+	protected DcMotorEx frontLeft;
+	protected DcMotorEx rearLeft;
+	protected ElapsedTime timer = new ElapsedTime();
+	protected double upperShooterSpeed = Shooter.AUDIENCE_RPM;
+	protected double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+	protected DistanceSensor distanceSensor;
+	protected Servo rgbServo;
 	// Performance monitoring
-	private long maxLoopTime = 0;
-
-	private Supplier<PathChain> pathBackBlue;
-	private Supplier<PathChain> pathFrontBlue;
-	private Supplier<PathChain> redGoalShootingPath;
-	private Supplier<PathChain> redAudienceShootingPath;
-
-	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
-	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
-	DistanceSensor distanceSensor;
-
-//	double indicatorValue() {
-//		// TODO: Export to a util class and beautify
-//		double x = timer.seconds();
-//		double hz = 1;
-//		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
-//			hz = 2.5;
-//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
-//			hz = 1;
-//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
-//			hz = 0.5;
-//		} else {
-//			hz = 0.5;
-//		}
-//		int state = Math.floorMod((int) Math.floor(x * hz), 2);
-//		return 0.23 * state + 0.388;
-//	}
+	protected long maxLoopTime = 0;
+	protected Supplier<PathChain> pathBackBlue;
+	protected Supplier<PathChain> pathFrontBlue;
+	protected Supplier<PathChain> redGoalShootingPath;
+	protected Supplier<PathChain> redAudienceShootingPath;
 
 	@Override
 	public void init() {
@@ -125,14 +104,14 @@ public abstract class MainTeleOp extends OpMode {
 		// Set shooter dependency for conditional transfer
 		transfer.setShooter(shooter);
 		transfer.setSpindexer(spindexer);
-		// TODO: Make subsystem
+
+		// Initialize RGB indicator servo and distance sensor
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
-		// limelight = new Limelight(hardwareMap);
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
-		// TODO: Make subsystem
+		// Initialize drive motors
 		frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
 		rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
 		frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
@@ -153,12 +132,12 @@ public abstract class MainTeleOp extends OpMode {
 
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 96.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(330), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(330), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(63, 96.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(210), 0.8))
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
@@ -168,17 +147,10 @@ public abstract class MainTeleOp extends OpMode {
 	}
 
 	@Override
-	public void init_loop() {
-
-	}
-
-	@Override
 	public void start() {
 		// Called when START is pressed
-//		limelight.start();
 		spindexer.zeroSpindexer();
 		timer.startTime();
-		//scheduler.run();
 	}
 
 	@Override
@@ -195,33 +167,19 @@ public abstract class MainTeleOp extends OpMode {
 		shooter.periodic();
 
 		displayTelemetry();
-		// Performance monitoring
 		long loopTime = System.nanoTime() - startTime;
 
 		if (loopTime > maxLoopTime) {
 			maxLoopTime = loopTime;
 		}
 
-		//limelight.updateLowPass(follower.getHeading());
-//		if (limelight.goalsFound() && (follower.isTeleopDrive() || !follower.isBusy())) {
-//			Pose botPose = limelight.PPVisionPoseRaw();
-//
-//			follower.setPose(new Pose(
-//					botPose.getX(),
-//					botPose.getY(),
-//					follower.getHeading()
-//			));
-//		}
-
-
-		if (gamepad1.xWasPressed()){
+		if (gamepad1.xWasPressed()) {
 			gamepad1.rumble(300);
 
-			if(getTeam().equals(Team.BLUE)){
-			follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
-			}
-			else if (getTeam().equals(Team.RED)){
-				follower.setPose(new Pose(6.2797255628690891,7.36770930252676, Math.toRadians(180)));
+			if (getTeam().equals(Team.BLUE)) {
+				follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
+			} else if (getTeam().equals(Team.RED)) {
+				follower.setPose(new Pose(6.2797255628690891, 7.36770930252676, Math.toRadians(180)));
 			}
 		}
 
@@ -236,8 +194,8 @@ public abstract class MainTeleOp extends OpMode {
 	@Override
 	public void stop() {
 		// Called when OpMode is stopped
-		// TODO: Stop all motors and disable the follower and scheduler
 	}
+
 	/**
 	 * Override this method in subclasses to set the starting pose
 	 */
@@ -261,10 +219,10 @@ public abstract class MainTeleOp extends OpMode {
 	 */
 	private void handleDriveInput() {
 
-		if(follower.getPose().getY() >= 72.0) {
+		if (follower.getPose().getY() >= 72.0) {
 			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
 			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
-		}else{
+		} else {
 			upperShooterSpeed = Shooter.AUDIENCE_RPM;
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM;
 		}
@@ -280,8 +238,7 @@ public abstract class MainTeleOp extends OpMode {
 			aButtonPressed = true;
 		} else if (!gamepad1.cross && aButtonPressed) {
 			aButtonPressed = false;
-		}
-		else if (gamepad1.circle && !b1ButtonPressed) {
+		} else if (gamepad1.circle && !b1ButtonPressed) {
 			if (getTeam() == Team.RED) {
 				follower.followPath(redGoalShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -363,13 +320,14 @@ public abstract class MainTeleOp extends OpMode {
 			spindexerDownCrossed = false;
 		}
 
-		if(gamepad2.right_bumper){
+		// Right bumper: Adjust spindexer power
+		if (gamepad2.right_bumper) {
 			spindexerPower = 0.5;
-		}else{
+		} else {
 			spindexerPower = 1;
 		}
 
-
+		// Dpad Down: Manual spindexer control
 		if (gamepad2.dpad_down && !dpadDownPressed) {
 			scheduler.schedule(spindexer.DirectPower(spindexerPower));
 			scheduler.schedule(transfer.IntakeDoorOut());
@@ -405,19 +363,18 @@ public abstract class MainTeleOp extends OpMode {
 //			dpadUpPressed = false;
 //		}
 
-		if(Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up){
-			ToggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
+		if (Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up) {
+			toggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
 
-			if(ToggleDistance && !ArtifactFound){
+			if (toggleDistance && !artifactFound) {
 				scheduler.schedule(new SequentialCommandGroup(
-						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
+						new ParallelCommandGroup(spindexer.DirectPower(1), new WaitCommand(270)),
 						spindexer.DirectPower(0)));
-				ArtifactFound = true;
-			}if(!ToggleDistance && ArtifactFound){
-				//scheduler.schedule(spindexer.DirectPower(0));
-				ArtifactFound = false;
+				artifactFound = true;
 			}
-
+			if (!toggleDistance && artifactFound) {
+				artifactFound = false;
+			}
 		}
 
 		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
@@ -438,19 +395,16 @@ public abstract class MainTeleOp extends OpMode {
 		} else {
 			// Proportional control: power is proportional to joystick position
 			scheduler.schedule(spindexer.DirectPower(leftJoystickY * spindexerPower));
-			
+
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
-				if (!gamepad2.x) {
-					scheduler.schedule(transfer.TransferIn());
-				}
 			} else {
 				scheduler.schedule(transfer.IntakeDoorIn());
-				if (!gamepad2.x) {
-					scheduler.schedule(transfer.TransferIn());
-				}
 			}
-			
+			if (!gamepad2.x) {
+				scheduler.schedule(transfer.TransferIn());
+			}
+
 			spindexerMidCrossed = false;
 			spindexerUpCrossed = false;
 			spindexerDownCrossed = false;

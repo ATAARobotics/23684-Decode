@@ -31,7 +31,7 @@ public class Spindexer extends SubsystemBase {
 	private double PREV_F = 0;
 	private double power = 0;
 	private boolean isAtTarget = true;
-	private boolean overrided= false;
+	private boolean overrided = false;
 
 	public Spindexer(HardwareMap hardwareMap) {
 		spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
@@ -72,7 +72,8 @@ public class Spindexer extends SubsystemBase {
 
 	public Command DirectPower(double power) {
 		return new InstantCommand(
-				() -> {spindexerMotor.setPower(power);
+				() -> {
+					spindexerMotor.setPower(power);
 					overrided = true;
 					isAtTarget = false;
 				}, this

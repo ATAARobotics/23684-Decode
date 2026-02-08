@@ -34,17 +34,15 @@ public class ShooterDistanceTuning extends OpMode {
 	public static double spindexerSpeed = 0;
 	public static Team team = Team.BLUE;
 
-	CommandScheduler scheduler;
-	Shooter shooter;
-	Spindexer spindexer;
-	Intake intake;
-	Transfer transfer;
-	Follower follower;
-
-	protected boolean aButtonPressed = false;
+	private CommandScheduler scheduler;
+	private Shooter shooter;
+	private Spindexer spindexer;
+	private Intake intake;
+	private Transfer transfer;
+	private Follower follower;
+	private TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 	private Supplier<PathChain> pathChain;
-
-	TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+	private boolean aButtonPressed = false;
 
 	@Override
 	public void init() {
@@ -61,9 +59,9 @@ public class ShooterDistanceTuning extends OpMode {
 		scheduler.run();
 
 		shooter.setTuningMode(true);
-
 		transfer.runAutomaticTransfer = true;
 
+		// Create path chain for tuning
 		pathChain = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(70.609, 103.834))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(151.386), 0.8))

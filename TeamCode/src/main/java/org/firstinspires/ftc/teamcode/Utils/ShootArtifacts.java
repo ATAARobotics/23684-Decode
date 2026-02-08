@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.Utils;
 
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
@@ -15,7 +14,7 @@ public class ShootArtifacts extends SequentialCommandGroup {
 				shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
 				shooter.WaitForTarget().withTimeout(3000L),
 				spindexer.DirectPower(1),
-                new WaitCommand(2800),
+				new WaitCommand(2800),
 //				shooter.WaitForDrop().withTimeout(560),
 //				shooter.WaitForTarget().withTimeout(560),
 //				shooter.WaitForDrop().withTimeout(560),
