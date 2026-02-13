@@ -179,7 +179,7 @@ public abstract class MainTeleOp extends OpMode {
 			if (getTeam().equals(Team.BLUE)) {
 				follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
 			} else if (getTeam().equals(Team.RED)) {
-				follower.setPose(new Pose(6.2797255628690891, 7.36770930252676, Math.toRadians(180)));
+				follower.setPose(new Pose(5, 6, Math.toRadians(180)));
 			}
 		}
 
@@ -218,7 +218,6 @@ public abstract class MainTeleOp extends OpMode {
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
-
 		if (follower.getPose().getY() >= 72.0) {
 			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
 			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
