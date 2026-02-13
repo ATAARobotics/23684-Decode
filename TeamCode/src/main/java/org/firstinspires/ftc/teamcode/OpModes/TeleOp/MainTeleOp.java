@@ -126,12 +126,12 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		pathFrontBlue = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 96.361))))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(81, 94.361))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(330), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(63, 96.361))))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(61, 94.361))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210), 0.8))
 				.build();
 
@@ -224,7 +224,6 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad1.cross && !aButtonPressed) {
-
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
