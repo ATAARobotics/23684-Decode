@@ -18,16 +18,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
-import com.seattlesolvers.solverslib.command.WaitCommand;
-
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
-import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -46,7 +39,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
-	//protected Limelight limelight;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -87,23 +79,6 @@ public abstract class MainTeleOp extends OpMode {
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
 	DistanceSensor distanceSensor;
 
-//	double indicatorValue() {
-//		// TODO: Export to a util class and beautify
-//		double x = timer.seconds();
-//		double hz = 1;
-//		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
-//			hz = 2.5;
-//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
-//			hz = 1;
-//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
-//			hz = 0.5;
-//		} else {
-//			hz = 0.5;
-//		}
-//		int state = Math.floorMod((int) Math.floor(x * hz), 2);
-//		return 0.23 * state + 0.388;
-//	}
-
 	@Override
 	public void init() {
 		// Initialize hardware
@@ -116,7 +91,6 @@ public abstract class MainTeleOp extends OpMode {
 		}
 		scheduler = CommandScheduler.getInstance();
 		scheduler.reset();
-		//light = new Limelight(hardwareMap);
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
 		scheduler.schedule(shooter.SetTarget(0, 0));
@@ -202,7 +176,7 @@ public abstract class MainTeleOp extends OpMode {
 			if (getTeam().equals(Team.BLUE)) {
 				follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
 			} else if (getTeam().equals(Team.RED)) {
-				follower.setPose(new Pose(5, 6, Math.toRadians(180)));
+				follower.setPose(new Pose(5, 5, Math.toRadians(180)));
 			}
 		}
 
@@ -445,9 +419,6 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addLine("=== MAIN TELEOP ===");
 		panelsTelemetry.addData("Drive Mode", "Mecanum");
 		panelsTelemetry.addData("Location", follower.getPose().toString());
-
-//		panelsTelemetry.addLine("=== LIMELIGHT ===");
-//		limelight.Telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
