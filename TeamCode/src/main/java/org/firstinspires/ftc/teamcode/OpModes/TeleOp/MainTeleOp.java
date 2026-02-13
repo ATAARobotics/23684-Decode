@@ -19,12 +19,15 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
+import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -36,7 +39,7 @@ import java.util.function.Supplier;
 @Config
 @Configurable
 public abstract class MainTeleOp extends OpMode {
-	public double spindexerPower = 1;
+	public  double spindexerPower = 1;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -63,24 +66,43 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
 
-	protected boolean artifactFound = false;
-	protected boolean toggleDistance = false;
+	boolean ArtifactFound = false;
+	boolean ToggleDistance = false;
 
-	protected DcMotorEx frontRight;
-	protected DcMotorEx rearRight;
-	protected DcMotorEx frontLeft;
-	protected DcMotorEx rearLeft;
-	protected ElapsedTime timer = new ElapsedTime();
-	protected double upperShooterSpeed = Shooter.AUDIENCE_RPM;
-	protected double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
-	protected DistanceSensor distanceSensor;
-	protected Servo rgbServo;
+	DcMotorEx frontRight;
+	DcMotorEx rearRight;
+	DcMotorEx frontLeft;
+	DcMotorEx rearLeft;
+	ElapsedTime timer = new ElapsedTime();
+	private Servo rgbServo;
 	// Performance monitoring
-	protected long maxLoopTime = 0;
-	protected Supplier<PathChain> pathBackBlue;
-	protected Supplier<PathChain> pathFrontBlue;
-	protected Supplier<PathChain> redGoalShootingPath;
-	protected Supplier<PathChain> redAudienceShootingPath;
+	private long maxLoopTime = 0;
+
+	private Supplier<PathChain> pathBackBlue;
+	private Supplier<PathChain> pathFrontBlue;
+	private Supplier<PathChain> redGoalShootingPath;
+	private Supplier<PathChain> redAudienceShootingPath;
+
+	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
+	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+	DistanceSensor distanceSensor;
+
+//	double indicatorValue() {
+//		// TODO: Export to a util class and beautify
+//		double x = timer.seconds();
+//		double hz = 1;
+//		if (hardwareMap.voltageSensor.iterator().next().getVoltage() >= 13.5) {
+//			hz = 2.5;
+//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 13.5 && hardwareMap.voltageSensor.iterator().next().getVoltage() >= 12) {
+//			hz = 1;
+//		} else if (hardwareMap.voltageSensor.iterator().next().getVoltage() <= 11) {
+//			hz = 0.5;
+//		} else {
+//			hz = 0.5;
+//		}
+//		int state = Math.floorMod((int) Math.floor(x * hz), 2);
+//		return 0.23 * state + 0.388;
+//	}
 
 	@Override
 	public void init() {
@@ -104,8 +126,7 @@ public abstract class MainTeleOp extends OpMode {
 		// Set shooter dependency for conditional transfer
 		transfer.setShooter(shooter);
 		transfer.setSpindexer(spindexer);
-
-		// Initialize RGB indicator servo and distance sensor
+		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
 
@@ -132,12 +153,12 @@ public abstract class MainTeleOp extends OpMode {
 
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 96.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(330), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(330), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(63, 96.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(210), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210), 0.8))
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
@@ -165,8 +186,10 @@ public abstract class MainTeleOp extends OpMode {
 		handleRumbleFeedback();
 		scheduler.run();
 		shooter.periodic();
+        spindexer.periodic();
 
 		displayTelemetry();
+		// Performance monitoring
 		long loopTime = System.nanoTime() - startTime;
 
 		if (loopTime > maxLoopTime) {
@@ -362,25 +385,27 @@ public abstract class MainTeleOp extends OpMode {
 //			dpadUpPressed = false;
 //		}
 
-		if (Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up) {
-			toggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
-
-			if (toggleDistance && !artifactFound) {
-				scheduler.schedule(new SequentialCommandGroup(
-						new ParallelCommandGroup(spindexer.DirectPower(1), new WaitCommand(270)),
-						spindexer.DirectPower(0)));
-				artifactFound = true;
-			}
-			if (!toggleDistance && artifactFound) {
-				artifactFound = false;
-			}
-		}
+//		if(Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up){
+//			ToggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
+//
+//			if(ToggleDistance && !ArtifactFound){
+//				scheduler.schedule(new SequentialCommandGroup(
+//						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
+//						spindexer.DirectPower(0)));
+//				ArtifactFound = true;
+//			}if(!ToggleDistance && ArtifactFound){
+//				//scheduler.schedule(spindexer.DirectPower(0));
+//				ArtifactFound = false;
+//			}
+//
+//		}
 
 		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;
 
 		// Dead zone: stop spindexer
-		if (Math.abs(leftJoystickY) < 0.1) {
+		if (Math.abs(gamepad2.left_stick_y) < 0.2) {
+			leftJoystickY = 0;
 			if (!spindexerMidCrossed) {
 				scheduler.schedule(spindexer.DirectPower(0));
 				scheduler.schedule(transfer.IntakeDoorStop());
@@ -393,15 +418,18 @@ public abstract class MainTeleOp extends OpMode {
 			}
 		} else {
 			// Proportional control: power is proportional to joystick position
-			scheduler.schedule(spindexer.DirectPower(leftJoystickY * spindexerPower));
+			scheduler.schedule(new PerpetualCommand(spindexer.DirectPower(leftJoystickY * spindexerPower)));
 
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
+				if (!gamepad2.x) {
+					scheduler.schedule(transfer.TransferIn());
+				}
 			} else {
 				scheduler.schedule(transfer.IntakeDoorIn());
-			}
-			if (!gamepad2.x) {
-				scheduler.schedule(transfer.TransferIn());
+				if (!gamepad2.x) {
+					scheduler.schedule(transfer.TransferIn());
+				}
 			}
 
 			spindexerMidCrossed = false;

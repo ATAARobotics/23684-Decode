@@ -310,7 +310,7 @@ public abstract class AudienceAuto extends OpMode {
 								new BezierLine(
 										new Pose(81.000, 9.000),
 
-										new Pose(83.000, 17.328)
+										new Pose(83.000, 11)
 								)
 						).setLinearHeadingInterpolation(Math.toRadians(-90), Math.toRadians(-120))
 
@@ -328,9 +328,9 @@ public abstract class AudienceAuto extends OpMode {
 
 				collectSpikeOne = follower.pathBuilder().addPath(
 								new BezierLine(
-										new Pose(98.000, 40.50),
+										new Pose(98.000, 35),
 
-										new Pose(135.000, 40.50)
+										new Pose(135.000, 35)
 								)
 						).setConstantHeadingInterpolation(Math.toRadians(0))
 
@@ -338,7 +338,7 @@ public abstract class AudienceAuto extends OpMode {
 
 				toShootSpikeOne = follower.pathBuilder().addPath(
 								new BezierLine(
-										new Pose(135.000, 40.50),
+										new Pose(135.000, 35),
 
 										new Pose(83.000, 11.000)
 								)
