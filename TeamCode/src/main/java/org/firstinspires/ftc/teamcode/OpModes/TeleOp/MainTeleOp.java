@@ -19,6 +19,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -162,14 +163,13 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 3))))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
 				.build();
 	}
 
 	@Override
 	public void init_loop() {
-
 
 	}
 
@@ -194,6 +194,7 @@ public abstract class MainTeleOp extends OpMode {
 		handleRumbleFeedback();
 		scheduler.run();
 		shooter.periodic();
+		spindexer.periodic();
 
 		displayTelemetry();
 		// Performance monitoring
@@ -309,7 +310,7 @@ public abstract class MainTeleOp extends OpMode {
 		// Left Trigger: run intake
 		if (gamepad2.left_trigger > 0.5 && !leftTriggerPressed) {
 			scheduler.schedule(intake.In());
-			scheduler.schedule(transfer.IntakeDoorIn());
+			scheduler.schedule(transfer.IntakeDoorOut());
 			leftTriggerPressed = true;
 		} else if (gamepad2.left_trigger <= 0.5 && leftTriggerPressed) {
 			scheduler.schedule(intake.Stop());
@@ -406,26 +407,27 @@ public abstract class MainTeleOp extends OpMode {
 //			dpadUpPressed = false;
 //		}
 
-		if(Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up){
-			ToggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
-
-			if(ToggleDistance && !ArtifactFound){
-				scheduler.schedule(new SequentialCommandGroup(
-						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
-						spindexer.DirectPower(0)));
-				ArtifactFound = true;
-			}if(!ToggleDistance && ArtifactFound){
-				//scheduler.schedule(spindexer.DirectPower(0));
-				ArtifactFound = false;
-			}
-
-		}
+//		if(Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up){
+//			ToggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
+//
+//			if(ToggleDistance && !ArtifactFound){
+//				scheduler.schedule(new SequentialCommandGroup(
+//						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
+//						spindexer.DirectPower(0)));
+//				ArtifactFound = true;
+//			}if(!ToggleDistance && ArtifactFound){
+//				//scheduler.schedule(spindexer.DirectPower(0));
+//				ArtifactFound = false;
+//			}
+//
+//		}
 
 		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;
 
 		// Dead zone: stop spindexer
-		if (Math.abs(leftJoystickY) < 0.1) {
+		if (Math.abs(gamepad2.left_stick_y) < 0.2) {
+			leftJoystickY = 0;
 			if (!spindexerMidCrossed) {
 				scheduler.schedule(spindexer.DirectPower(0));
 				scheduler.schedule(transfer.IntakeDoorStop());
@@ -438,8 +440,8 @@ public abstract class MainTeleOp extends OpMode {
 			}
 		} else {
 			// Proportional control: power is proportional to joystick position
-			scheduler.schedule(spindexer.DirectPower(leftJoystickY * spindexerPower));
-			
+			scheduler.schedule(new PerpetualCommand(spindexer.DirectPower(leftJoystickY * spindexerPower)));
+
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
 				if (!gamepad2.x) {
@@ -451,7 +453,7 @@ public abstract class MainTeleOp extends OpMode {
 					scheduler.schedule(transfer.TransferIn());
 				}
 			}
-			
+
 			spindexerMidCrossed = false;
 			spindexerUpCrossed = false;
 			spindexerDownCrossed = false;
