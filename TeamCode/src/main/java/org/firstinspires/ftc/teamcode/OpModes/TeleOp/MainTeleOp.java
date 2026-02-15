@@ -106,17 +106,6 @@ public abstract class MainTeleOp extends OpMode {
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
-		// Initialize drive motors
-		frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
-		rearRight = hardwareMap.get(DcMotorEx.class, "rearRight");
-		frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
-		rearLeft = hardwareMap.get(DcMotorEx.class, "rearLeft");
-
-		frontRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-		frontLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-		rearRight.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-		rearLeft.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
 
@@ -126,13 +115,13 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		pathFrontBlue = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(81, 94.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(330), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(107, 101))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(344), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(61, 94.361))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(210), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(39.03, 101.80))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(203), 0.8))
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
@@ -176,7 +165,7 @@ public abstract class MainTeleOp extends OpMode {
 			if (getTeam().equals(Team.BLUE)) {
 				follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
 			} else if (getTeam().equals(Team.RED)) {
-				follower.setPose(new Pose(5, 5, Math.toRadians(180)));
+				follower.setPose(new Pose(5, 7, Math.toRadians(180)));
 			}
 		}
 
@@ -319,7 +308,7 @@ public abstract class MainTeleOp extends OpMode {
 		if (gamepad2.right_bumper) {
 			spindexerPower = 0.5;
 		} else {
-			spindexerPower = 1;
+			spindexerPower = 0.7;
 		}
 
 		// Dpad Down: Manual spindexer control

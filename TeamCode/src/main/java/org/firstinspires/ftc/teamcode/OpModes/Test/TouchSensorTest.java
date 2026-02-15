@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.OpModes.Test;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
@@ -11,6 +12,8 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 
+
+@TeleOp(name = "Touch Sensor Test", group = " Test")
 public class TouchSensorTest extends OpMode {
     Spindexer spindexer;
 
@@ -29,7 +32,11 @@ public class TouchSensorTest extends OpMode {
         scheduler = CommandScheduler.getInstance();
         scheduler.reset();
         spindexer = new Spindexer(hardwareMap);
+        transfer = new Transfer(hardwareMap);
+        intake = new Intake(hardwareMap);
         intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensor");
+
+        spindexer.zeroSpindexer();
 
     }
 
@@ -52,14 +59,16 @@ public class TouchSensorTest extends OpMode {
 
         if(intakeTouchSensor.isPressed() && !touchSensorTouched) {
             scheduler.schedule(new SequentialCommandGroup(
-						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
-						spindexer.DirectPower(0)));
+                    new WaitCommand(300),
+                    spindexer.NextTarget()
+            ));
             touchSensorTouched = true;
         } else if(!intakeTouchSensor.isPressed() && touchSensorTouched) {
             touchSensorTouched = false;
         }
 
         telemetry.addData("Touch Sensor Touched", intakeTouchSensor.isPressed());
+
 
 
 
