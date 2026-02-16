@@ -143,4 +143,6 @@ public class Spindexer extends SubsystemBase {
 	public boolean isAtTarget() {
 		return isAtTarget;
 	}
+
+	// TODO: Implement getCurrentSlot() to determine which slot (1, 2, or 3) is at the shooting position
 }

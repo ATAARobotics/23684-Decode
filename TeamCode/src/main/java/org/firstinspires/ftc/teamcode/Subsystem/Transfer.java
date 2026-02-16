@@ -110,12 +110,11 @@ public class Transfer extends SubsystemBase {
 
 	public void updateAutomaticTransfer(boolean passive) {
 		if (shooter != null && spindexer != null) {
-//				reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
-//				reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);
-			reachedAverageTarget = (shooter.lowerTarget >= 100) && (shooter.upperTarget >= 100) && (((Math.abs(shooter.lowerRPM - shooter.lowerTarget) + Math.abs(shooter.upperRPM - shooter.upperTarget)) / 2) <= SHOOTER_RPM_TOLERANCE);
-			spindexerAtTarget = spindexer.isAtTarget();
+			reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
+			reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);
+//			reachedAverageTarget = (shooter.lowerTarget >= 100) && (shooter.upperTarget >= 100) && (((Math.abs(shooter.lowerRPM - shooter.lowerTarget) + Math.abs(shooter.upperRPM - shooter.upperTarget)) / 2) <= SHOOTER_RPM_TOLERANCE);
 
-			if (reachedAverageTarget) {// && spindexerAtTarget) {
+			if (reachedUpperTarget && reachedLowerTarget) {// && spindexerAtTarget) {
 				transferLeft.setPower(1);
 				transferRight.setPower(1);
 			} else if (!passive) {

@@ -19,11 +19,11 @@ public class Shooter extends SubsystemBase {
 	private static final double HALF_DIVISOR = 0.5;
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
-	public static double UPPER_P = 0.004, UPPER_I = 0, UPPER_D = 0;
-	public static double LOWER_P = 0.009, LOWER_I = 0, LOWER_D = 0;
+	public static double UPPER_P = 0.019, UPPER_I = 0, UPPER_D = 0;
+	public static double LOWER_P = 0.017, LOWER_I = 0, LOWER_D = 0;
 	// --- Feedforward Constants ---
-	public static double UPPER_KS = 0.14, UPPER_KV = 0.000149;
-	public static double LOWER_KS = 0.25, LOWER_KV = 0.000146;
+	public static double UPPER_KS = 0.25, UPPER_KV = 0.000227;
+	public static double LOWER_KS = 0.27, LOWER_KV = 0.000134;
 	// --- Only for Tuning ---
 	public static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
 	public static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;
@@ -35,6 +35,7 @@ public class Shooter extends SubsystemBase {
 	public static double RPM_TOLERANCE = 35;
 	public static double DROP_RPM_TOLERANCE = 150;
 	public static double TICKS_PER_REVOLUTION = 28.0;
+
 	// --- Pre-calculated constants ---
 	private static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
 	public static double AUDIENCE_RPM = 2255;

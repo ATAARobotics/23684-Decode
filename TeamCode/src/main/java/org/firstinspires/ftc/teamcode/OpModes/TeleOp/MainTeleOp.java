@@ -20,6 +20,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
@@ -39,6 +40,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
+	protected Colour colour;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -97,6 +99,7 @@ public abstract class MainTeleOp extends OpMode {
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
+		colour = new Colour(hardwareMap);
 		// Set shooter dependency for conditional transfer
 		transfer.setShooter(shooter);
 		transfer.setSpindexer(spindexer);
@@ -149,7 +152,9 @@ public abstract class MainTeleOp extends OpMode {
 		handleRumbleFeedback();
 		scheduler.run();
 		shooter.periodic();
-        spindexer.periodic();
+		spindexer.periodic();
+		// TODO: Call colour.update() with the current spindexer slot once getCurrentSlot() is implemented
+		// colour.update(spindexer.getCurrentSlot());
 
 		displayTelemetry();
 		// Performance monitoring
@@ -204,10 +209,10 @@ public abstract class MainTeleOp extends OpMode {
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
-		if (follower.getPose().getY() >= 72.0) {
-			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
-			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
-		} else {
+		if ((upperShooterSpeed != Shooter.GOAL_RPM_UPPER || lowerShooterSpeed != Shooter.GOAL_RPM_LOWER) && follower.getPose().getY() >= 72.0) {
+			upperShooterSpeed = Shooter.AUDIENCE_RPM;
+			lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+		} else if (upperShooterSpeed != Shooter.AUDIENCE_RPM || lowerShooterSpeed != Shooter.AUDIENCE_RPM) {
 			upperShooterSpeed = Shooter.AUDIENCE_RPM;
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM;
 		}
@@ -228,6 +233,7 @@ public abstract class MainTeleOp extends OpMode {
 			} else if (getTeam() == Team.BLUE) {
 				follower.followPath(pathFrontBlue.get(), true);
 			}
+
 			b1ButtonPressed = true;
 		} else if (!gamepad1.circle && b1ButtonPressed) {
 			b1ButtonPressed = false;
@@ -416,6 +422,12 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addLine("=== TRANSFER ===");
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
+
+		panelsTelemetry.addLine("=== COLOUR ===");
+		panelsTelemetry.addData("Slot 1", colour.colours.getSlot1().toString());
+		panelsTelemetry.addData("Slot 2", colour.colours.getSlot2().toString());
+		panelsTelemetry.addData("Slot 3", colour.colours.getSlot3().toString());
+		// TODO: Add current slot telemetry once getCurrentSlot() is implemented
 
 		panelsTelemetry.update();
 	}
