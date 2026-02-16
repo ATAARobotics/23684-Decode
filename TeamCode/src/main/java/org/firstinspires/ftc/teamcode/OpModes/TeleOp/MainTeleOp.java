@@ -377,27 +377,18 @@ public abstract class MainTeleOp extends OpMode {
 			if (!spindexerMidCrossed) {
 				scheduler.schedule(spindexer.DirectPower(0));
 				scheduler.schedule(transfer.IntakeDoorStop());
-				if (!gamepad2.x) {
-					scheduler.schedule(transfer.TransferStop());
-				}
 				spindexerMidCrossed = true;
 				spindexerUpCrossed = false;
 				spindexerDownCrossed = false;
 			}
-		} else {
-			// Proportional control: power is proportional to joystick position
+		}
+		if (Math.abs(gamepad2.left_stick_y) >= 0.2) {
 			scheduler.schedule(new PerpetualCommand(spindexer.DirectPower(leftJoystickY * spindexerPower)));
 
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
-				if (!gamepad2.x) {
-					scheduler.schedule(transfer.TransferIn());
-				}
 			} else {
 				scheduler.schedule(transfer.IntakeDoorIn());
-				if (!gamepad2.x) {
-					scheduler.schedule(transfer.TransferIn());
-				}
 			}
 
 			spindexerMidCrossed = false;
