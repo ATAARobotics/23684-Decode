@@ -167,8 +167,7 @@ public class Colour extends SubsystemBase {
 				break;
 			case 3:
 				colours.setSlot3(SlotColour.NONE);
-				break;
-		}
+				break;		}
 	}
 
 	private SlotColour detectColour(NormalizedColorSensor sensor) {
