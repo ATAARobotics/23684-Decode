@@ -109,7 +109,7 @@ public class Transfer extends SubsystemBase {
 	}
 
 	public void updateAutomaticTransfer(boolean passive) {
-		if (shooter != null && spindexer != null) {
+		if (shooter != null) {
 			reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
 			reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);
 //			reachedAverageTarget = (shooter.lowerTarget >= 100) && (shooter.upperTarget >= 100) && (((Math.abs(shooter.lowerRPM - shooter.lowerTarget) + Math.abs(shooter.upperRPM - shooter.upperTarget)) / 2) <= SHOOTER_RPM_TOLERANCE);

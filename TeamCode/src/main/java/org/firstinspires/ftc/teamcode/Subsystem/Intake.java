@@ -9,9 +9,9 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 public class Intake extends SubsystemBase {
 	DcMotor intake;
 
-	double INSPEED = 0.8;
-	double OUTSPEED = -0.8;
-	double SLOWSPEED = 0.1;
+	double INSPEED = 1;
+	double OUTSPEED = -1 ;
+	double SLOWSPEED = 0.5;
 	double SLOWSPEEDOUT = -0.1;
 
 	public Intake(HardwareMap hardwareMap) {
@@ -37,6 +37,7 @@ public class Intake extends SubsystemBase {
 				() -> intake.setPower(SLOWSPEEDOUT), this
 		);
 	}
+
 
 
 	public Command Out() {

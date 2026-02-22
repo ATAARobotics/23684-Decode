@@ -11,9 +11,9 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 public class ShootArtifacts extends SequentialCommandGroup {
 	public ShootArtifacts(Shooter shooter, Spindexer spindexer, Transfer transfer, Intake intake) {
 		addCommands(
-				shooter.SetTarget(Shooter.AUDIENCE_RPM - 20, Shooter.AUDIENCE_RPM - 20 ),
+				shooter.SetTarget(Shooter.AUDIENCE_RPM , Shooter.AUDIENCE_RPM),
 				shooter.WaitForTarget().withTimeout(3000L),
-				spindexer.DirectPower(1),
+				spindexer.DirectPower(0.25),
 				new WaitCommand(2800),
 //				shooter.WaitForDrop().withTimeout(560),
 //				shooter.WaitForTarget().withTimeout(560),

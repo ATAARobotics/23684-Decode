@@ -4,6 +4,7 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -29,7 +30,7 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 public abstract class AudienceAuto extends OpMode {
 	// Configurable wait times (in milliseconds)
 	public static int SHOOT_DWELL_TIME = 3200; // Time to allow all artifacts to be shot
-	public static int SPIKE_COLLECTION_WAIT = 800; // Short wait during spike collection
+	public static int SPIKE_COLLECTION_WAIT = 20; // Short wait during spike collection
 	private final ElapsedTime timer = new ElapsedTime();
 	public Follower follower;
 	public Paths paths;
@@ -83,7 +84,10 @@ public abstract class AudienceAuto extends OpMode {
 		timer.startTime();
 		scheduler.schedule(
 				new SequentialCommandGroup(
-						new FollowPathCommand(follower, paths.shootPreload),
+						new ParallelCommandGroup(
+							new FollowPathCommand(follower, paths.shootPreload),
+							shooter.SetTarget(Shooter.AUDIENCE_RPM,Shooter.AUDIENCE_RPM)
+						),
 						transfer.SetAutomaticTransfer(true),
 						new ShootArtifacts(shooter, spindexer, transfer, intake),
 						transfer.SetAutomaticTransfer(false),
@@ -93,17 +97,19 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
-						new FollowPathCommand(follower, paths.toSpikeOne),
-
+						new FollowPathCommand(follower, paths.toSpikeOne).setGlobalMaxPower(0.6),
 						intake.In(),
-						spindexer.DirectPower(1),
+						spindexer.DirectPower(0.3),
 						transfer.IntakeDoorOut(),
 
-						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-						new FollowPathCommand(follower, paths.collectSpikeOne),
-						new WaitCommand(SPIKE_COLLECTION_WAIT),
 
-						intake.SlowOut(),
+						new FollowPathCommand(follower, paths.collectSpikeOne).setGlobalMaxPower(1),
+
+
+
+
+						intake.Slow(),
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
 						spindexer.DirectPower(0),
 						new FollowPathCommand(follower, paths.toShootSpikeOne),
 						transfer.IntakeDoorOut(),
@@ -117,27 +123,26 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
-						new FollowPathCommand(follower, paths.toSpikeTwo),
+						new FollowPathCommand(follower, paths.toSpikeTwo).setGlobalMaxPower(0.6),
 
 						transfer.TransferIn(),
 						new ParallelCommandGroup(
-								spindexer.DirectPower(1),
+								spindexer.DirectPower(0.3),
 								transfer.IntakeDoorOut(),
 								intake.In()
 						),
-						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
-						new FollowPathCommand(follower, paths.collectSpikeTwo),
-						new WaitCommand(SPIKE_COLLECTION_WAIT),
 
-						shooter.SetTarget(0, 0),
+						new FollowPathCommand(follower, paths.collectSpikeTwo).setGlobalMaxPower(1),
+
+
+						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
 						transfer.TransferStop(),
 						new ParallelCommandGroup(
 								spindexer.DirectPower(0),
-
-								intake.SlowOut()
+								intake.Slow()
 						),
 
-						new WaitCommand(SPIKE_COLLECTION_WAIT),
+
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 						transfer.IntakeDoorOut(),
 						transfer.SetAutomaticTransfer(true),
@@ -149,7 +154,39 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.TransferStop(),
 						transfer.IntakeDoorStop(),
 
-						new FollowPathCommand(follower, paths.toParkSpikeTwo)
+//						new FollowPathCommand(follower, paths.toParkSpikeTwo)
+
+						new FollowPathCommand(follower, paths.toSpikeThree).setGlobalMaxPower(0.6),
+
+						transfer.TransferIn(),
+						new ParallelCommandGroup(
+								spindexer.DirectPower(0.3),
+								transfer.IntakeDoorOut(),
+								intake.In()
+						),
+						new WaitCommand(SPIKE_COLLECTION_WAIT), // Short wait during collection
+						new FollowPathCommand(follower, paths.toCollectSpikeThree).setGlobalMaxPower(1),
+						new WaitCommand(SPIKE_COLLECTION_WAIT),
+
+						shooter.SetTarget(0, 0),
+						transfer.TransferStop(),
+						new ParallelCommandGroup(
+								spindexer.DirectPower(0),
+
+								intake.SlowOut()
+						),
+
+						new WaitCommand(SPIKE_COLLECTION_WAIT),
+						new FollowPathCommand(follower, paths.toShootSpikeThree),
+						transfer.IntakeDoorOut(),
+						transfer.SetAutomaticTransfer(true),
+						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						transfer.SetAutomaticTransfer(false),
+						// Turn off the motors and servos
+						shooter.SetTarget(0, 0),
+						intake.Stop(),
+						transfer.TransferStop(),
+						transfer.IntakeDoorStop()
 				)
 		);
 
@@ -183,13 +220,22 @@ public abstract class AudienceAuto extends OpMode {
 		public PathChain shootPreload;
 		public PathChain toSpikeOne;
 		public PathChain collectSpikeOne;
+
+		public PathChain CollectionWiggleInSpikeOne;
+		public PathChain CollectionWiggleSpikeOne;
 		public PathChain toShootSpikeOne;
 		public PathChain toSpikeTwo;
 		public PathChain collectSpikeTwo;
+
+		public PathChain CollectionWiggleInSpikeTwo;
+		public PathChain CollectionWiggleSpikeTwo;
 		public PathChain toParkSpikeTwo;
 		public PathChain toShootSpikeTwo;
 		public PathChain toSpikeThree;
 		public PathChain toCollectSpikeThree;
+
+		public PathChain CollectionWiggleInSpikeThree;
+		public PathChain CollectionWiggleOutSpikeThree;
 		public PathChain toShootSpikeThree;
 
 		public Paths(Follower follower, Team team) {
@@ -219,7 +265,44 @@ public abstract class AudienceAuto extends OpMode {
 				collectSpikeOne = follower
 						.pathBuilder()
 						.addPath(
-								new BezierLine(new Pose(46.000, 40.50), new Pose(9.000, 40.50))
+								new BezierLine(new Pose(46.000, 40.50), new Pose(11.000, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+
+						.addPath(
+								new BezierLine(new Pose(11, 40.50), new Pose(17.000, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(15, 40.50), new Pose(11, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
+				CollectionWiggleSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(11, 40.50), new Pose(17.000, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(15, 40.50), new Pose(11, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(11, 40.50), new Pose(17.000, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(17, 40.50), new Pose(9, 40.50))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
+				CollectionWiggleInSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(15, 40.50), new Pose(9, 40.50))
 						)
 						.setConstantHeadingInterpolation(Math.toRadians(180))
 						.build();
@@ -227,7 +310,7 @@ public abstract class AudienceAuto extends OpMode {
 				toShootSpikeOne = follower
 						.pathBuilder()
 						.addPath(
-								new BezierLine(new Pose(9.000, 40.50), new Pose(59.440, 17.328))
+								new BezierLine(new Pose(11.000, 40.50), new Pose(59.440, 17.328))
 						)
 						.setLinearHeadingInterpolation(
 								Math.toRadians(180),
@@ -249,7 +332,44 @@ public abstract class AudienceAuto extends OpMode {
 				collectSpikeTwo = follower
 						.pathBuilder()
 						.addPath(
-								new BezierLine(new Pose(46.000, 65.500), new Pose(9.000, 65.500))
+								new BezierLine(new Pose(46.000, 65.500), new Pose(11.000, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+
+						.addPath(
+								new BezierLine(new Pose(11, 65.500), new Pose(17.000, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(17, 65.500), new Pose(11, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
+				CollectionWiggleSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(9, 65.500), new Pose(12.000, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
+				CollectionWiggleInSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(11, 65.500), new Pose(17.000, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(17, 65.500), new Pose(11, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(11, 65.500), new Pose(17.000, 65.500))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(11, 65.500), new Pose(17, 65.500))
 						)
 						.setConstantHeadingInterpolation(Math.toRadians(180))
 						.build();
@@ -257,7 +377,7 @@ public abstract class AudienceAuto extends OpMode {
 				toShootSpikeTwo = follower
 						.pathBuilder()
 						.addPath(
-								new BezierLine(new Pose(9.000, 65.500), new Pose(59.440, 17.328))
+								new BezierLine(new Pose(11.000, 65.500), new Pose(59.440, 17.328))
 						)
 						.setLinearHeadingInterpolation(
 								Math.toRadians(180),
@@ -295,11 +415,13 @@ public abstract class AudienceAuto extends OpMode {
 						.setConstantHeadingInterpolation(Math.toRadians(180))
 						.build();
 
-				toShootSpikeThree = follower
-						.pathBuilder()
-						.addPath(
-								new BezierLine(new Pose(15.000, 89.500), new Pose(59.000, 17.328))
-						)
+				toShootSpikeThree = follower.pathBuilder().addPath(
+						new BezierCurve(
+								new Pose(15.000, 89.500),
+								new Pose(52.449, 88.976),
+								new Pose(15.351, 84.391),
+								new Pose(59.000, 17.000)))
+
 						.setLinearHeadingInterpolation(
 								Math.toRadians(180),
 								Math.toRadians(294.935)
@@ -312,7 +434,7 @@ public abstract class AudienceAuto extends OpMode {
 
 										new Pose(83.000, 11)
 								)
-						).setLinearHeadingInterpolation(Math.toRadians(-90), Math.toRadians(-120))
+						).setLinearHeadingInterpolation(Math.toRadians(-90), Math.toRadians(-114.14))
 
 						.build();
 
@@ -322,7 +444,7 @@ public abstract class AudienceAuto extends OpMode {
 
 										new Pose(98.000, 35.000)
 								)
-						).setLinearHeadingInterpolation(Math.toRadians(-120), Math.toRadians(0))
+						).setLinearHeadingInterpolation(Math.toRadians(-114.14), Math.toRadians(0))
 
 						.build();
 
@@ -330,19 +452,48 @@ public abstract class AudienceAuto extends OpMode {
 								new BezierLine(
 										new Pose(98.000, 35),
 
-										new Pose(135.000, 35)
+										new Pose(143.000, 35)
 								)
 						).setConstantHeadingInterpolation(Math.toRadians(0))
 
 						.build();
 
+
+				CollectionWiggleSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(143, 35), new Pose(139, 35))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(139, 35), new Pose(143, 35))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(143, 35), new Pose(139, 35))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(139, 35), new Pose(143, 35))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
+				CollectionWiggleInSpikeOne = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(139, 35), new Pose(143, 35))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
 				toShootSpikeOne = follower.pathBuilder().addPath(
 								new BezierLine(
-										new Pose(135.000, 35),
+										new Pose(143.000, 35),
 
 										new Pose(83.000, 11.000)
 								)
-						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
+						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-114.14))
 
 						.build();
 
@@ -353,7 +504,7 @@ public abstract class AudienceAuto extends OpMode {
 
 										new Pose(98.000, 60.000)
 								)
-						).setLinearHeadingInterpolation(Math.toRadians(-120), Math.toRadians(0))
+						).setLinearHeadingInterpolation(Math.toRadians(-114.14), Math.toRadians(0))
 
 						.build();
 
@@ -361,19 +512,47 @@ public abstract class AudienceAuto extends OpMode {
 								new BezierLine(
 										new Pose(98.000, 60.000),
 
-										new Pose(135.000, 60.000)
+										new Pose(143.000, 60.000)
 								)
 						).setConstantHeadingInterpolation(Math.toRadians(0))
 
 						.build();
 
+				CollectionWiggleSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(143, 60), new Pose(137, 60))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(137, 60), new Pose(143, 60))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(143, 60), new Pose(137, 60))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.addPath(
+								new BezierLine(new Pose(137, 60), new Pose(143, 60))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
+				CollectionWiggleInSpikeTwo = follower
+						.pathBuilder()
+						.addPath(
+								new BezierLine(new Pose(137, 60), new Pose(143, 60))
+						)
+						.setConstantHeadingInterpolation(Math.toRadians(180))
+						.build();
+
 				toShootSpikeTwo = follower.pathBuilder().addPath(
 								new BezierLine(
-										new Pose(135.000, 60.000),
+										new Pose(143.000, 60.000),
 
 										new Pose(83.000, 11.000)
 								)
-						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
+						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-114.14))
 						.build();
 
 				toParkSpikeTwo = follower
@@ -382,7 +561,7 @@ public abstract class AudienceAuto extends OpMode {
 								new BezierLine(new Pose(83, 11), new Pose(105, 34))
 						)
 						.setLinearHeadingInterpolation(
-								Math.toRadians(-120),
+								Math.toRadians(-114.14),
 								Math.toRadians(0)
 						)
 						.build();
@@ -393,7 +572,7 @@ public abstract class AudienceAuto extends OpMode {
 
 										new Pose(98.000, 84.000)
 								)
-						).setLinearHeadingInterpolation(Math.toRadians(-120), Math.toRadians(0))
+						).setLinearHeadingInterpolation(Math.toRadians(-114.14), Math.toRadians(0))
 
 						.build();
 
@@ -408,12 +587,12 @@ public abstract class AudienceAuto extends OpMode {
 						.build();
 
 				toShootSpikeThree = follower.pathBuilder().addPath(
-								new BezierLine(
-										new Pose(129.000, 84.000),
-
-										new Pose(83.000, 11.000)
-								)
-						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-120))
+										new BezierCurve(
+												new Pose(129.000, 89.500),
+												new Pose(61.063, 91.416),
+												new Pose(85.000, 17.000)
+										)
+						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-114.14))
 
 						.build();
 			}

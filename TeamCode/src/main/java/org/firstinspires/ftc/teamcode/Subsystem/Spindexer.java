@@ -15,9 +15,9 @@ import org.firstinspires.ftc.teamcode.Utils.SpindexerPosition;
 
 @Configurable
 public class Spindexer extends SubsystemBase {
-	public static double P = 1.2;
+	public static double P = 0.009;
 	public static double I = 0;
-	public static double D = 0;
+	public static double D = 0.006;
 	public static double F = 0;
 	public final DcMotor spindexerMotor;
 	PIDFController spindexerPIDF;
@@ -86,11 +86,11 @@ public class Spindexer extends SubsystemBase {
 			public void initialize() {
 				double currentDegrees = getPosition() / 1.4936;
 				// Fast-forward prevTarget if we are already past the next derived target
-				while (SpindexerPosition.getNextShootPosition((int) prevTarget) <= currentDegrees + 10) {
-					prevTarget = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				while (SpindexerPosition.getNextIntakePosition((int) prevTarget) <= currentDegrees + 10) {
+					prevTarget = SpindexerPosition.getNextIntakePosition((int) prevTarget);
 				}
 
-				double nextTarget = SpindexerPosition.getNextShootPosition((int) prevTarget);
+				double nextTarget = SpindexerPosition.getNextIntakePosition((int) prevTarget);
 				prevTarget = nextTarget;
 
 				targetDegrees = nextTarget - 20; // We subtract 20 as our algorithm overshoots (by design)
@@ -100,7 +100,7 @@ public class Spindexer extends SubsystemBase {
 				overrided = false;
 
 				spindexerPIDF.setSetpoint(targetTicks);
-				spindexerPIDF.setSetpointRange(60);
+				//spindexerPIDF.setSetpointRange(60);
 			}
 
 			@Override
@@ -117,7 +117,7 @@ public class Spindexer extends SubsystemBase {
 
 			@Override
 			public boolean isFinished() {
-				return Math.abs(getPosition() - targetTicks) < 40 || overrided;
+				return Math.abs(power) < 0.05 || overrided;
 			}
 		};
 	}
