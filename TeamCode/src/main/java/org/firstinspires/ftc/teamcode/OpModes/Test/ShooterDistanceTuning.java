@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.OpModes.Test;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -25,7 +24,6 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 
 import java.util.function.Supplier;
 
-@Config
 @Configurable
 @TeleOp
 public class ShooterDistanceTuning extends OpMode {

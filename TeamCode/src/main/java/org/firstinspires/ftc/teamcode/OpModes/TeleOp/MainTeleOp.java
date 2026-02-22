@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -23,7 +22,6 @@ import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
@@ -33,7 +31,6 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 
 import java.util.function.Supplier;
 
-@Config
 @Configurable
 public abstract class MainTeleOp extends OpMode {
 	public  double spindexerPower = 1;

@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Subsystem;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -13,8 +12,6 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Utils.FeedForwardController;
 import org.firstinspires.ftc.teamcode.Utils.PIDFController;
-
-@Config
 @Configurable
 public class Shooter extends SubsystemBase {
 	private static final double HALF_DIVISOR = 0.5;
