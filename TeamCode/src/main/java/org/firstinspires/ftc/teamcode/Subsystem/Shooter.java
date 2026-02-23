@@ -12,16 +12,17 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Utils.FeedForwardController;
 import org.firstinspires.ftc.teamcode.Utils.PIDFController;
+
 @Configurable
 public class Shooter extends SubsystemBase {
 	private static final double HALF_DIVISOR = 0.5;
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
-	public static double UPPER_P = 0.019, UPPER_I = 0, UPPER_D = 0;
+	public static double UPPER_P = 0.01, UPPER_I = 0, UPPER_D = 0;
 	public static double LOWER_P = 0.017, LOWER_I = 0.00, LOWER_D = 0;
 	// --- Feedforward Constants ---
-	public static double UPPER_KS = 0.25, UPPER_KV = 0.000227;
-	public static double LOWER_KS = 0.27, LOWER_KV = 0.000134;
+	public static double UPPER_KS = 0.32, UPPER_KV = 0.00007;
+	public static double LOWER_KS = 0.333, LOWER_KV = 0.00009;
 	// --- Only for Tuning ---
 	public static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
 	public static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;
