@@ -5,11 +5,12 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
-public class TouchSensor extends SubsystemBase {
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+public class Touch extends SubsystemBase {
 
     private com.qualcomm.robotcore.hardware.TouchSensor intakeTouchSensorRight;
     private com.qualcomm.robotcore.hardware.TouchSensor intakeTouchSensorLeft;
@@ -27,13 +28,19 @@ public class TouchSensor extends SubsystemBase {
 
     public int arifactShotCount = 0;
 
-    public TouchSensor(HardwareMap hardwareMap){
+    public Touch(HardwareMap hardwareMap){
         intakeTouchSensorRight = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class,"intakeTouchSensorRight");
         intakeTouchSensorLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "intakeTouchSensorLeft");
 
         transferMagSwitchRight = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "transferMagSwitchRight");
         transferMagSwitchLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "transferMagSwitchLeft");
 
+    }
+
+    public void init(){
+        artifactCollectCount = 3;
+        arifactShotCount = 0;
+        finalizedCycle = true;
     }
 
     public Command ResetCounter(){
@@ -55,7 +62,7 @@ public class TouchSensor extends SubsystemBase {
     }
 
     public boolean ArtifactInTransfer() {
-        return !transferMagSwitchRight.isPressed() || !transferMagSwitchLeft.isPressed();
+        return transferMagSwitchRight.isPressed() || transferMagSwitchLeft.isPressed();
     }
 
     public Command ShootAllArtifacts(){
@@ -73,7 +80,7 @@ public class TouchSensor extends SubsystemBase {
             intakePressed = false;
         }
 
-        if (ArtifactInTransfer() && !transferPressed && transfer.reachedLowerTarget && transfer.reachedUpperTarget) {
+        if (ArtifactInTransfer() && !transferPressed && finalizedCycle ) {//  && transfer.reachedLowerTarget && transfer.reachedUpperTarget) {
             arifactShotCount += 1;
             transferPressed = true;
         }else if (!ArtifactInTransfer() && transferPressed){
@@ -88,6 +95,13 @@ public class TouchSensor extends SubsystemBase {
         TelemetryManager.addData("Artifact Shot Count", arifactShotCount);
 
    }
+
+    public void Telemetry(Telemetry Telemetry){
+        Telemetry.addData("Artifact Count", artifactCollectCount);
+        Telemetry.addData("Artifact Shot Count", arifactShotCount);
+        Telemetry.addData("transfer",ArtifactInTransfer());
+
+    }
 
 
 

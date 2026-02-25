@@ -267,6 +267,8 @@ public abstract class MainTeleOp extends OpMode {
 			leftTriggerPressed = false;
 		}
 
+		boolean lockTransfer = false;
+
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
 			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
@@ -275,6 +277,7 @@ public abstract class MainTeleOp extends OpMode {
 					spindexer.DirectPower(0.3)
 			));
 			rightTriggerPressed = true;
+			yButtonPressed = false;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);
 			scheduler.schedule(transfer.TransferStop());
@@ -282,13 +285,13 @@ public abstract class MainTeleOp extends OpMode {
 			rightTriggerPressed = false;
 		}
 
+
 		if (gamepad2.y && !yButtonPressed) {
 			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
 			yButtonPressed = true;
 		} else if (!gamepad2.y && yButtonPressed) {
 			//shooter.setTarget(0, 0);
 			//scheduler.schedule(transfer.TransferStop());
-			yButtonPressed = false;
 		}
 
 		// X Button: Override transfer forward - manual control
@@ -301,10 +304,10 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad2.x) {
-			if ((Math.abs(gamepad2.left_stick_y) > 0.2 || rightTriggerPressed) && !gamepad2.y) {
+			if ((Math.abs(gamepad2.left_stick_y) > 0.2 || rightTriggerPressed) && yButtonPressed) {
 				transfer.runAutomaticTransfer = true;
 				transfer.updateAutomaticTransfer(false);
-			} else if ((Math.abs(gamepad2.left_stick_y) < 0.2 || !rightTriggerPressed) && gamepad2.y) {
+			} else if ((Math.abs(gamepad2.left_stick_y) < 0.2 || !rightTriggerPressed) && !yButtonPressed) {
 				transfer.runAutomaticTransfer = false;
 				scheduler.schedule(transfer.TransferIn());
 			} else{

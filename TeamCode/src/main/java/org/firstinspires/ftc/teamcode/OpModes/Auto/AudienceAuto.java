@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
+import org.firstinspires.ftc.teamcode.Subsystem.Touch;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
@@ -39,6 +40,8 @@ public abstract class AudienceAuto extends OpMode {
 	private Shooter shooter;
 	private Spindexer spindexer;
 	private Transfer transfer;
+
+	Touch touch;
 	private TelemetryManager panelsTelemetry;
 
 	@Override
@@ -71,6 +74,9 @@ public abstract class AudienceAuto extends OpMode {
 		transfer = new Transfer(hardwareMap);
 		transfer.setShooter(shooter);
 		transfer.setSpindexer(spindexer);
+		touch =  new Touch(hardwareMap);
+		touch.init();
+
 
 		paths = new Paths(follower, getTeam());
 
@@ -89,7 +95,7 @@ public abstract class AudienceAuto extends OpMode {
 							shooter.SetTarget(Shooter.AUDIENCE_RPM,Shooter.AUDIENCE_RPM)
 						),
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -115,7 +121,7 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.IntakeDoorOut(),
 
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -146,7 +152,7 @@ public abstract class AudienceAuto extends OpMode {
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 						transfer.IntakeDoorOut(),
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -180,7 +186,7 @@ public abstract class AudienceAuto extends OpMode {
 						new FollowPathCommand(follower, paths.toShootSpikeThree),
 						transfer.IntakeDoorOut(),
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake),
+						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -199,6 +205,8 @@ public abstract class AudienceAuto extends OpMode {
 		scheduler.run();
 		shooter.periodic();
 		transfer.periodic();
+		touch.Update(transfer);
+		touch.Telemetry(telemetry);
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
@@ -211,6 +219,8 @@ public abstract class AudienceAuto extends OpMode {
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 		panelsTelemetry.addData("Automatic Transfer Running", transfer.runAutomaticTransfer);
+
+
 
 		panelsTelemetry.update();
 		panelsTelemetry.update(telemetry);
