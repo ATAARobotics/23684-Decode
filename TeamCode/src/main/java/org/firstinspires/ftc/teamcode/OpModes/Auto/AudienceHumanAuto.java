@@ -50,6 +50,7 @@ public abstract class AudienceHumanAuto extends OpMode {
             RobotPosition.robotPose = follower.getPose();
             RobotPosition.isPoseSet = true;
         }
+
         CommandScheduler.getInstance().reset();
     }
 
@@ -106,11 +107,7 @@ public abstract class AudienceHumanAuto extends OpMode {
                         spindexer.DirectPower(0.3),
                         transfer.IntakeDoorOut(),
 
-
                         new FollowPathCommand(follower, paths.collectHumanPlayer).setGlobalMaxPower(1),
-
-
-
 
                         intake.Slow(),
                         shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
@@ -119,7 +116,7 @@ public abstract class AudienceHumanAuto extends OpMode {
                         transfer.IntakeDoorOut(),
 
                         transfer.SetAutomaticTransfer(true),
-                        new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
+                        new ShootArtifacts(shooter, spindexer, transfer, intake, touch),
                         transfer.SetAutomaticTransfer(false),
                         // Turn off the motors and servos
                         shooter.SetTarget(0, 0),
@@ -137,7 +134,6 @@ public abstract class AudienceHumanAuto extends OpMode {
                         ),
 
                         new FollowPathCommand(follower, paths.collectSpikeOne).setGlobalMaxPower(1),
-
 
                         shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                         transfer.TransferStop(),

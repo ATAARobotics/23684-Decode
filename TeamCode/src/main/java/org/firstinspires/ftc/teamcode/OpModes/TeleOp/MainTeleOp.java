@@ -40,7 +40,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
-//	protected Colour colour;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -60,13 +59,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
 
-	boolean ArtifactFound = false;
-	boolean ToggleDistance = false;
-
-	DcMotorEx frontRight;
-	DcMotorEx rearRight;
-	DcMotorEx frontLeft;
-	DcMotorEx rearLeft;
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
 	// Performance monitoring
@@ -108,7 +100,6 @@ public abstract class MainTeleOp extends OpMode {
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
 		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensor");
-
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 

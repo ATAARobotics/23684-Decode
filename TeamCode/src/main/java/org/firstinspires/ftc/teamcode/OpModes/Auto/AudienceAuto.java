@@ -77,7 +77,6 @@ public abstract class AudienceAuto extends OpMode {
 		touch =  new Touch(hardwareMap);
 		touch.init();
 
-
 		paths = new Paths(follower, getTeam());
 
 		panelsTelemetry.debug("Status", "Initialized");
@@ -108,11 +107,7 @@ public abstract class AudienceAuto extends OpMode {
 						spindexer.DirectPower(0.3),
 						transfer.IntakeDoorOut(),
 
-
 						new FollowPathCommand(follower, paths.collectSpikeOne).setGlobalMaxPower(1),
-
-
-
 
 						intake.Slow(),
 						shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
