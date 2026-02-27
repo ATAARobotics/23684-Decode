@@ -193,6 +193,9 @@ public abstract class MainTeleOp extends OpMode {
 	@Override
 	public void stop() {
 		// Called when OpMode is stopped
+		// Ensure we don't reuse values if TeleOp is accidentally stopped and restarted
+		RobotPosition.isSpindexerSet = false;
+		RobotPosition.spindexerTicks = 0;
 	}
 
 	/**
