@@ -56,6 +56,9 @@ public abstract class OverFlowAuto extends OpMode {
             RobotPosition.robotPose = follower.getPose();
             RobotPosition.isPoseSet = true;
         }
+        if (spindexer != null) {
+            spindexer.savePosition();
+        }
         CommandScheduler.getInstance().reset();
     }
 

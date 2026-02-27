@@ -11,6 +11,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Utils.PIDFController;
+import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.SpindexerPosition;
 
 @Configurable
@@ -19,8 +20,17 @@ public class Spindexer extends SubsystemBase {
 	public static double I = 0;
 	public static double D = 0.006;
 	public static double F = 0;
+	public static double SLOT_TOLERANCE = 15;
+
+	// 537.7 PPR motor with 2:1 gear ratio (reduction)
+	// TICKS_PER_REV = 537.7 * 2 = 1075.4
+	// TICKS_PER_DEGREE = 1075.4 / 360 = 2.987222222222222
+	// DEGREES_PER_TICK = 360 / 1075.4 = 0.3347591593825553
+	public static final double TICKS_PER_DEGREE = 2.987222222222222;
+	public static final double DEGREES_PER_TICK = 0.3347591593825553;
+
 	public final DcMotor spindexerMotor;
-	PIDFController spindexerPIDF;
+PIDFController spindexerPIDF;
 	double targetTicks = 0;
 	double targetDegrees = 0;
 	private int offset = 0;
@@ -38,7 +48,11 @@ public class Spindexer extends SubsystemBase {
 		spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
 		spindexerPIDF = new PIDFController(P, I, D, F);
-		spindexerPIDF.setOutputLimits(-0.3, 1);
+
+		if (RobotPosition.isSpindexerSet) {
+			offset = spindexerMotor.getCurrentPosition() - RobotPosition.spindexerTicks;
+			// RobotPosition.isSpindexerSet = false;
+		}
 
 		prevTarget = 0;
 	}
@@ -70,6 +84,22 @@ public class Spindexer extends SubsystemBase {
 		return spindexerMotor.getCurrentPosition() - offset;
 	}
 
+	public double getDegrees() {
+		return getPosition() * DEGREES_PER_TICK;
+	}
+
+	public int getCurrentSlot() {
+		double degrees = getDegrees();
+		double normalizedDegrees = ((degrees % 360) + 360) % 360;
+
+		// Slot 1 is at 0 degrees, Slot 2 at 120, Slot 3 at 240
+		if (Math.abs(normalizedDegrees - 0) <= SLOT_TOLERANCE || Math.abs(normalizedDegrees - 360) <= SLOT_TOLERANCE) return 1;
+		if (Math.abs(normalizedDegrees - 120) <= SLOT_TOLERANCE) return 2;
+		if (Math.abs(normalizedDegrees - 240) <= SLOT_TOLERANCE) return 3;
+
+		return -1; // Not at a valid slot
+	}
+
 	public Command DirectPower(double power) {
 		return new InstantCommand(
 				() -> {
@@ -84,7 +114,7 @@ public class Spindexer extends SubsystemBase {
 		return new CommandBase() {
 			@Override
 			public void initialize() {
-				double currentDegrees = getPosition() / 1.4936;
+				double currentDegrees = getDegrees();
 				// Fast-forward prevTarget if we are already past the next derived target
 				while (SpindexerPosition.getNextIntakePosition((int) prevTarget) <= currentDegrees + 10) {
 					prevTarget = SpindexerPosition.getNextIntakePosition((int) prevTarget);
@@ -94,7 +124,7 @@ public class Spindexer extends SubsystemBase {
 				prevTarget = nextTarget;
 
 				targetDegrees = nextTarget - 20; // We subtract 20 as our algorithm overshoots (by design)
-				targetTicks = targetDegrees * 1.4936;
+				targetTicks = targetDegrees * TICKS_PER_DEGREE;
 
 				isAtTarget = false;
 				overrided = false;
@@ -125,24 +155,29 @@ public class Spindexer extends SubsystemBase {
 	public void Telemetry(Telemetry telemetry) {
 		double currentPosTicks = getPosition();
 
-		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * 0.6695);
+		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * DEGREES_PER_TICK);
 		telemetry.addData("Spindexer Target (degrees)", targetDegrees);
 		telemetry.addData("Spindexer Power", power);
 		telemetry.addData("Tick Error", targetTicks - currentPosTicks);
+		telemetry.addData("Current Slot", getCurrentSlot());
 	}
 
 	public void Telemetry(TelemetryManager telemetry) {
 		double currentPosTicks = getPosition();
 
-		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * 0.6695);
+		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * DEGREES_PER_TICK);
 		telemetry.addData("Spindexer Target (degrees)", targetDegrees);
 		telemetry.addData("Spindexer Power", power);
 		telemetry.addData("Tick Error", targetTicks - currentPosTicks);
+		telemetry.addData("Current Slot", getCurrentSlot());
 	}
 
 	public boolean isAtTarget() {
 		return isAtTarget;
 	}
 
-	// TODO: Implement getCurrentSlot() to determine which slot (1, 2, or 3) is at the shooting position
+	public void savePosition() {
+		RobotPosition.spindexerTicks = (int) getPosition();
+		RobotPosition.isSpindexerSet = true;
+	}
 }
