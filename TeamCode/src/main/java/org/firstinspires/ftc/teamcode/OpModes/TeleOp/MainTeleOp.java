@@ -20,6 +20,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
@@ -104,7 +105,7 @@ public abstract class MainTeleOp extends OpMode {
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
 		distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
-		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensor");
+		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensorLeft");
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
@@ -117,8 +118,8 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		pathFrontBlue = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(107, 101))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(344), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(120.4, 95.7))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(340.7), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
@@ -127,8 +128,8 @@ public abstract class MainTeleOp extends OpMode {
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 11))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(245), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 15))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(247.5), 0.8))
 				.build();
 	}
 
@@ -177,7 +178,7 @@ public abstract class MainTeleOp extends OpMode {
 			if (getTeam().equals(Team.BLUE)) {
 				follower.setPose(new Pose(142.7202744371309, 7.36770930252676, 0));
 			} else if (getTeam().equals(Team.RED)) {
-				follower.setPose(new Pose(5, 7, Math.toRadians(180)));
+				follower.setPose(new Pose(7.1, 18, Math.toRadians(180)));
 			}
 //			follower.setPose(new Pose(136.039, 78.907317073, 0)); testing only
 		}
@@ -284,7 +285,6 @@ public abstract class MainTeleOp extends OpMode {
 					spindexer.DirectPower(0.3)
 			));
 			rightTriggerPressed = true;
-			yButtonPressed = false;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			shooter.setTarget(0, 0);
 			scheduler.schedule(transfer.TransferStop());
@@ -299,6 +299,9 @@ public abstract class MainTeleOp extends OpMode {
 		} else if (!gamepad2.y && yButtonPressed) {
 			//shooter.setTarget(0, 0);
 			//scheduler.schedule(transfer.TransferStop());
+			if(shooter.averageRPM == 0){
+				yButtonPressed = false;
+			}
 		}
 
 		// X Button: Override transfer forward - manual control
@@ -311,15 +314,18 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad2.x) {
-			if ((Math.abs(gamepad2.left_stick_y) > 0.2 || rightTriggerPressed) && yButtonPressed) {
+			if ((rightTriggerPressed)) {
 				transfer.runAutomaticTransfer = true;
 				transfer.updateAutomaticTransfer(false);
-			} else if ((Math.abs(gamepad2.left_stick_y) < 0.2 || !rightTriggerPressed) && !yButtonPressed) {
+				telemetry.addLine("1");
+			} else if ((Math.abs(gamepad2.left_stick_y) > 0.2 && !rightTriggerPressed)) {
 				transfer.runAutomaticTransfer = false;
 				scheduler.schedule(transfer.TransferIn());
-			} else{
+				telemetry.addLine("2");
+			} else {
 				transfer.runAutomaticTransfer = false;
 				scheduler.schedule(transfer.TransferStop());
+				telemetry.addLine("3");
 			}
 		}
 

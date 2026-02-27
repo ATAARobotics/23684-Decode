@@ -27,6 +27,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Touch;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utils.NewFollowPathCommand;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 import org.firstinspires.ftc.teamcode.Utils.Team;
@@ -99,7 +100,7 @@ public abstract class OverFlowAuto extends OpMode {
         scheduler.schedule(
                 new SequentialCommandGroup(
                         new ParallelCommandGroup(
-                                new FollowPathCommand(follower, paths.shootPreload),
+                                new NewFollowPathCommand(follower, paths.shootPreload),
                                 shooter.SetTarget(Shooter.AUDIENCE_RPM,Shooter.AUDIENCE_RPM)
                         ),
                         transfer.SetAutomaticTransfer(true),
@@ -111,13 +112,13 @@ public abstract class OverFlowAuto extends OpMode {
                         transfer.TransferStop(),
                         transfer.IntakeDoorStop(),
 
-                        new FollowPathCommand(follower, paths.toSpikeOne).setGlobalMaxPower(0.6),
+                        new NewFollowPathCommand(follower, paths.toSpikeOne),
                         intake.In(),
                         spindexer.DirectPower(0.3),
                         transfer.IntakeDoorOut(),
 
 
-                        new FollowPathCommand(follower, paths.collectSpikeOne).setGlobalMaxPower(1),
+                        new NewFollowPathCommand(follower, paths.collectSpikeOne,0.1),
 
 
 
@@ -125,7 +126,7 @@ public abstract class OverFlowAuto extends OpMode {
 
                         shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                         new ParallelCommandGroup(
-                        new FollowPathCommand(follower, paths.toShootSpikeOne),
+                        new NewFollowPathCommand(follower, paths.toShootSpikeOne),
                                 new SequentialCommandGroup(
                                         spindexer.DirectPower(0.3),
                                         intake.In(),
@@ -150,7 +151,7 @@ public abstract class OverFlowAuto extends OpMode {
                                             transfer.TransferStop(),
                                             transfer.IntakeDoorStop(),
 
-                                            new FollowPathCommand(follower, paths.toHumanPlayer).setGlobalMaxPower(0.6),
+                                            new NewFollowPathCommand(follower, paths.toHumanPlayer),
 
                                             transfer.TransferIn(),
                                             new ParallelCommandGroup(
@@ -159,14 +160,14 @@ public abstract class OverFlowAuto extends OpMode {
                                                     intake.In()
                                                  ),
 
-                                            new FollowPathCommand(follower, paths.collectHumanPlayer).setGlobalMaxPower(1),
+                                            new NewFollowPathCommand(follower, paths.collectHumanPlayer,0.1),
 
 
                                             shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                                             transfer.TransferStop(),
 
                                             new ParallelCommandGroup(
-                                                    new FollowPathCommand(follower, paths.toShootHumanPlayer),
+                                                    new NewFollowPathCommand(follower, paths.toShootHumanPlayer),
                                                     new SequentialCommandGroup(
                                                             spindexer.DirectPower(0.3),
                                                             intake.In(),
@@ -194,7 +195,7 @@ public abstract class OverFlowAuto extends OpMode {
                         intake.Stop(),
                         transfer.TransferStop(),
                         transfer.IntakeDoorStop(),
-                        new FollowPathCommand(follower,paths.toParkSpikeTwo)
+                        new NewFollowPathCommand(follower,paths.toParkSpikeTwo)
                 )
         );
 
