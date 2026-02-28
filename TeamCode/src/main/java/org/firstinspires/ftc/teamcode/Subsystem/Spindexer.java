@@ -100,6 +100,22 @@ PIDFController spindexerPIDF;
 		return -1; // Not at a valid slot
 	}
 
+	public double getDistanceFromSlot() {
+		double degrees = getDegrees();
+		double normalizedDegrees = ((degrees % 360) + 360) % 360;
+
+		// Find distance to nearest slot (0, 120, 240 degrees)
+		double distTo0 = Math.min(Math.abs(normalizedDegrees - 0), Math.abs(normalizedDegrees - 360));
+		double distTo120 = Math.abs(normalizedDegrees - 120);
+		double distTo240 = Math.abs(normalizedDegrees - 240);
+
+		return Math.min(distTo0, Math.min(distTo120, distTo240));
+	}
+
+	public boolean isAlignedWithSlot() {
+		return getCurrentSlot() != -1;
+	}
+
 	public Command DirectPower(double power) {
 		return new InstantCommand(
 				() -> {

@@ -6,6 +6,9 @@ public enum RouteStep {
     COLLECT_SPIKE_2,
     COLLECT_SPIKE_3,
     COLLECT_HUMAN_PLAYER,
+    COLLECT_HUMAN_PLAYER_WIGGLE,
     SHOOT,
-    PARK
+    SHOOT_LONG_PRESPIN,
+    PARK,
+    WAIT
 }

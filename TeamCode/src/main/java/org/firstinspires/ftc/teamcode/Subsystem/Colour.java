@@ -16,6 +16,25 @@ public class Colour extends SubsystemBase {
 	private int slot2ConfirmationCount = 0;
 	private int slot3ConfirmationCount = 0;
 	private static final int CONFIRMATION_THRESHOLD = 10; // ~300-500ms at 30-50ms per update cycle
+	
+	// Logging fields for sensor data
+	public double slot2Hue = 0;
+	public double slot2Saturation = 0;
+	public double slot2Value = 0;
+	public double slot2Red = 0;
+	public double slot2Green = 0;
+	public double slot2Blue = 0;
+	
+	public double slot3Hue = 0;
+	public double slot3Saturation = 0;
+	public double slot3Value = 0;
+	public double slot3Red = 0;
+	public double slot3Green = 0;
+	public double slot3Blue = 0;
+	
+	public boolean isUpdating = false;
+	public int updateCount = 0;
+	public long lastUpdateTime = 0;
 
 	public enum SlotColour {
 		GREEN,
@@ -88,13 +107,17 @@ public class Colour extends SubsystemBase {
 	}
 
 	public void update(double spindexerSlot) {
+		isUpdating = true;
+		updateCount++;
+		lastUpdateTime = System.currentTimeMillis();
+		
 		int slot = (int) spindexerSlot;
 		boolean spindexerTurned = (slot != lastSpindexerSlot);
 		lastSpindexerSlot = slot;
 
 		// Read colors from sensors
-		SlotColour slot2SensorColour = detectColour(slot2);
-		SlotColour slot3SensorColour = detectColour(slot3);
+		SlotColour slot2SensorColour = detectColour(slot2, true);
+		SlotColour slot3SensorColour = detectColour(slot3, false);
 
 		// Apply confirmation filter when spindexer hasn't turned
 		// This prevents noise from overwriting colors while still allowing corrections
@@ -134,6 +157,8 @@ public class Colour extends SubsystemBase {
 				colours.setSlot2(filteredSlot3Colour);
 				break;
 		}
+		
+		isUpdating = false;
 	}
 
 	private SlotColour filterColour(SlotColour current, SlotColour last, int confirmationCount, boolean spindexerTurned) {
@@ -167,10 +192,11 @@ public class Colour extends SubsystemBase {
 				break;
 			case 3:
 				colours.setSlot3(SlotColour.NONE);
-				break;		}
+				break;
+		}
 	}
 
-	private SlotColour detectColour(NormalizedColorSensor sensor) {
+	private SlotColour detectColour(NormalizedColorSensor sensor, boolean isSlot2) {
 		// Get normalized color values from sensor (read once for consistency)
 		NormalizedRGBA colors = sensor.getNormalizedColors();
 		double r = colors.red;
@@ -181,6 +207,24 @@ public class Colour extends SubsystemBase {
 		double[] hsv = rgbToHsv(r, g, b);
 		double hue = hsv[0];
 		double saturation = hsv[1];
+		double value = hsv[2];
+
+		// Store values for logging
+		if (isSlot2) {
+			slot2Red = r;
+			slot2Green = g;
+			slot2Blue = b;
+			slot2Hue = hue;
+			slot2Saturation = saturation;
+			slot2Value = value;
+		} else {
+			slot3Red = r;
+			slot3Green = g;
+			slot3Blue = b;
+			slot3Hue = hue;
+			slot3Saturation = saturation;
+			slot3Value = value;
+		}
 
 		// Check for green (hue around 80-160 degrees)
 		if (saturation > 0.3 && hue >= 80 && hue <= 160) {

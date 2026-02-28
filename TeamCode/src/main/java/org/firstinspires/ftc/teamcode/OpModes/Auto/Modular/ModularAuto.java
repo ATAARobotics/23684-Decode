@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.OpModes.Auto.Modular;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
@@ -11,6 +12,7 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -20,7 +22,6 @@ import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
-import org.firstinspires.ftc.teamcode.Subsystem.Touch;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
@@ -29,8 +30,10 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 import java.util.ArrayList;
 import java.util.List;
 
+@Configurable
 public abstract class ModularAuto extends OpMode {
-    public static int SPIKE_COLLECTION_WAIT = 20;
+    public static int COLLECTION_WAIT = 1300;
+    public static int HUMAN_PLAYER_COLLECTION_WAIT = 1700;
 
     protected Follower follower;
     protected CommandScheduler scheduler;
@@ -38,11 +41,27 @@ public abstract class ModularAuto extends OpMode {
     protected Shooter shooter;
     protected Spindexer spindexer;
     protected Transfer transfer;
-    protected Touch touch;
     protected TelemetryManager panelsTelemetry;
 
-    private List<RouteStep> route = new ArrayList<>();
+    private static class RouteItem {
+        RouteStep step;
+        int waitMs;
+        boolean isWait;
+
+        RouteItem(RouteStep step) {
+            this.step = step;
+            this.isWait = false;
+        }
+
+        RouteItem(int waitMs) {
+            this.waitMs = waitMs;
+            this.isWait = true;
+        }
+    }
+
+    private List<RouteItem> route = new ArrayList<>();
     private Pose currentExpectedPose;
+    private String currentStepName = "INITIALIZING";
 
     @Override
     public void init() {
@@ -62,8 +81,6 @@ public abstract class ModularAuto extends OpMode {
         transfer = new Transfer(hardwareMap);
         transfer.setShooter(shooter);
         transfer.setSpindexer(spindexer);
-        touch = new Touch(hardwareMap);
-        touch.init();
 
         setRoute();
 
@@ -76,7 +93,11 @@ public abstract class ModularAuto extends OpMode {
     protected abstract void setRoute();
 
     protected void addStep(RouteStep step) {
-        route.add(step);
+        route.add(new RouteItem(step));
+    }
+
+    protected void addStep(int waitMs) {
+        route.add(new RouteItem(waitMs));
     }
 
     @Override
@@ -85,8 +106,18 @@ public abstract class ModularAuto extends OpMode {
         
         SequentialCommandGroup fullAuto = new SequentialCommandGroup();
         
-        for (RouteStep step : route) {
-            fullAuto.addCommands(getCommandForStep(step));
+        for (RouteItem item : route) {
+            if (item.isWait) {
+                fullAuto.addCommands(
+                        new InstantCommand(() -> currentStepName = "WAITING (" + item.waitMs + "ms)"),
+                        new WaitCommand(item.waitMs)
+                );
+            } else {
+                fullAuto.addCommands(
+                        new InstantCommand(() -> currentStepName = item.step.name()),
+                        getCommandForStep(item.step)
+                );
+            }
         }
 
         scheduler.schedule(fullAuto);
@@ -107,25 +138,35 @@ public abstract class ModularAuto extends OpMode {
                 return new SequentialCommandGroup(
                         new ParallelCommandGroup(
                                 new FollowPathCommand(follower, preloadPath),
-                                shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+                                new SequentialCommandGroup(
+                                        new WaitCommand(300),
+                                        shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+                                )
                         ),
-                        getShootSequence()
+                        transfer.IntakeDoorOut(),
+                        getShootSequence(2050)
                 );
 
             case COLLECT_SPIKE_1:
-                return getCollectSpikeCommand(1);
+                return getCollectSpikeCommand(1, COLLECTION_WAIT);
 
             case COLLECT_SPIKE_2:
-                return getCollectSpikeCommand(2);
+                return getCollectSpikeCommand(2, COLLECTION_WAIT - 300);
 
             case COLLECT_SPIKE_3:
-                return getCollectSpikeCommand(3);
+                return getCollectSpikeCommand(3, COLLECTION_WAIT);
 
             case COLLECT_HUMAN_PLAYER:
                 return getCollectHumanPlayerCommand();
 
+            case COLLECT_HUMAN_PLAYER_WIGGLE:
+                return getCollectHumanPlayerCommandWithWiggle();
+
             case SHOOT:
-                return getShootStepCommand();
+                return getShootStepCommand(1000);
+
+            case SHOOT_LONG_PRESPIN:
+                return getShootStepCommand(2000);
 
             case PARK:
                 Pose parkPose = team == Team.BLUE ? PoseDatabase.BLUE_PARK : PoseDatabase.RED_PARK;
@@ -136,12 +177,15 @@ public abstract class ModularAuto extends OpMode {
                 currentExpectedPose = parkPose;
                 return new FollowPathCommand(follower, parkPath);
 
+            case WAIT:
+                return new WaitCommand(0); // Handled by item.isWait logic, but here for completeness
+
             default:
                 return new WaitCommand(0);
         }
     }
 
-    private Command getCollectSpikeCommand(int spikeNum) {
+    private Command getCollectSpikeCommand(int spikeNum, int collectionWait) {
         Team team = getTeam();
         Pose intermediate, collect;
         if (team == Team.BLUE) {
@@ -159,7 +203,42 @@ public abstract class ModularAuto extends OpMode {
                 .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
                 .build();
 
-        PathChain collectPath = follower.pathBuilder()
+        PathChain forwardPath = follower.pathBuilder()
+                .addPath(new BezierLine(intermediate, collect))
+                .setConstantHeadingInterpolation(collect.getHeading())
+                .build();
+
+        currentExpectedPose = collect;
+
+        SequentialCommandGroup command = new SequentialCommandGroup(
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, toSpike).setGlobalMaxPower(0.9),
+                        new SequentialCommandGroup(
+                                transfer.TransferIn(),
+                                intake.In(),
+                                spindexer.DirectPower(0.37),
+                                transfer.IntakeDoorOut()
+                        )
+                ),
+                new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
+                new WaitCommand(collectionWait),
+                transfer.TransferStop()
+        );
+
+        return command;
+    }
+
+    private Command getCollectHumanPlayerCommand() {
+        Team team = getTeam();
+        Pose intermediate = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_INTERMEDIATE : PoseDatabase.RED_HUMAN_PLAYER_INTERMEDIATE;
+        Pose collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT;
+
+        PathChain toHP = follower.pathBuilder()
+                .addPath(new BezierLine(currentExpectedPose, intermediate))
+                .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
+                .build();
+
+        PathChain forwardPath = follower.pathBuilder()
                 .addPath(new BezierLine(intermediate, collect))
                 .setConstantHeadingInterpolation(collect.getHeading())
                 .build();
@@ -167,19 +246,31 @@ public abstract class ModularAuto extends OpMode {
         currentExpectedPose = collect;
 
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, toSpike).setGlobalMaxPower(0.6),
-                transfer.TransferIn(),
                 new ParallelCommandGroup(
-                        intake.In(),
-                        spindexer.DirectPower(0.3),
-                        transfer.IntakeDoorOut()
+                        new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.9),
+                        new SequentialCommandGroup(
+                                new WaitCommand(100),
+                                transfer.TransferIn(),
+                                intake.In(),
+                                spindexer.DirectPower(0.36),
+                                transfer.IntakeDoorOut()
+                        )
                 ),
-                new FollowPathCommand(follower, collectPath).setGlobalMaxPower(1),
-                new WaitCommand(SPIKE_COLLECTION_WAIT)
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
+                        new SequentialCommandGroup(
+                                transfer.TransferIn(),
+                                intake.In(),
+                                spindexer.DirectPower(0.36),
+                                transfer.IntakeDoorOut()
+                        )
+                ),
+                new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
+                transfer.TransferStop()
         );
     }
 
-    private Command getCollectHumanPlayerCommand() {
+    private Command getCollectHumanPlayerCommandWithWiggle() {
         Team team = getTeam();
         Pose intermediate = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_INTERMEDIATE : PoseDatabase.RED_HUMAN_PLAYER_INTERMEDIATE;
         Pose collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT;
@@ -190,28 +281,50 @@ public abstract class ModularAuto extends OpMode {
                 .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
                 .build();
 
-        PathChain collectPath = follower.pathBuilder()
+        PathChain forwardPath = follower.pathBuilder()
                 .addPath(new BezierLine(intermediate, collect))
-                .setConstantHeadingInterpolation(collect.getHeading())
-                .addPath(new BezierLine(collect, wiggle))
-                .setConstantHeadingInterpolation(collect.getHeading())
-                .addPath(new BezierLine(wiggle, collect))
                 .setConstantHeadingInterpolation(collect.getHeading())
                 .build();
 
-        currentExpectedPose = collect;
+        double wiggleOffset = (team == Team.BLUE) ? 1.5 : -1.5;
+        Pose shallowWiggle = new Pose(wiggle.getX() + wiggleOffset, wiggle.getY(), wiggle.getHeading());
+        PathChain wigglePath = follower.pathBuilder()
+                .addPath(new BezierLine(wiggle, shallowWiggle))
+                .setConstantHeadingInterpolation(collect.getHeading())
+                .addPath(new BezierLine(shallowWiggle, wiggle))
+                .setConstantHeadingInterpolation(collect.getHeading())
+                .build();
+
+        currentExpectedPose = wiggle;
 
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.6),
-                intake.In(),
-                spindexer.DirectPower(0.3),
-                transfer.IntakeDoorOut(),
-                new FollowPathCommand(follower, collectPath).setGlobalMaxPower(1),
-                new WaitCommand(SPIKE_COLLECTION_WAIT)
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.9),
+                        new SequentialCommandGroup(
+                                new WaitCommand(100),
+                                transfer.TransferIn(),
+                                intake.In(),
+                                spindexer.DirectPower(0.36),
+                                transfer.IntakeDoorOut()
+                        )
+                ),
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
+                        new SequentialCommandGroup(
+                                transfer.TransferIn(),
+                                intake.In(),
+                                spindexer.DirectPower(0.36),
+                                transfer.IntakeDoorOut()
+                        )
+                ),
+                new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
+                new FollowPathCommand(follower, wigglePath).setGlobalMaxPower(1),
+                new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
+                transfer.TransferStop()
         );
     }
 
-    private Command getShootStepCommand() {
+    private Command getShootStepCommand(int prespinWaitMs) {
         Team team = getTeam();
         Pose shootPose = PoseDatabase.getShootPose(team);
         PathChain toShoot;
@@ -245,18 +358,23 @@ public abstract class ModularAuto extends OpMode {
 
         return new SequentialCommandGroup(
                 intake.Slow(),
-                shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
                 spindexer.DirectPower(0),
-                new FollowPathCommand(follower, toShoot),
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, toShoot),
+                        new SequentialCommandGroup(
+                                new WaitCommand(prespinWaitMs),
+                                shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+                        )
+                ),
                 transfer.IntakeDoorOut(),
-                getShootSequence()
+                getShootSequence(2500)
         );
     }
 
-    private Command getShootSequence() {
+    private Command getShootSequence(int waitTime) {
         return new SequentialCommandGroup(
                 transfer.SetAutomaticTransfer(true),
-                new ShootArtifacts(shooter, spindexer, transfer, intake, touch),
+                new ShootArtifacts(shooter, spindexer, transfer, intake, waitTime),
                 transfer.SetAutomaticTransfer(false),
                 shooter.SetTarget(0, 0),
                 intake.Stop(),
@@ -271,7 +389,8 @@ public abstract class ModularAuto extends OpMode {
         scheduler.run();
         shooter.periodic();
         transfer.periodic();
-        touch.Update(transfer);
+
+        panelsTelemetry.addData("Current Step", currentStepName);
         
         panelsTelemetry.addLine("=== SHOOTER ===");
         panelsTelemetry.addData("Upper RPM", shooter.upperRPM);

@@ -467,12 +467,31 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
-		panelsTelemetry.addLine("=== COLOUR ===");
+		panelsTelemetry.addLine("=== SPINDEXER ===");
+		panelsTelemetry.addData("Current Slot", spindexer.getCurrentSlot());
+		panelsTelemetry.addData("Spindexer Degrees", spindexer.getDegrees());
+		panelsTelemetry.addData("Distance from Slot", "%.2f°", spindexer.getDistanceFromSlot());
+		panelsTelemetry.addData("Aligned with Slot", spindexer.isAlignedWithSlot());
+
+		panelsTelemetry.addLine("=== COLOUR SENSORS ===");
+		panelsTelemetry.addData("Update Count", colour.updateCount);
+		panelsTelemetry.addData("Is Updating", colour.isUpdating);
+		panelsTelemetry.addData("Last Update (ms ago)", System.currentTimeMillis() - colour.lastUpdateTime);
+
+		panelsTelemetry.addLine("--- Slot 2 Sensor ---");
+		panelsTelemetry.addData("RGB", "R=%.2f G=%.2f B=%.2f", colour.slot2Red, colour.slot2Green, colour.slot2Blue);
+		panelsTelemetry.addData("HSV", "H=%.1f° S=%.2f V=%.2f", colour.slot2Hue, colour.slot2Saturation, colour.slot2Value);
+		panelsTelemetry.addData("Detected Colour", colour.colours.getSlot2().toString());
+
+		panelsTelemetry.addLine("--- Slot 3 Sensor ---");
+		panelsTelemetry.addData("RGB", "R=%.2f G=%.2f B=%.2f", colour.slot3Red, colour.slot3Green, colour.slot3Blue);
+		panelsTelemetry.addData("HSV", "H=%.1f° S=%.2f V=%.2f", colour.slot3Hue, colour.slot3Saturation, colour.slot3Value);
+		panelsTelemetry.addData("Detected Colour", colour.colours.getSlot3().toString());
+
+		panelsTelemetry.addLine("--- Mapped Slots ---");
 		panelsTelemetry.addData("Slot 1", colour.colours.getSlot1().toString());
 		panelsTelemetry.addData("Slot 2", colour.colours.getSlot2().toString());
 		panelsTelemetry.addData("Slot 3", colour.colours.getSlot3().toString());
-		panelsTelemetry.addData("Current Slot", spindexer.getCurrentSlot());
-		panelsTelemetry.addData("Spindexer Degrees", spindexer.getDegrees());
 
 		panelsTelemetry.update();
 	}

@@ -28,4 +28,20 @@ public class ShootArtifacts extends SequentialCommandGroup {
 
 		addRequirements(shooter, spindexer, transfer, intake);
 	}
+
+	public ShootArtifacts(Shooter shooter, Spindexer spindexer, Transfer transfer, Intake intake) {
+		this(shooter, spindexer, transfer, intake, 3200);
+	}
+
+	public ShootArtifacts(Shooter shooter, Spindexer spindexer, Transfer transfer, Intake intake, int waitTime) {
+		addCommands(
+				shooter.SetTarget(Shooter.AUDIENCE_RPM , Shooter.AUDIENCE_RPM),
+				shooter.WaitForTarget().withTimeout(3000L),
+				spindexer.DirectPower(0.25),
+				new WaitCommand(waitTime),
+				spindexer.DirectPower(0)
+		);
+
+		addRequirements(shooter, spindexer, transfer, intake);
+	}
 }
