@@ -4,7 +4,7 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Red Modular Audience Auto", group = "Red", preselectTeleOp = "Red Audience TeleOp")
+@Autonomous(name = "Red Audience Auto", group = "Red", preselectTeleOp = "Red Audience TeleOp")
 public class RedModularAudienceAuto extends ModularAuto {
     @Override
     protected Pose getStartingPose() {

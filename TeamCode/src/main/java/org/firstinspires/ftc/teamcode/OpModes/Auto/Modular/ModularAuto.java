@@ -32,8 +32,8 @@ import java.util.List;
 
 @Configurable
 public abstract class ModularAuto extends OpMode {
-    public static int COLLECTION_WAIT = 1300;
-    public static int HUMAN_PLAYER_COLLECTION_WAIT = 1700;
+    public static int COLLECTION_WAIT = 300;
+    public static int HUMAN_PLAYER_COLLECTION_WAIT = 500;
 
     protected Follower follower;
     protected CommandScheduler scheduler;
@@ -212,7 +212,7 @@ public abstract class ModularAuto extends OpMode {
 
         SequentialCommandGroup command = new SequentialCommandGroup(
                 new ParallelCommandGroup(
-                        new FollowPathCommand(follower, toSpike).setGlobalMaxPower(0.9),
+                        new FollowPathCommand(follower, toSpike).setGlobalMaxPower(1),
                         new SequentialCommandGroup(
                                 transfer.TransferIn(),
                                 intake.In(),
@@ -367,7 +367,7 @@ public abstract class ModularAuto extends OpMode {
                         )
                 ),
                 transfer.IntakeDoorOut(),
-                getShootSequence(2500)
+                getShootSequence(2000)
         );
     }
 

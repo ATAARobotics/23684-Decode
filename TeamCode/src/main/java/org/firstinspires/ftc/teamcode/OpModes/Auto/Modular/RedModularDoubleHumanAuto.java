@@ -4,26 +4,26 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Blue Human Auto", group = "Blue", preselectTeleOp = "Blue TeleOp")
-public class BlueModularHumanAuto extends ModularAuto {
+@Autonomous(name = "Red Double Human Auto", group = "Red", preselectTeleOp = "Red TeleOp")
+public class RedModularDoubleHumanAuto extends ModularAuto {
     @Override
     protected Pose getStartingPose() {
-        return PoseDatabase.BLUE_START;
+        return PoseDatabase.RED_START;
     }
 
     @Override
     protected Team getTeam() {
-        return Team.BLUE;
+        return Team.RED;
     }
 
     @Override
     protected void setRoute() {
         addStep(RouteStep.SHOOT_PRELOAD);
-        addStep(RouteStep.COLLECT_HUMAN_PLAYER);
-        addStep(RouteStep.SHOOT);
         addStep(RouteStep.COLLECT_SPIKE_1);
-        addStep(RouteStep.SHOOT_LONG_PRESPIN);
-        addStep(RouteStep.COLLECT_SPIKE_2);
+        addStep(RouteStep.SHOOT);
+        addStep(RouteStep.COLLECT_HUMAN_PLAYER_WIGGLE);
+        addStep(RouteStep.SHOOT);
+        addStep(RouteStep.COLLECT_HUMAN_PLAYER_WIGGLE);
         addStep(RouteStep.SHOOT);
         addStep(RouteStep.PARK);
     }

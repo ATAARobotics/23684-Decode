@@ -2,9 +2,11 @@ package org.firstinspires.ftc.teamcode.OpModes.Auto;
 
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
+@Disabled
 @Autonomous(name = "Red Audience Auto", group = "Red", preselectTeleOp = "Red Audience TeleOp")
 public class RedAudienceAuto extends AudienceAuto {
 	@Override

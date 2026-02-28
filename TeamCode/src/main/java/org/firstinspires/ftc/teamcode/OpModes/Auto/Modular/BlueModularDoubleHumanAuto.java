@@ -4,7 +4,7 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Blue Modular Double Human Auto", group = "Blue", preselectTeleOp = "Blue TeleOp")
+@Autonomous(name = "Blue Double Human Auto", group = "Blue", preselectTeleOp = "Blue TeleOp")
 public class BlueModularDoubleHumanAuto extends ModularAuto {
     @Override
     protected Pose getStartingPose() {

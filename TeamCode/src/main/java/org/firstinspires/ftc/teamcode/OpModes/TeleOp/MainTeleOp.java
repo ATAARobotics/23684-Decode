@@ -503,7 +503,7 @@ public abstract class MainTeleOp extends OpMode {
 		// Driver 1: Rumble when path following (A button) is complete
 		boolean isPathBusy = follower.isBusy();
 		if (gamepad1.a && wasPathBusy && !isPathBusy) {
-			gamepad1.rumble(500);
+			gamepad2.rumble(500);
 		}
 		wasPathBusy = isPathBusy;
 
