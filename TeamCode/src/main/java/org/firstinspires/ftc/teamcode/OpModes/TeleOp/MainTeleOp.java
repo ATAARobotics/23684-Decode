@@ -61,6 +61,7 @@ public abstract class MainTeleOp extends OpMode {
 	// Rumble state tracking
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
+	protected boolean warnedEndGame = false;
 
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
@@ -180,7 +181,6 @@ public abstract class MainTeleOp extends OpMode {
 			} else if (getTeam().equals(Team.RED)) {
 				follower.setPose(new Pose(7.1, 18, Math.toRadians(180)));
 			}
-//			follower.setPose(new Pose(136.039, 78.907317073, 0)); testing only
 		}
 
 		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
@@ -500,10 +500,17 @@ public abstract class MainTeleOp extends OpMode {
 	 * Handle controller rumble feedback
 	 */
 	private void handleRumbleFeedback() {
+		// Match Timer Alert: 21 seconds remaining in 2:00 TeleOp (99 seconds elapsed)
+		if (timer.seconds() >= 99 && !warnedEndGame) {
+			gamepad1.rumbleBlips(3);
+			gamepad2.rumbleBlips(3);
+			warnedEndGame = true;
+		}
+
 		// Driver 1: Rumble when path following (A button) is complete
 		boolean isPathBusy = follower.isBusy();
 		if (gamepad1.a && wasPathBusy && !isPathBusy) {
-			gamepad2.rumble(500);
+			gamepad2.rumble(100);
 		}
 		wasPathBusy = isPathBusy;
 

@@ -35,8 +35,17 @@ public class Transfer extends SubsystemBase {
 
 	@Override
 	public void periodic() {
+		updateTargetFlags();
 		if (runAutomaticTransfer) {
 			updateAutomaticTransfer(false);
+		}
+	}
+
+	private void updateTargetFlags() {
+		if (shooter != null) {
+			reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
+			reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);
+			reachedAverageTarget = reachedUpperTarget && reachedLowerTarget;
 		}
 	}
 
@@ -110,10 +119,6 @@ public class Transfer extends SubsystemBase {
 
 	public void updateAutomaticTransfer(boolean passive) {
 		if (shooter != null) {
-			reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
-			reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);
-//			reachedAverageTarget = (shooter.lowerTarget >= 100) && (shooter.upperTarget >= 100) && (((Math.abs(shooter.lowerRPM - shooter.lowerTarget) + Math.abs(shooter.upperRPM - shooter.upperTarget)) / 2) <= SHOOTER_RPM_TOLERANCE);
-
 			if (reachedUpperTarget && reachedLowerTarget) {// && spindexerAtTarget) {
 				transferLeft.setPower(1);
 				transferRight.setPower(1);
