@@ -4,8 +4,8 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Red Audience Auto", group = "Red", preselectTeleOp = "Red TeleOp")
-public class RedModularAudienceAuto extends ModularAuto {
+@Autonomous(name = "Red Triple Human Auto", group = "Red", preselectTeleOp = "Red TeleOp")
+public class RedOnlyHuman extends ModularAuto {
     @Override
     protected Pose getStartingPose() {
         return PoseDatabase.RED_START;
@@ -19,12 +19,13 @@ public class RedModularAudienceAuto extends ModularAuto {
     @Override
     protected void setRoute() {
         addStep(RouteStep.SHOOT_PRELOAD);
-        addStep(RouteStep.COLLECT_SPIKE_1);
+        addStep(RouteStep.COLLECT_HUMAN_PLAYER_CLOSE_WIGGLE);
         addStep(RouteStep.SHOOT);
-        addStep(RouteStep.COLLECT_SPIKE_2);
+        addStep(2000);
+        addStep(RouteStep.COLLECT_HUMAN_PLAYER_WIGGLE);
         addStep(RouteStep.SHOOT);
-        addStep(RouteStep.COLLECT_SPIKE_3);
-        addStep(RouteStep.SHOOT);
+        addStep(RouteStep.COLLECT_HUMAN_PLAYER_CLOSE_WIGGLE);
+        //addStep(RouteStep.SHOOT);
         addStep(RouteStep.PARK);
     }
 }

@@ -160,7 +160,10 @@ public abstract class ModularAuto extends OpMode {
                 return getCollectHumanPlayerCommand();
 
             case COLLECT_HUMAN_PLAYER_WIGGLE:
-                return getCollectHumanPlayerCommandWithWiggle();
+                return getCollectHumanPlayerCommandWithWiggle(false);
+
+            case COLLECT_HUMAN_PLAYER_CLOSE_WIGGLE:
+                return  getCollectHumanPlayerCommandWithWiggle(true);
 
             case SHOOT:
                 return getShootStepCommand(1000);
@@ -261,7 +264,7 @@ public abstract class ModularAuto extends OpMode {
                         new SequentialCommandGroup(
                                 transfer.TransferIn(),
                                 intake.In(),
-                                spindexer.DirectPower(0.36),
+                                spindexer.DirectPower(0.37),
                                 transfer.IntakeDoorOut()
                         )
                 ),
@@ -270,11 +273,20 @@ public abstract class ModularAuto extends OpMode {
         );
     }
 
-    private Command getCollectHumanPlayerCommandWithWiggle() {
+    private Command getCollectHumanPlayerCommandWithWiggle(boolean close) {
         Team team = getTeam();
         Pose intermediate = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_INTERMEDIATE : PoseDatabase.RED_HUMAN_PLAYER_INTERMEDIATE;
-        Pose collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT;
-        Pose wiggle = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_WIGGLE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_WIGGLE;
+        Pose collect;
+        Pose wiggle;
+        if (!close) {
+           collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT;
+           wiggle = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_WIGGLE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_WIGGLE;
+        }else{
+            collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_CLOSE;
+            wiggle = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_WIGGLE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_WIGGLE_CLOSE;
+
+        }
+
 
         PathChain toHP = follower.pathBuilder()
                 .addPath(new BezierLine(currentExpectedPose, intermediate))
@@ -334,7 +346,7 @@ public abstract class ModularAuto extends OpMode {
              toShoot = follower.pathBuilder().addPath(
                 new BezierCurve(
                         new Pose(15.000, 89.500),
-                        new Pose(52.449, 88.976),
+                        new Pose(52.449, 89.5),
                         new Pose(15.351, 84.391),
                         shootPose))
                 .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
@@ -377,6 +389,7 @@ public abstract class ModularAuto extends OpMode {
                 new ShootArtifacts(shooter, spindexer, transfer, intake, waitTime),
                 transfer.SetAutomaticTransfer(false),
                 shooter.SetTarget(0, 0),
+                spindexer.DirectPower(0),
                 intake.Stop(),
                 transfer.TransferStop(),
                 transfer.IntakeDoorStop()

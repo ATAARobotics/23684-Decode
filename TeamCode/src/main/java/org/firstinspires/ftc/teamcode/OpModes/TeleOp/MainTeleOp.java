@@ -28,6 +28,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Subsystem.Colour;
+import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
@@ -225,8 +226,8 @@ public abstract class MainTeleOp extends OpMode {
 			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
 			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
 		} else{
-			upperShooterSpeed = Shooter.AUDIENCE_RPM;
-			lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+			upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
+			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 		}
 
 		if (gamepad1.cross && !aButtonPressed) {
@@ -282,7 +283,7 @@ public abstract class MainTeleOp extends OpMode {
 			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
 			scheduler.schedule(new SequentialCommandGroup(
 					shooter.WaitForTarget(),
-					spindexer.DirectPower(0.3)
+					spindexer.DirectPower(0.8)
 			));
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
@@ -316,7 +317,9 @@ public abstract class MainTeleOp extends OpMode {
 		if (!gamepad2.x) {
 			if ((rightTriggerPressed)) {
 				transfer.runAutomaticTransfer = true;
-				transfer.updateAutomaticTransfer(false);
+				transfer.updateTargetFlags();
+				//transfer.updateAutomaticTransfer(false);
+				scheduler.schedule(transfer.TransferOut());
 				telemetry.addLine("1");
 			} else if ((Math.abs(gamepad2.left_stick_y) > 0.2 && !rightTriggerPressed)) {
 				transfer.runAutomaticTransfer = false;
@@ -357,7 +360,7 @@ public abstract class MainTeleOp extends OpMode {
 		if (gamepad2.right_bumper) {
 			spindexerPower = 0.1;
 		} else {
-			spindexerPower = 0.3;
+			spindexerPower = 0.37;
 		}
 
 		// Dpad Down: Manual spindexer control
@@ -456,6 +459,7 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addLine("=== MAIN TELEOP ===");
 		panelsTelemetry.addData("Drive Mode", "Mecanum");
 		panelsTelemetry.addData("Location", follower.getPose().toString());
+		Drawing.drawRobot(follower.getPose());
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);

@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.Utils.PIDFController;
 
 @Configurable
 public class Shooter extends SubsystemBase {
-	private static final double HALF_DIVISOR = 0.5;
+	public static final double HALF_DIVISOR = 0.5;
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
 	public static double UPPER_P = 0.01, UPPER_I = 0, UPPER_D = 0;
@@ -36,8 +36,12 @@ public class Shooter extends SubsystemBase {
 	public static double TICKS_PER_REVOLUTION = 28.0;
 
 	// --- Pre-calculated constants ---
-	private static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
+	public static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
 	public static double AUDIENCE_RPM = 2070;
+
+	public static double AUDIENCE_RPM_UPPER = 2350; //1700
+	public static double AUDIENCE_RPM_LOWER = 2350; //2300
+
 	public static double GOAL_RPM_UPPER = 1900;
 	public static double GOAL_RPM_LOWER = 2250;
 

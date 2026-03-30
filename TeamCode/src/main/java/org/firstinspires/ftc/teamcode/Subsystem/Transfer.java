@@ -41,7 +41,7 @@ public class Transfer extends SubsystemBase {
 		}
 	}
 
-	private void updateTargetFlags() {
+	public void updateTargetFlags() {
 		if (shooter != null) {
 			reachedUpperTarget = (shooter.upperTarget >= 100) && (Math.abs(shooter.upperRPM - shooter.upperTarget) <= SHOOTER_RPM_TOLERANCE);
 			reachedLowerTarget = (shooter.lowerTarget >= 100) && (Math.abs(shooter.lowerRPM - shooter.lowerTarget) <= SHOOTER_RPM_TOLERANCE);

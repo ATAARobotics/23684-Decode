@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Subsystem;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.TelemetryManager;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
@@ -26,10 +27,17 @@ public class Spindexer extends SubsystemBase {
 	// TICKS_PER_REV = 537.7 * 2 = 1075.4
 	// TICKS_PER_DEGREE = 1075.4 / 360 = 2.987222222222222
 	// DEGREES_PER_TICK = 360 / 1075.4 = 0.3347591593825553
-	public static final double TICKS_PER_DEGREE = 2.987222222222222;
-	public static final double DEGREES_PER_TICK = 0.3347591593825553;
+
+	// 8192 CPR through bore encoder
+	// TICKS_PER_REV = 8192
+	// TICKS_PER_DEGREE = 8192 / 360 = 22.75555555555556
+	// DEGREES_PER_TICK = 360 / 8192 = 0.0439453125
+	public static final double TICKS_PER_DEGREE = 22.75555555555556;
+	public static final double DEGREES_PER_TICK = 0.0439453125;
 
 	public final DcMotor spindexerMotor;
+
+	AnalogInput spindexerAnalog;
 PIDFController spindexerPIDF;
 	double targetTicks = 0;
 	double targetDegrees = 0;
@@ -45,7 +53,8 @@ PIDFController spindexerPIDF;
 
 	public Spindexer(HardwareMap hardwareMap) {
 		spindexerMotor = hardwareMap.get(DcMotor.class, "spindexerMotor");
-		spindexerMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		spindexerMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		spindexerAnalog = hardwareMap.get(AnalogInput.class, "spindexerAnalog");
 
 		spindexerPIDF = new PIDFController(P, I, D, F);
 
@@ -146,7 +155,7 @@ PIDFController spindexerPIDF;
 				overrided = false;
 
 				spindexerPIDF.setSetpoint(targetTicks);
-				//spindexerPIDF.setSetpointRange(60);
+				spindexerPIDF.setSetpointRange(60);
 			}
 
 			@Override
@@ -163,7 +172,7 @@ PIDFController spindexerPIDF;
 
 			@Override
 			public boolean isFinished() {
-				return Math.abs(power) < 0.05 || overrided;
+				return Math.abs(targetTicks - getPosition()) < 150 || overrided;
 			}
 		};
 	}
@@ -186,6 +195,7 @@ PIDFController spindexerPIDF;
 		telemetry.addData("Spindexer Power", power);
 		telemetry.addData("Tick Error", targetTicks - currentPosTicks);
 		telemetry.addData("Current Slot", getCurrentSlot());
+		telemetry.addData("raw Analog value", spindexerAnalog.getVoltage());
 	}
 
 	public boolean isAtTarget() {
