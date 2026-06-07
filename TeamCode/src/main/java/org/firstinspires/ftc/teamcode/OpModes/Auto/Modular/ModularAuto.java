@@ -19,6 +19,7 @@ import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
@@ -32,8 +33,8 @@ import java.util.List;
 
 @Configurable
 public abstract class ModularAuto extends OpMode {
-    public static int COLLECTION_WAIT = 300;
-    public static int HUMAN_PLAYER_COLLECTION_WAIT = 500;
+    public static int COLLECTION_WAIT = 20;
+    public static int HUMAN_PLAYER_COLLECTION_WAIT = 30;
 
     protected Follower follower;
     protected CommandScheduler scheduler;
@@ -41,6 +42,8 @@ public abstract class ModularAuto extends OpMode {
     protected Shooter shooter;
     protected Spindexer spindexer;
     protected Transfer transfer;
+
+    protected Gate gate;
     protected TelemetryManager panelsTelemetry;
 
     private static class RouteItem {
@@ -81,6 +84,7 @@ public abstract class ModularAuto extends OpMode {
         transfer = new Transfer(hardwareMap);
         transfer.setShooter(shooter);
         transfer.setSpindexer(spindexer);
+        gate = new Gate(hardwareMap);
 
         setRoute();
 
@@ -138,13 +142,11 @@ public abstract class ModularAuto extends OpMode {
                 return new SequentialCommandGroup(
                         new ParallelCommandGroup(
                                 new FollowPathCommand(follower, preloadPath),
-                                new SequentialCommandGroup(
-                                        new WaitCommand(300),
-                                        shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
-                                )
+                                shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+
                         ),
                         transfer.IntakeDoorOut(),
-                        getShootSequence(2050)
+                        getShootSequence(1050)
                 );
 
             case COLLECT_SPIKE_1:
@@ -205,25 +207,28 @@ public abstract class ModularAuto extends OpMode {
                 .addPath(new BezierLine(currentExpectedPose, intermediate))
                 .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
                 .build();
+        toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
 
         PathChain forwardPath = follower.pathBuilder()
                 .addPath(new BezierLine(intermediate, collect))
                 .setConstantHeadingInterpolation(collect.getHeading())
                 .build();
 
+        forwardPath.setDecelerationType(PathChain.DecelerationType.NONE);
+
         currentExpectedPose = collect;
 
         SequentialCommandGroup command = new SequentialCommandGroup(
                 new ParallelCommandGroup(
-                        new FollowPathCommand(follower, toSpike).setGlobalMaxPower(1),
+                        new FollowPathCommand(follower, toSpike),
                         new SequentialCommandGroup(
                                 transfer.TransferIn(),
                                 intake.In(),
-                                spindexer.DirectPower(0.37),
+                                spindexer.DirectPower(1),
                                 transfer.IntakeDoorOut()
                         )
                 ),
-                new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
+                new FollowPathCommand(follower, forwardPath),
                 new WaitCommand(collectionWait),
                 transfer.TransferStop()
         );
@@ -240,11 +245,14 @@ public abstract class ModularAuto extends OpMode {
                 .addPath(new BezierLine(currentExpectedPose, intermediate))
                 .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
                 .build();
+        toHP.setDecelerationType(PathChain.DecelerationType.NONE);
 
         PathChain forwardPath = follower.pathBuilder()
                 .addPath(new BezierLine(intermediate, collect))
                 .setConstantHeadingInterpolation(collect.getHeading())
                 .build();
+
+        forwardPath.setDecelerationType(PathChain.DecelerationType.NONE);
 
         currentExpectedPose = collect;
 
@@ -255,7 +263,7 @@ public abstract class ModularAuto extends OpMode {
                                 new WaitCommand(100),
                                 transfer.TransferIn(),
                                 intake.In(),
-                                spindexer.DirectPower(0.36),
+                                spindexer.DirectPower(1),
                                 transfer.IntakeDoorOut()
                         )
                 ),
@@ -264,7 +272,7 @@ public abstract class ModularAuto extends OpMode {
                         new SequentialCommandGroup(
                                 transfer.TransferIn(),
                                 intake.In(),
-                                spindexer.DirectPower(0.37),
+                                spindexer.DirectPower(1),
                                 transfer.IntakeDoorOut()
                         )
                 ),
@@ -293,10 +301,14 @@ public abstract class ModularAuto extends OpMode {
                 .setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
                 .build();
 
+        toHP.setDecelerationType(PathChain.DecelerationType.NONE);
+
         PathChain forwardPath = follower.pathBuilder()
                 .addPath(new BezierLine(intermediate, collect))
                 .setConstantHeadingInterpolation(collect.getHeading())
                 .build();
+
+        forwardPath.setDecelerationType(PathChain.DecelerationType.NONE);
 
         double wiggleOffset = (team == Team.BLUE) ? 1.5 : -1.5;
         Pose shallowWiggle = new Pose(wiggle.getX() + wiggleOffset, wiggle.getY(), wiggle.getHeading());
@@ -307,6 +319,8 @@ public abstract class ModularAuto extends OpMode {
                 .setConstantHeadingInterpolation(collect.getHeading())
                 .build();
 
+        wigglePath.setDecelerationType(PathChain.DecelerationType.NONE);
+
         currentExpectedPose = wiggle;
 
         return new SequentialCommandGroup(
@@ -316,7 +330,7 @@ public abstract class ModularAuto extends OpMode {
                                 new WaitCommand(100),
                                 transfer.TransferIn(),
                                 intake.In(),
-                                spindexer.DirectPower(0.36),
+                                spindexer.DirectPower(1),
                                 transfer.IntakeDoorOut()
                         )
                 ),
@@ -325,7 +339,7 @@ public abstract class ModularAuto extends OpMode {
                         new SequentialCommandGroup(
                                 transfer.TransferIn(),
                                 intake.In(),
-                                spindexer.DirectPower(0.36),
+                                spindexer.DirectPower(1),
                                 transfer.IntakeDoorOut()
                         )
                 ),
@@ -366,6 +380,8 @@ public abstract class ModularAuto extends OpMode {
                     .build();
         }
 
+        toShoot.setDecelerationType(PathChain.DecelerationType.NONE);
+
         currentExpectedPose = shootPose;
 
         return new SequentialCommandGroup(
@@ -379,16 +395,15 @@ public abstract class ModularAuto extends OpMode {
                         )
                 ),
                 transfer.IntakeDoorOut(),
-                getShootSequence(2000)
+                getShootSequence(1050)
         );
     }
 
     private Command getShootSequence(int waitTime) {
         return new SequentialCommandGroup(
-                transfer.SetAutomaticTransfer(true),
-                new ShootArtifacts(shooter, spindexer, transfer, intake, waitTime),
-                transfer.SetAutomaticTransfer(false),
+                new ShootArtifacts(shooter, spindexer, transfer, intake,gate, waitTime),
                 shooter.SetTarget(0, 0),
+                gate.closeGate(),
                 spindexer.DirectPower(0),
                 intake.Stop(),
                 transfer.TransferStop(),

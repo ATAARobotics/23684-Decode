@@ -18,16 +18,16 @@ public class Shooter extends SubsystemBase {
 	public static final double HALF_DIVISOR = 0.5;
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
-	public static double UPPER_P = 0.01, UPPER_I = 0, UPPER_D = 0;
-	public static double LOWER_P = 0.017, LOWER_I = 0.00, LOWER_D = 0;
+	public static double UPPER_P = 0.001, UPPER_I = 0, UPPER_D = 0;
+	public static double LOWER_P = 0.0017, LOWER_I = 0.00, LOWER_D = 0;
 	// --- Feedforward Constants ---
-	public static double UPPER_KS = 0.32, UPPER_KV = 0.00007;
-	public static double LOWER_KS = 0.333, LOWER_KV = 0.00009;
+	public static double UPPER_KS = 0.1, UPPER_KV = 0.00018;
+	public static double LOWER_KS = 0.17, LOWER_KV = 0.00017;
 	// --- Only for Tuning ---
-	public static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
-	public static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;
-	public static double PREV_UPPER_KS = 0, PREV_UPPER_KV = 0;
-	public static double PREV_LOWER_KS = 0, PREV_LOWER_KV = 0;
+	private static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
+	private static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;
+	private static double PREV_UPPER_KS = 0, PREV_UPPER_KV = 0;
+	private static double PREV_LOWER_KS = 0, PREV_LOWER_KV = 0;
 	// --- Motor Power Constants ---
 	public static double STOP_POWER = 0.0;
 	// --- RPM & Control Constants ---

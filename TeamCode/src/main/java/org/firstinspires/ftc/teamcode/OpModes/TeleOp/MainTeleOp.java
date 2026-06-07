@@ -12,7 +12,6 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -23,13 +22,16 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
+import org.firstinspires.ftc.teamcode.Subsystem.NewShooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
+import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
 import java.util.function.Supplier;
@@ -43,6 +45,8 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
+	protected NewShooter newShooter;
+	protected Gate gate;
 	protected Colour colour;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	// Button state tracking to prevent continuous input
@@ -64,6 +68,8 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasPathBusy = false;
 	protected boolean warnedEndGame = false;
 
+	protected boolean openGate = false;
+
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
 	// Performance monitoring
@@ -76,7 +82,7 @@ public abstract class MainTeleOp extends OpMode {
 
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
-	DistanceSensor distanceSensor;
+	//DistanceSensor distanceSensor;
 	TouchSensor intakeTouchSensor;
 
 	@Override
@@ -93,10 +99,15 @@ public abstract class MainTeleOp extends OpMode {
 		scheduler.reset();
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
-		scheduler.schedule(shooter.SetTarget(0, 0));
+		//scheduler.schedule(shooter.SetTarget(0, 0));
+
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
+		newShooter = new NewShooter(hardwareMap);
+		scheduler.schedule(newShooter.setTarget(0,0));
+		gate = new Gate(hardwareMap);
+		spindexer.zeroSpindexer();
 		if (RobotPosition.isSpindexerSet) {
 			RobotPosition.isSpindexerSet = false;
 		}
@@ -106,7 +117,7 @@ public abstract class MainTeleOp extends OpMode {
 		//transfer.setSpindexer(spindexer);
 		// TODO: Make subsystem
 		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
-		distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
+		//distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
 		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensorLeft");
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
@@ -138,8 +149,10 @@ public abstract class MainTeleOp extends OpMode {
 	@Override
 	public void start() {
 		// Called when START is pressed
-		// spindexer.zeroSpindexer(); // Spindexer already initializes from RobotPosition in constructor
+		 // Spindexer already initializes from RobotPosition in constructor
 		timer.startTime();
+		scheduler.schedule(gate.closeGate());
+		scheduler.run();
 	}
 
 	@Override
@@ -154,7 +167,11 @@ public abstract class MainTeleOp extends OpMode {
 		updateRGBIndicator();
 		handleRumbleFeedback();
 		shooter.periodic();
-		spindexer.periodic();
+
+		if (openGate){scheduler.schedule(gate.openGate());}
+		else{scheduler.schedule(gate.closeGate());}
+
+
 
 		int currentSlot = spindexer.getCurrentSlot();
 		if (currentSlot != -1) {
@@ -230,6 +247,8 @@ public abstract class MainTeleOp extends OpMode {
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 		}
 
+
+
 		if (gamepad1.cross && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
@@ -269,10 +288,12 @@ public abstract class MainTeleOp extends OpMode {
 		if (gamepad2.left_trigger > 0.5 && !leftTriggerPressed) {
 			scheduler.schedule(intake.In());
 			scheduler.schedule(transfer.IntakeDoorOut());
+			scheduler.schedule(spindexer.DirectPower(spindexerPower));
 			leftTriggerPressed = true;
 		} else if (gamepad2.left_trigger <= 0.5 && leftTriggerPressed) {
 			scheduler.schedule(intake.Stop());
 			scheduler.schedule(transfer.IntakeDoorStop());
+			scheduler.schedule(spindexer.DirectPower(0));
 			leftTriggerPressed = false;
 		}
 
@@ -280,66 +301,76 @@ public abstract class MainTeleOp extends OpMode {
 
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
-			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
-			scheduler.schedule(new SequentialCommandGroup(
-					shooter.WaitForTarget(),
-					spindexer.DirectPower(0.8)
-			));
+//			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
+			scheduler.schedule(
+					new SequentialCommandGroup(
+							new InstantCommand(()-> openGate = true),
+							shooter.SetTarget(Shooter.AUDIENCE_RPM , Shooter.AUDIENCE_RPM),
+							shooter.WaitForTarget().withTimeout(2500),
+							transfer.TransferOut(),
+							spindexer.DirectPower(1)
+					));
+//					new InstantCommand(()-> openGate = true),
+//					shooter.WaitForTarget().withTimeout(2500),
+//					transfer.TransferOut().withTimeout(50),
+//					spindexer.DirectPower(spindexerPower)
+//			));
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
-			shooter.setTarget(0, 0);
+			scheduler.schedule(shooter.SetTarget(0, 0));
 			scheduler.schedule(transfer.TransferStop());
 			scheduler.schedule(spindexer.DirectPower(0));
+			openGate = false;
 			rightTriggerPressed = false;
 		}
 
-
-		if (gamepad2.y && !yButtonPressed) {
-			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
-			yButtonPressed = true;
-		} else if (!gamepad2.y && yButtonPressed) {
-			//shooter.setTarget(0, 0);
-			//scheduler.schedule(transfer.TransferStop());
-			if(shooter.averageRPM == 0){
-				yButtonPressed = false;
-			}
+		if(gamepad2.yWasPressed()){
+			shooter.SetTarget(upperShooterSpeed,lowerShooterSpeed);
 		}
+
+
+//		if (gamepad2.y && !yButtonPressed) {
+//			shooter.SetTarget(upperShooterSpeed,lowerShooterSpeed);
+//			yButtonPressed = true;
+//		} else if (!gamepad2.y && yButtonPressed) {
+//			//shooter.setTarget(0, 0);
+//			//scheduler.schedule(transfer.TransferStop());
+//			if(shooter.averageRPM == 0){
+//				yButtonPressed = false;
+//			}
+//		}
 
 		// X Button: Override transfer forward - manual control
 		if (gamepad2.x && !xButtonPressed) {
 			scheduler.schedule(transfer.TransferOut());
 			xButtonPressed = true;
-		} else if (!gamepad2.x && xButtonPressed) {
+		} else if (!gamepad2.x && xButtonPressed && !rightTriggerPressed) {
 			scheduler.schedule(transfer.TransferStop());
 			xButtonPressed = false;
 		}
 
 		if (!gamepad2.x) {
-			if ((rightTriggerPressed)) {
-				transfer.runAutomaticTransfer = true;
-				transfer.updateTargetFlags();
-				//transfer.updateAutomaticTransfer(false);
-				scheduler.schedule(transfer.TransferOut());
-				telemetry.addLine("1");
-			} else if ((Math.abs(gamepad2.left_stick_y) > 0.2 && !rightTriggerPressed)) {
-				transfer.runAutomaticTransfer = false;
-				scheduler.schedule(transfer.TransferIn());
-				telemetry.addLine("2");
-			} else {
-				transfer.runAutomaticTransfer = false;
-				scheduler.schedule(transfer.TransferStop());
-				telemetry.addLine("3");
-			}
+//			 if ((Math.abs(gamepad2.left_stick_y) > 0.2 && !rightTriggerPressed)) {
+//				transfer.runAutomaticTransfer = false;
+//				scheduler.schedule(transfer.TransferIn());
+//				telemetry.addLine("2");
+//			} else {
+//				transfer.runAutomaticTransfer = false;
+//				scheduler.schedule(transfer.TransferStop());
+//				telemetry.addLine("3");
+//			}
 		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
 		if (gamepad2.b && !b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorIn());
 			scheduler.schedule(intake.Out());
+			scheduler.schedule(spindexer.DirectPower(-spindexerPower));
 			b2ButtonPressed = true;
 		} else if (!gamepad2.b && b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorStop());
 			scheduler.schedule(intake.Stop());
+			scheduler.schedule(spindexer.DirectPower(0));
 			b2ButtonPressed = false;
 		}
 
@@ -358,10 +389,11 @@ public abstract class MainTeleOp extends OpMode {
 
 		// Right bumper: Adjust spindexer power
 		if (gamepad2.right_bumper) {
-			spindexerPower = 0.1;
+			spindexerPower = 0.6;
 		} else {
-			spindexerPower = 0.37;
+			spindexerPower = 1;
 		}
+
 
 		// Dpad Down: Manual spindexer control
 		if (gamepad2.dpad_down && !dpadDownPressed) {
@@ -369,7 +401,7 @@ public abstract class MainTeleOp extends OpMode {
 			scheduler.schedule(transfer.IntakeDoorOut());
 			dpadUpPressed = true;
 		} else if (!gamepad2.dpad_down && dpadDownPressed) {
-			scheduler.schedule(spindexer.NextTarget());
+//			scheduler.schedule(spindexer.NextTarget());
 			scheduler.schedule(transfer.IntakeDoorStop());
 			dpadDownPressed = false;
 			spindexerMidCrossed = true;
@@ -377,13 +409,13 @@ public abstract class MainTeleOp extends OpMode {
 			spindexerDownCrossed = false;
 		}
 
-		// A Button: Reset spindexer position
-		if (gamepad2.a && !g2AButtonPressed) {
-			scheduler.schedule(new InstantCommand(spindexer::zeroSpindexer));
-			g2AButtonPressed = true;
-		} else if (!gamepad2.a && g2AButtonPressed) {
-			g2AButtonPressed = false;
-		}
+////		 A Button: Reset spindexer position
+//		if (gamepad2.a && !g2AButtonPressed) {
+//			scheduler.schedule(spindexer.NewNextTarget());
+//			g2AButtonPressed = true;
+//		} else if (!gamepad2.a && g2AButtonPressed) {
+//			g2AButtonPressed = false;
+//		}
 
 //		if (gamepad2.right_bumper && !dpadUpPressed) {
 //			eee
@@ -462,20 +494,23 @@ public abstract class MainTeleOp extends OpMode {
 		Drawing.drawRobot(follower.getPose());
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
-		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
-		panelsTelemetry.addData("Lower RPM", shooter.lowerRPM);
-		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
-		panelsTelemetry.addData("Amps Drawn to Shooter", shooter.TotalCurrentDrawn());
+		panelsTelemetry.addData("Upper ticks", newShooter.upperShooter.getVelocity());
+		panelsTelemetry.addData("Lower RPM", newShooter.upperShooter.getVelocity());
+		panelsTelemetry.addData("Target",NewShooter.AUDIENCE_TPR);
+		panelsTelemetry.addData("At Target ?", newShooter.isAtTarget());
+//		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
+//		panelsTelemetry.addData("Amps Drawn to Shooter", shooter.TotalCurrentDrawn());
 
 		panelsTelemetry.addLine("=== TRANSFER ===");
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
 		panelsTelemetry.addLine("=== SPINDEXER ===");
-		panelsTelemetry.addData("Current Slot", spindexer.getCurrentSlot());
-		panelsTelemetry.addData("Spindexer Degrees", spindexer.getDegrees());
-		panelsTelemetry.addData("Distance from Slot", "%.2f°", spindexer.getDistanceFromSlot());
-		panelsTelemetry.addData("Aligned with Slot", spindexer.isAlignedWithSlot());
+//		panelsTelemetry.addData("Current Slot", spindexer.getCurrentSlot());
+//		panelsTelemetry.addData("Spindexer Degrees", spindexer.getDegrees());
+//		panelsTelemetry.addData("Distance from Slot", "%.2f°", spindexer.getDistanceFromSlot());
+//		panelsTelemetry.addData("Aligned with Slot", spindexer.isAlignedWithSlot());
+		spindexer.Telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== COLOUR SENSORS ===");
 		panelsTelemetry.addData("Update Count", colour.updateCount);

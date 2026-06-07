@@ -26,11 +26,12 @@ public class TestSpindexer extends OpMode {
 	@Override
 	public void loop() {
 		if ((gamepad1.a) && !spindexerPressed) {
-			scheduler.schedule(spindexer.NextTarget());
+			scheduler.schedule(spindexer.NewNextTarget());
 			spindexerPressed = true;
 		} else if ((!gamepad1.a) && spindexerPressed) {
 			spindexerPressed = false;
 		}
+
 
 		spindexer.Telemetry(panelsTelemetry);
 		scheduler.run();

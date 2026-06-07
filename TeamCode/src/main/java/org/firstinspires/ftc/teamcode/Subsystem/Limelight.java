@@ -20,6 +20,10 @@ import java.util.List;
 public class Limelight {
 	private final Limelight3A limelight;
 	double heading;
+
+	public static int BLUEGOAL = 20;
+	public static int REDGOAL = 24;
+
 	LowPassFilter xLowPassFilter;
 	LowPassFilter yLowPassFilter;
 
@@ -83,8 +87,18 @@ public class Limelight {
 			Pose3D botPose = llResult.getBotpose_MT2();
 			telemetry.addData("LL Latency", llResult.getCaptureLatency() + llResult.getTargetingLatency());
 			telemetry.addData("LL MT2 Pose", botPose.toString());
+
+			telemetry.addData("Blue Goal Found?", blueGoalFound()? "give that man a TRUE" : "false");
+			telemetry.addData("Red Goal Found?", redGoalFound()? "give that man a TRUE" : "false");
+
+			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+
+				telemetry.addLine(fiducial.getFiducialId() + " : " + fiducial.getTargetXDegrees());
+
+
+			}
 		}
-		telemetry.update();
 	}
 
 	public boolean goalsFound() {
@@ -93,12 +107,64 @@ public class Limelight {
 		if (llResult != null && llResult.isValid()) {
 			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
 			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
-				if (fiducial.getFiducialId() == 20 || fiducial.getFiducialId() == 24) {
+				if (fiducial.getFiducialId() == BLUEGOAL || fiducial.getFiducialId() == REDGOAL) {
 					return true;
 				}
 			}
 		}
 
 		return false;
+	}
+
+	public boolean redGoalFound() {
+		LLResult llResult = limelight.getLatestResult();
+
+		if (llResult != null && llResult.isValid()) {
+			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+				if (fiducial.getFiducialId() == REDGOAL) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public boolean blueGoalFound() {
+		LLResult llResult = limelight.getLatestResult();
+
+		if (llResult != null && llResult.isValid()) {
+			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+				if (fiducial.getFiducialId() == BLUEGOAL) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public double AngleFrom(int tag) {
+		LLResult llResult = limelight.getLatestResult();
+
+		if (llResult != null && llResult.isValid()) {
+			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+				if (tag == BLUEGOAL) {
+					if (fiducial.getFiducialId() == BLUEGOAL) {
+						return fiducial.getTargetXDegrees();
+					}
+				} else if (tag == REDGOAL) {
+					if (fiducial.getFiducialId() == BLUEGOAL) {
+						return fiducial.getTargetXDegrees();
+					}
+				}
+
+			}
+		}
+		return 0;
+
 	}
 }

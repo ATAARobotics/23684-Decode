@@ -59,7 +59,7 @@ public class Transfer extends SubsystemBase {
 
 	public Command IntakeDoorIn() {
 		return new InstantCommand(() -> {
-			intakeDoorLeft.setPower(1);
+			intakeDoorLeft.setPower(0.5);
 			intakeDoorRight.setPower(1);
 		}, this
 		);
@@ -67,7 +67,7 @@ public class Transfer extends SubsystemBase {
 
 	public Command IntakeDoorOut() {
 		return new InstantCommand(() -> {
-			intakeDoorLeft.setPower(-1);
+			intakeDoorLeft.setPower(-0.5);
 			intakeDoorRight.setPower(-1);
 		}, this
 		);
