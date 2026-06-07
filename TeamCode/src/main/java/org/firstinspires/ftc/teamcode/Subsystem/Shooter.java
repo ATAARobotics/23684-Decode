@@ -150,6 +150,12 @@ public class Shooter extends SubsystemBase {
 		return !(upperReady && lowerReady);
 	}
 
+	public double getPercentToTarget() {
+		double upperPercent = upperTarget > 0 ? upperRPM / upperTarget : 0.0;
+		double lowerPercent = lowerTarget > 0 ? lowerRPM / lowerTarget : 0.0;
+		return Math.max(0.0, (upperPercent + lowerPercent) * HALF_DIVISOR);
+	}
+
 	private void updateMotors() {
 		double upperPower, lowerPower;
 

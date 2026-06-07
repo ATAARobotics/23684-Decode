@@ -20,6 +20,7 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
@@ -149,7 +150,8 @@ public abstract class MainTeleOp extends OpMode {
 	@Override
 	public void start() {
 		// Called when START is pressed
-		 // Spindexer already initializes from RobotPosition in constructor
+		// Spindexer already initializes from RobotPosition in constructor
+		timer.reset();
 		timer.startTime();
 		scheduler.schedule(gate.closeGate());
 		scheduler.run();
@@ -170,8 +172,6 @@ public abstract class MainTeleOp extends OpMode {
 
 		if (openGate){scheduler.schedule(gate.openGate());}
 		else{scheduler.schedule(gate.closeGate());}
-
-
 
 		int currentSlot = spindexer.getCurrentSlot();
 		if (currentSlot != -1) {
@@ -301,20 +301,15 @@ public abstract class MainTeleOp extends OpMode {
 
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
-//			shooter.setTarget(upperShooterSpeed, lowerShooterSpeed);
 			scheduler.schedule(
 					new SequentialCommandGroup(
-							new InstantCommand(()-> openGate = true),
 							shooter.SetTarget(Shooter.AUDIENCE_RPM , Shooter.AUDIENCE_RPM),
+							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
+							new InstantCommand(() -> openGate = true),
 							shooter.WaitForTarget().withTimeout(2500),
 							transfer.TransferOut(),
 							spindexer.DirectPower(1)
 					));
-//					new InstantCommand(()-> openGate = true),
-//					shooter.WaitForTarget().withTimeout(2500),
-//					transfer.TransferOut().withTimeout(50),
-//					spindexer.DirectPower(spindexerPower)
-//			));
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			scheduler.schedule(shooter.SetTarget(0, 0));
@@ -328,18 +323,6 @@ public abstract class MainTeleOp extends OpMode {
 			shooter.SetTarget(upperShooterSpeed,lowerShooterSpeed);
 		}
 
-
-//		if (gamepad2.y && !yButtonPressed) {
-//			shooter.SetTarget(upperShooterSpeed,lowerShooterSpeed);
-//			yButtonPressed = true;
-//		} else if (!gamepad2.y && yButtonPressed) {
-//			//shooter.setTarget(0, 0);
-//			//scheduler.schedule(transfer.TransferStop());
-//			if(shooter.averageRPM == 0){
-//				yButtonPressed = false;
-//			}
-//		}
-
 		// X Button: Override transfer forward - manual control
 		if (gamepad2.x && !xButtonPressed) {
 			scheduler.schedule(transfer.TransferOut());
@@ -347,18 +330,6 @@ public abstract class MainTeleOp extends OpMode {
 		} else if (!gamepad2.x && xButtonPressed && !rightTriggerPressed) {
 			scheduler.schedule(transfer.TransferStop());
 			xButtonPressed = false;
-		}
-
-		if (!gamepad2.x) {
-//			 if ((Math.abs(gamepad2.left_stick_y) > 0.2 && !rightTriggerPressed)) {
-//				transfer.runAutomaticTransfer = false;
-//				scheduler.schedule(transfer.TransferIn());
-//				telemetry.addLine("2");
-//			} else {
-//				transfer.runAutomaticTransfer = false;
-//				scheduler.schedule(transfer.TransferStop());
-//				telemetry.addLine("3");
-//			}
 		}
 
 		// B Button: Intake door backward and intake out when pressed, forward and intake stop when released
@@ -394,57 +365,18 @@ public abstract class MainTeleOp extends OpMode {
 			spindexerPower = 1;
 		}
 
-
 		// Dpad Down: Manual spindexer control
 		if (gamepad2.dpad_down && !dpadDownPressed) {
 			scheduler.schedule(spindexer.DirectPower(spindexerPower));
 			scheduler.schedule(transfer.IntakeDoorOut());
 			dpadUpPressed = true;
 		} else if (!gamepad2.dpad_down && dpadDownPressed) {
-//			scheduler.schedule(spindexer.NextTarget());
 			scheduler.schedule(transfer.IntakeDoorStop());
 			dpadDownPressed = false;
 			spindexerMidCrossed = true;
 			spindexerUpCrossed = false;
 			spindexerDownCrossed = false;
 		}
-
-////		 A Button: Reset spindexer position
-//		if (gamepad2.a && !g2AButtonPressed) {
-//			scheduler.schedule(spindexer.NewNextTarget());
-//			g2AButtonPressed = true;
-//		} else if (!gamepad2.a && g2AButtonPressed) {
-//			g2AButtonPressed = false;
-//		}
-
-//		if (gamepad2.right_bumper && !dpadUpPressed) {
-//			eee
-//					new RepeatCommand(
-//							new SequentialCommandGroup(
-//									spindexer.NextTarget(),
-//									shooter.WaitForTarget().withTimeout(2500L),
-//									shooter.WaitForDrop().withTimeout(1000L),
-//									new WaitCommand(300)
-//							), () -> !gamepad2.dpad_up));
-//			dpadUpPressed = true;
-//		} else if (!gamepad2.right_bumper && dpadUpPressed) {
-//			dpadUpPressed = false;
-//		}
-
-//		if(Math.abs(gamepad2.left_stick_y) < 0.1 && !gamepad2.dpad_up){
-//			ToggleDistance = distanceSensor.getDistance(DistanceUnit.CM) < 12;
-//
-//			if(ToggleDistance && !ArtifactFound){
-//				scheduler.schedule(new SequentialCommandGroup(
-//						new ParallelCommandGroup(spindexer.DirectPower(1),new WaitCommand(270)),
-//						spindexer.DirectPower(0)));
-//				ArtifactFound = true;
-//			}if(!ToggleDistance && ArtifactFound){
-//				//scheduler.schedule(spindexer.DirectPower(0));
-//				ArtifactFound = false;
-//			}
-//
-//		}
 
 		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;
@@ -455,9 +387,6 @@ public abstract class MainTeleOp extends OpMode {
 			if (!spindexerMidCrossed) {
 				scheduler.schedule(spindexer.DirectPower(0));
 				scheduler.schedule(transfer.IntakeDoorStop());
-//				if (!gamepad2.x || !rightTriggerPressed) {
-//					scheduler.schedule(transfer.SetAutomaticTransfer(false));
-//				}
 				spindexerMidCrossed = true;
 				spindexerUpCrossed = false;
 				spindexerDownCrossed = false;
@@ -468,14 +397,8 @@ public abstract class MainTeleOp extends OpMode {
 
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
-//				if (!gamepad2.x || !rightTriggerPressed) {
-//					scheduler.schedule(transfer.SetAutomaticTransfer(true));
-//				}
 			} else {
 				scheduler.schedule(transfer.IntakeDoorIn());
-//				if (!gamepad2.x || !rightTriggerPressed) {
-//					scheduler.schedule(transfer.SetAutomaticTransfer(true));
-//				}
 			}
 
 			spindexerMidCrossed = false;
@@ -498,18 +421,11 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Lower RPM", newShooter.upperShooter.getVelocity());
 		panelsTelemetry.addData("Target",NewShooter.AUDIENCE_TPR);
 		panelsTelemetry.addData("At Target ?", newShooter.isAtTarget());
-//		panelsTelemetry.addData("Average RPM", shooter.averageRPM);
-//		panelsTelemetry.addData("Amps Drawn to Shooter", shooter.TotalCurrentDrawn());
 
 		panelsTelemetry.addLine("=== TRANSFER ===");
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
-		panelsTelemetry.addLine("=== SPINDEXER ===");
-//		panelsTelemetry.addData("Current Slot", spindexer.getCurrentSlot());
-//		panelsTelemetry.addData("Spindexer Degrees", spindexer.getDegrees());
-//		panelsTelemetry.addData("Distance from Slot", "%.2f°", spindexer.getDistanceFromSlot());
-//		panelsTelemetry.addData("Aligned with Slot", spindexer.isAlignedWithSlot());
 		spindexer.Telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== COLOUR SENSORS ===");
