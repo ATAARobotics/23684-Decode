@@ -19,10 +19,10 @@ public class Shooter extends SubsystemBase {
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
 	public static double UPPER_P = 0.001, UPPER_I = 0, UPPER_D = 0;
-	public static double LOWER_P = 0.0017, LOWER_I = 0.00, LOWER_D = 0;
+	public static double LOWER_P = 0.0001, LOWER_I = 0.00, LOWER_D = 0;
 	// --- Feedforward Constants ---
-	public static double UPPER_KS = 0.1, UPPER_KV = 0.00018;
-	public static double LOWER_KS = 0.17, LOWER_KV = 0.00017;
+	public static double UPPER_KS = 0.1, UPPER_KV = 0.00017;
+	public static double LOWER_KS = 0.17, LOWER_KV = 0.000158;
 	// --- Only for Tuning ---
 	private static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
 	private static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;

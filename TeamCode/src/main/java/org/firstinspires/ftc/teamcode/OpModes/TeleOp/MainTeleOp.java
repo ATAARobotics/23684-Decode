@@ -11,7 +11,6 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -19,20 +18,18 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
-import org.firstinspires.ftc.teamcode.Subsystem.NewShooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
 import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
-import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
 import java.util.function.Supplier;
@@ -46,9 +43,12 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
-	protected NewShooter newShooter;
 	protected Gate gate;
 	protected Colour colour;
+	protected BeamBreaker beamBreaker;
+	protected int ballCount = 0;
+	protected boolean lastIntakeIn = true;
+	protected boolean prespinTriggered = false;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
@@ -105,8 +105,7 @@ public abstract class MainTeleOp extends OpMode {
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		spindexer = new Spindexer(hardwareMap);
-		newShooter = new NewShooter(hardwareMap);
-		scheduler.schedule(newShooter.setTarget(0,0));
+		beamBreaker = new BeamBreaker(hardwareMap);
 		gate = new Gate(hardwareMap);
 		spindexer.zeroSpindexer();
 		if (RobotPosition.isSpindexerSet) {
@@ -181,6 +180,31 @@ public abstract class MainTeleOp extends OpMode {
 		// Clear slot when transfer is running forward
 		if (transfer.transferLeft.getPower() > 0.5) {
 			colour.clearCurrentSlot(currentSlot);
+		}
+
+		// --- Beam Breaker Update ---
+		// Determine intake direction from motor power
+		double intakePower = intake.getPower();
+		Boolean intakeRunningIn;
+		if (intakePower > 0) {
+			intakeRunningIn = true;
+			lastIntakeIn = true;
+		} else if (intakePower < 0) {
+			intakeRunningIn = false;
+			lastIntakeIn = false;
+		} else {
+			intakeRunningIn = null;
+		}
+
+		// Update beam breaker with direction awareness; null indicates stopped
+		beamBreaker.update(intakeRunningIn);
+		ballCount = beamBreaker.getBallCount();
+
+		// Prespin when ball count reaches 3 (one-shot until count drops)
+		if (ballCount >= 3 && !prespinTriggered) {
+			prespinTriggered = true;
+		} else if (ballCount < 3 && prespinTriggered) {
+			prespinTriggered = false;
 		}
 
 		displayTelemetry();
@@ -316,7 +340,22 @@ public abstract class MainTeleOp extends OpMode {
 			scheduler.schedule(transfer.TransferStop());
 			scheduler.schedule(spindexer.DirectPower(0));
 			openGate = false;
+			if (ballCount > 0) {
+				beamBreaker.resetBallCount();
+				ballCount = 0;
+				prespinTriggered = false;
+			}
 			rightTriggerPressed = false;
+		}
+
+		// A Button: Override - reset beam breaker ball count
+		if (gamepad2.a && !g2AButtonPressed) {
+			beamBreaker.resetBallCount();
+			ballCount = 0;
+			prespinTriggered = false;
+			g2AButtonPressed = true;
+		} else if (!gamepad2.a && g2AButtonPressed) {
+			g2AButtonPressed = false;
 		}
 
 		if(gamepad2.yWasPressed()){
@@ -416,17 +455,13 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Location", follower.getPose().toString());
 		Drawing.drawRobot(follower.getPose());
 
-		panelsTelemetry.addLine("=== SHOOTER ===");
-		panelsTelemetry.addData("Upper ticks", newShooter.upperShooter.getVelocity());
-		panelsTelemetry.addData("Lower RPM", newShooter.upperShooter.getVelocity());
-		panelsTelemetry.addData("Target",NewShooter.AUDIENCE_TPR);
-		panelsTelemetry.addData("At Target ?", newShooter.isAtTarget());
-
 		panelsTelemetry.addLine("=== TRANSFER ===");
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
 		spindexer.Telemetry(panelsTelemetry);
+
+		beamBreaker.telemetry(panelsTelemetry);
 
 		panelsTelemetry.addLine("=== COLOUR SENSORS ===");
 		panelsTelemetry.addData("Update Count", colour.updateCount);
