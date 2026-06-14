@@ -35,6 +35,7 @@ import java.util.List;
 public abstract class ModularAuto extends OpMode {
 	public static int COLLECTION_WAIT = 20;
 	public static int HUMAN_PLAYER_COLLECTION_WAIT = 30;
+	public static int SHOOT_WAIT = 150;
 
 	protected Follower follower;
 	protected CommandScheduler scheduler;
@@ -381,6 +382,7 @@ public abstract class ModularAuto extends OpMode {
 									shootPose))
 					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
 					.build();
+			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
 			toShoot = follower.pathBuilder().addPath(
 							new BezierCurve(
@@ -389,6 +391,7 @@ public abstract class ModularAuto extends OpMode {
 									shootPose)
 					).setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
 					.build();
+			prespinWaitMs += 400;
 		} else {
 			toShoot = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, shootPose))
@@ -417,6 +420,7 @@ public abstract class ModularAuto extends OpMode {
 
 	private Command getShootSequence(int waitTime) {
 		return new SequentialCommandGroup(
+				new WaitCommand(SHOOT_WAIT),
 				new ShootArtifacts(shooter, spindexer, transfer, intake, gate, waitTime),
 				shooter.SetTarget(0, 0),
 				gate.closeGate(),

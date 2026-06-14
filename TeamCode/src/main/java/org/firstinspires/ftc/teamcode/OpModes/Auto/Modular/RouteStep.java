@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode.OpModes.Auto.Modular;
 public enum RouteStep {
 	SHOOT_PRELOAD,
 	COLLECT_SPIKE_1,
-
-	COLLECT_SPIKE_1_WIGGLE,
 	COLLECT_SPIKE_2,
 	COLLECT_SPIKE_3,
 	COLLECT_HUMAN_PLAYER,

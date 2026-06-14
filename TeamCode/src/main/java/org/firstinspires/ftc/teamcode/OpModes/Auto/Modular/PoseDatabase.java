@@ -10,13 +10,13 @@ public class PoseDatabase {
 	public static final Pose BLUE_SHOOT = new Pose(59.440, 17.328, Math.toRadians(294.935));
 
 	public static final Pose BLUE_SPIKE_1_INTERMEDIATE = new Pose(46.000, 45.50, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_1_COLLECT = new Pose(11.000, 45.50, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_1_COLLECT = new Pose(17.000, 45.50, Math.toRadians(180));
 
 	public static final Pose BLUE_SPIKE_2_INTERMEDIATE = new Pose(46.000, 67.500, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_2_COLLECT = new Pose(11.000, 67.500, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_2_COLLECT = new Pose(17.000, 67.500, Math.toRadians(180));
 
 	public static final Pose BLUE_SPIKE_3_INTERMEDIATE = new Pose(46.000, 94.000, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(16.800, 94.000, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(21.000, 94.000, Math.toRadians(180));
 
 	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 19.128, Math.toRadians(180));
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(24.00, 19.128, Math.toRadians(180));
