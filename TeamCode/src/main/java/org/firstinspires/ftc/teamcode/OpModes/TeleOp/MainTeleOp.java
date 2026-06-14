@@ -50,6 +50,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean lastIntakeIn = true;
 	protected boolean prespinTriggered = false;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
+
 	// Button state tracking to prevent continuous input
 	protected boolean leftTriggerPressed = false;
 	protected boolean rightTriggerPressed = false;
@@ -60,10 +61,10 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean b2ButtonPressed = false;
 	protected boolean dpadUpPressed = false;
 	protected boolean dpadDownPressed = false;
-	protected boolean yButtonPressed = false;
 	protected boolean spindexerUpCrossed = false;
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
+
 	// Rumble state tracking
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
@@ -73,6 +74,7 @@ public abstract class MainTeleOp extends OpMode {
 
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
+
 	// Performance monitoring
 	private long maxLoopTime = 0;
 
@@ -83,7 +85,6 @@ public abstract class MainTeleOp extends OpMode {
 
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
-	//DistanceSensor distanceSensor;
 	TouchSensor intakeTouchSensor;
 
 	@Override
@@ -125,8 +126,9 @@ public abstract class MainTeleOp extends OpMode {
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
 
+		// TODO: Rename
 		pathBackBlue = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(65, 11))))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(61.5, 16))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(295), 0.8))
 				.build();
 
@@ -274,7 +276,7 @@ public abstract class MainTeleOp extends OpMode {
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 		}
 
-		if (gamepad1.cross && !aButtonPressed) {
+		if (gamepad1.a && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -282,9 +284,9 @@ public abstract class MainTeleOp extends OpMode {
 			}
 
 			aButtonPressed = true;
-		} else if (!gamepad1.cross && aButtonPressed) {
+		} else if (!gamepad1.a && aButtonPressed) {
 			aButtonPressed = false;
-		} else if (gamepad1.circle && !b1ButtonPressed) {
+		} else if (gamepad1.b && !b1ButtonPressed) {
 			if (getTeam() == Team.RED) {
 				follower.followPath(redGoalShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -292,11 +294,11 @@ public abstract class MainTeleOp extends OpMode {
 			}
 
 			b1ButtonPressed = true;
-		} else if (!gamepad1.circle && b1ButtonPressed) {
+		} else if (!gamepad1.b && b1ButtonPressed) {
 			b1ButtonPressed = false;
 		}
 
-		if (!gamepad1.circle && !gamepad1.cross) {
+		if (!gamepad1.b && !gamepad1.a) {
 			if (!follower.isTeleopDrive()) {
 				follower.startTeleOpDrive(true);
 			}
@@ -360,7 +362,7 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad2.yWasPressed()) {
-			shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed);
+			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
 		}
 
 		// X Button: Override transfer forward - manual control
@@ -516,9 +518,6 @@ public abstract class MainTeleOp extends OpMode {
 			gamepad2.rumble(500);
 		}
 
-//		if(intakeTouchSensor.isPressed()){
-//			gamepad2.rumble(500);
-//		}
 		wasShooterAtTarget = transfer.reachedAverageTarget;
 	}
 }
