@@ -21,13 +21,13 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
+import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
-import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
-import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.Team;
@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 
 @Configurable
 public abstract class MainTeleOp extends OpMode {
-	public  double spindexerPower = 1;
+	public double spindexerPower = 1;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -81,8 +81,8 @@ public abstract class MainTeleOp extends OpMode {
 	private Supplier<PathChain> redGoalShootingPath;
 	private Supplier<PathChain> redAudienceShootingPath;
 
-	double upperShooterSpeed = Shooter.AUDIENCE_RPM;
-	double lowerShooterSpeed = Shooter.AUDIENCE_RPM;
+	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
+	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 	//DistanceSensor distanceSensor;
 	TouchSensor intakeTouchSensor;
 
@@ -132,12 +132,12 @@ public abstract class MainTeleOp extends OpMode {
 
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(120.4, 95.7))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(340.7), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(340.7), 0.8))
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(39.03, 101.80))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading,Math.toRadians(203), 0.8))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(203), 0.8))
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
@@ -169,8 +169,11 @@ public abstract class MainTeleOp extends OpMode {
 		handleRumbleFeedback();
 		shooter.periodic();
 
-		if (openGate){scheduler.schedule(gate.openGate());}
-		else{scheduler.schedule(gate.closeGate());}
+		if (openGate) {
+			scheduler.schedule(gate.openGate());
+		} else {
+			scheduler.schedule(gate.closeGate());
+		}
 
 		int currentSlot = spindexer.getCurrentSlot();
 		if (currentSlot != -1) {
@@ -263,10 +266,10 @@ public abstract class MainTeleOp extends OpMode {
 	 * Handle driving input from gamepad1
 	 */
 	private void handleDriveInput() {
-		if ( follower.getPose().getY() >= 72.0) {
+		if (follower.getPose().getY() >= 72.0) {
 			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
 			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
-		} else{
+		} else {
 			upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 		}
@@ -325,7 +328,7 @@ public abstract class MainTeleOp extends OpMode {
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
 			scheduler.schedule(
 					new SequentialCommandGroup(
-							shooter.SetTarget(Shooter.AUDIENCE_RPM , Shooter.AUDIENCE_RPM),
+							shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
 							new InstantCommand(() -> openGate = true),
 							shooter.WaitForTarget().withTimeout(2500),
@@ -356,8 +359,8 @@ public abstract class MainTeleOp extends OpMode {
 			g2AButtonPressed = false;
 		}
 
-		if(gamepad2.yWasPressed()){
-			shooter.SetTarget(upperShooterSpeed,lowerShooterSpeed);
+		if (gamepad2.yWasPressed()) {
+			shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed);
 		}
 
 		// X Button: Override transfer forward - manual control

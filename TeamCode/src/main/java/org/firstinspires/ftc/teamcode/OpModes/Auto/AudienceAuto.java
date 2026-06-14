@@ -77,7 +77,7 @@ public abstract class AudienceAuto extends OpMode {
 		transfer = new Transfer(hardwareMap);
 		transfer.setShooter(shooter);
 		transfer.setSpindexer(spindexer);
-		touch =  new Touch(hardwareMap);
+		touch = new Touch(hardwareMap);
 		touch.init();
 
 		paths = new Paths(follower, getTeam());
@@ -93,11 +93,11 @@ public abstract class AudienceAuto extends OpMode {
 		scheduler.schedule(
 				new SequentialCommandGroup(
 						new ParallelCommandGroup(
-							new FollowPathCommand(follower, paths.shootPreload),
-							shooter.SetTarget(Shooter.AUDIENCE_RPM,Shooter.AUDIENCE_RPM)
+								new FollowPathCommand(follower, paths.shootPreload),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
 						),
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
+						new ShootArtifacts(shooter, spindexer, transfer, intake, touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -119,7 +119,7 @@ public abstract class AudienceAuto extends OpMode {
 						transfer.IntakeDoorOut(),
 
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
+						new ShootArtifacts(shooter, spindexer, transfer, intake, touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -150,7 +150,7 @@ public abstract class AudienceAuto extends OpMode {
 						new FollowPathCommand(follower, paths.toShootSpikeTwo),
 						transfer.IntakeDoorOut(),
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
+						new ShootArtifacts(shooter, spindexer, transfer, intake, touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -184,7 +184,7 @@ public abstract class AudienceAuto extends OpMode {
 						new FollowPathCommand(follower, paths.toShootSpikeThree),
 						transfer.IntakeDoorOut(),
 						transfer.SetAutomaticTransfer(true),
-						new ShootArtifacts(shooter, spindexer, transfer, intake,touch),
+						new ShootArtifacts(shooter, spindexer, transfer, intake, touch),
 						transfer.SetAutomaticTransfer(false),
 						// Turn off the motors and servos
 						shooter.SetTarget(0, 0),
@@ -217,7 +217,6 @@ public abstract class AudienceAuto extends OpMode {
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 		panelsTelemetry.addData("Automatic Transfer Running", transfer.runAutomaticTransfer);
-
 
 
 		panelsTelemetry.update();
@@ -424,11 +423,11 @@ public abstract class AudienceAuto extends OpMode {
 						.build();
 
 				toShootSpikeThree = follower.pathBuilder().addPath(
-						new BezierCurve(
-								new Pose(15.000, 89.500),
-								new Pose(52.449, 88.976),
-								new Pose(15.351, 84.391),
-								new Pose(59.000, 17.000)))
+								new BezierCurve(
+										new Pose(15.000, 89.500),
+										new Pose(52.449, 88.976),
+										new Pose(15.351, 84.391),
+										new Pose(59.000, 17.000)))
 
 						.setLinearHeadingInterpolation(
 								Math.toRadians(180),
@@ -595,11 +594,11 @@ public abstract class AudienceAuto extends OpMode {
 						.build();
 
 				toShootSpikeThree = follower.pathBuilder().addPath(
-										new BezierCurve(
-												new Pose(129.000, 89.500),
-												new Pose(61.063, 91.416),
-												new Pose(85.000, 17.000)
-										)
+								new BezierCurve(
+										new Pose(129.000, 89.500),
+										new Pose(61.063, 91.416),
+										new Pose(85.000, 17.000)
+								)
 						).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-114.14))
 
 						.build();

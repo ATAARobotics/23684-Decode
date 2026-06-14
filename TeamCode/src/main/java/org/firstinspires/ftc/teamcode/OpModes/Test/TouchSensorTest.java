@@ -3,9 +3,6 @@ package org.firstinspires.ftc.teamcode.OpModes.Test;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
-import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
@@ -15,39 +12,39 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 
 @TeleOp(name = "Touch Sensor Test", group = " Test")
 public class TouchSensorTest extends OpMode {
-    Spindexer spindexer;
+	Spindexer spindexer;
 
-    Intake intake;
+	Intake intake;
 
-    Transfer transfer;
-    CommandScheduler scheduler;
+	Transfer transfer;
+	CommandScheduler scheduler;
 
-   Touch touch;
+	Touch touch;
 
-    private boolean touchSensorTouched = false;
-    private boolean aButtonPressed = false;
+	private final boolean touchSensorTouched = false;
+	private final boolean aButtonPressed = false;
 
-    @Override
-    public void init() {
-        scheduler = CommandScheduler.getInstance();
-        scheduler.reset();
-        spindexer = new Spindexer(hardwareMap);
-        transfer = new Transfer(hardwareMap);
-        intake = new Intake(hardwareMap);
-        touch = new Touch(hardwareMap);
+	@Override
+	public void init() {
+		scheduler = CommandScheduler.getInstance();
+		scheduler.reset();
+		spindexer = new Spindexer(hardwareMap);
+		transfer = new Transfer(hardwareMap);
+		intake = new Intake(hardwareMap);
+		touch = new Touch(hardwareMap);
 
-        spindexer.zeroSpindexer();
+		spindexer.zeroSpindexer();
 
-        scheduler.schedule(touch.ResetCounter());
+		scheduler.schedule(touch.ResetCounter());
 
-    }
+	}
 
-    @Override
-    public void loop() {
+	@Override
+	public void loop() {
 
-        scheduler.run();
+		scheduler.run();
 
-        touch.Update(transfer);
+		touch.Update(transfer);
 
 //        if(gamepad1.a && !aButtonPressed) {
 //            scheduler.schedule(transfer.TransferIn());
@@ -73,10 +70,8 @@ public class TouchSensorTest extends OpMode {
 //
 //        telemetry.addData("Touch Sensor Touched", intakeTouchSensor.isPressed());
 
-        touch.Telemetry(telemetry);
+		touch.Telemetry(telemetry);
 
 
-
-
-    }
+	}
 }

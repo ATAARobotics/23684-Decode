@@ -82,43 +82,43 @@
 //						),
 //						new WaitCommand(30),
 //						new FollowPathCommand(follower, paths.collectSpikeOne)
-////						new ParallelCommandGroup(
-////								new FollowPathCommand(follower, paths.toShootSpikeOne),
-////								intake.Out(),
-////								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
-////								shooter.WaitForTarget()
-////						),
-////						transfer.TransferOut(),
-////						new ParallelCommandGroup(
-////								shooter.SetTarget(0, 0),
-////								intake.In(),
-////								transfer.TransferIn(),
-////								new FollowPathCommand(follower, paths.toSpikeTwo)
-////						),
-////						new WaitCommand(30),
-////						new FollowPathCommand(follower, paths.collectSpikeTwo),
-////						new ParallelCommandGroup(
-////								new FollowPathCommand(follower, paths.toShootSpikeTwo),
-////								intake.Out(),
-////								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
-////								shooter.WaitForTarget()
-////						),
-////						transfer.TransferOut(),
-////						new ParallelCommandGroup(
-////								shooter.SetTarget(0, 0),
-////								intake.In(),
-////								transfer.TransferIn(),
-////								new FollowPathCommand(follower, paths.toSpikeThree)
-////						),
-////						new WaitCommand(30),
-////						new FollowPathCommand(follower, paths.collectSpikeThree),
-////						new ParallelCommandGroup(
-////								new FollowPathCommand(follower, paths.toShootSpikeThree),
-////								intake.Out(),
-////								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
-////								shooter.WaitForTarget()
-////						),
-////						transfer.TransferOut()
+/// /						new ParallelCommandGroup(
+/// /								new FollowPathCommand(follower, paths.toShootSpikeOne),
+/// /								intake.Out(),
+/// /								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
+/// /								shooter.WaitForTarget()
+/// /						),
+/// /						transfer.TransferOut(),
+/// /						new ParallelCommandGroup(
+/// /								shooter.SetTarget(0, 0),
+/// /								intake.In(),
+/// /								transfer.TransferIn(),
+/// /								new FollowPathCommand(follower, paths.toSpikeTwo)
+/// /						),
+/// /						new WaitCommand(30),
+/// /						new FollowPathCommand(follower, paths.collectSpikeTwo),
+/// /						new ParallelCommandGroup(
+/// /								new FollowPathCommand(follower, paths.toShootSpikeTwo),
+/// /								intake.Out(),
+/// /								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
+/// /								shooter.WaitForTarget()
+/// /						),
+/// /						transfer.TransferOut(),
+/// /						new ParallelCommandGroup(
+/// /								shooter.SetTarget(0, 0),
+/// /								intake.In(),
+/// /								transfer.TransferIn(),
+/// /								new FollowPathCommand(follower, paths.toSpikeThree)
+/// /						),
+/// /						new WaitCommand(30),
+/// /						new FollowPathCommand(follower, paths.collectSpikeThree),
+/// /						new ParallelCommandGroup(
+/// /								new FollowPathCommand(follower, paths.toShootSpikeThree),
+/// /								intake.Out(),
+/// /								shooter.SetTarget(Shooter.GOAL_RPM_UPPER, Shooter.GOAL_RPM_LOWER),
+/// /								shooter.WaitForTarget()
+/// /						),
+/// /						transfer.TransferOut()
 //				)
 //		);
 //	}

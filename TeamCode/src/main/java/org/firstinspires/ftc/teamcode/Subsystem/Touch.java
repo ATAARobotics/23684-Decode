@@ -12,101 +12,96 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Touch extends SubsystemBase {
 
-    private com.qualcomm.robotcore.hardware.TouchSensor intakeTouchSensorRight;
-    private com.qualcomm.robotcore.hardware.TouchSensor intakeTouchSensorLeft;
+	private final com.qualcomm.robotcore.hardware.TouchSensor intakeTouchSensorRight;
+	private final com.qualcomm.robotcore.hardware.TouchSensor intakeTouchSensorLeft;
 
-    private com.qualcomm.robotcore.hardware.TouchSensor transferMagSwitchRight;
-    private com.qualcomm.robotcore.hardware.TouchSensor transferMagSwitchLeft;
+	private final com.qualcomm.robotcore.hardware.TouchSensor transferMagSwitchRight;
+	private final com.qualcomm.robotcore.hardware.TouchSensor transferMagSwitchLeft;
 
-    boolean intakePressed = false;
-    boolean transferPressed = false;
+	boolean intakePressed = false;
+	boolean transferPressed = false;
 
-    boolean finalizedCycle = false;
-
-
-    public int artifactCollectCount = 0;
-
-    public int arifactShotCount = 0;
-
-    public Touch(HardwareMap hardwareMap){
-        intakeTouchSensorRight = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class,"intakeTouchSensorRight");
-        intakeTouchSensorLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "intakeTouchSensorLeft");
-
-        transferMagSwitchRight = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "transferMagSwitchRight");
-        transferMagSwitchLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "transferMagSwitchLeft");
-
-    }
-
-    public void init(){
-        artifactCollectCount = 3;
-        arifactShotCount = 0;
-        finalizedCycle = true;
-    }
-
-    public Command ResetCounter(){
-        return new InstantCommand(
-                () -> {
-
-                        artifactCollectCount = 0;
-                        arifactShotCount = 0;
-                        finalizedCycle = false;
-
-                }, this
-        );
-
-    }
-
-    public boolean ArtifactInIntake(){
-        return intakeTouchSensorRight.isPressed() || intakeTouchSensorLeft.isPressed();
-
-    }
-
-    public boolean ArtifactInTransfer() {
-        return transferMagSwitchRight.isPressed() || transferMagSwitchLeft.isPressed();
-    }
-
-    public Command ShootAllArtifacts(){
-        return new ParallelCommandGroup(
-                new InstantCommand(()-> finalizedCycle = true),
-                new WaitUntilCommand(()-> arifactShotCount == artifactCollectCount));
-    }
-
-    public void Update(Transfer transfer){
-
-        if (ArtifactInIntake() && !intakePressed && !finalizedCycle) {
-            artifactCollectCount += 1;
-            intakePressed = true;
-        }else if (!ArtifactInIntake() && intakePressed) {
-            intakePressed = false;
-        }
-
-        if (ArtifactInTransfer() && !transferPressed && finalizedCycle ) {//  && transfer.reachedLowerTarget && transfer.reachedUpperTarget) {
-            arifactShotCount += 1;
-            transferPressed = true;
-        }else if (!ArtifactInTransfer() && transferPressed){
-            transferPressed = false;
-        }
+	boolean finalizedCycle = false;
 
 
-   }
+	public int artifactCollectCount = 0;
 
-   public void Telemetry(TelemetryManager TelemetryManager){
-        TelemetryManager.addData("Artifact Count", artifactCollectCount);
-        TelemetryManager.addData("Artifact Shot Count", arifactShotCount);
+	public int arifactShotCount = 0;
 
-   }
+	public Touch(HardwareMap hardwareMap) {
+		intakeTouchSensorRight = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "intakeTouchSensorRight");
+		intakeTouchSensorLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "intakeTouchSensorLeft");
 
-    public void Telemetry(Telemetry Telemetry){
-        Telemetry.addData("Artifact Count", artifactCollectCount);
-        Telemetry.addData("Artifact Shot Count", arifactShotCount);
-        Telemetry.addData("transfer",ArtifactInTransfer());
+		transferMagSwitchRight = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "transferMagSwitchRight");
+		transferMagSwitchLeft = hardwareMap.get(com.qualcomm.robotcore.hardware.TouchSensor.class, "transferMagSwitchLeft");
 
-    }
+	}
+
+	public void init() {
+		artifactCollectCount = 3;
+		arifactShotCount = 0;
+		finalizedCycle = true;
+	}
+
+	public Command ResetCounter() {
+		return new InstantCommand(
+				() -> {
+
+					artifactCollectCount = 0;
+					arifactShotCount = 0;
+					finalizedCycle = false;
+
+				}, this
+		);
+
+	}
+
+	public boolean ArtifactInIntake() {
+		return intakeTouchSensorRight.isPressed() || intakeTouchSensorLeft.isPressed();
+
+	}
+
+	public boolean ArtifactInTransfer() {
+		return transferMagSwitchRight.isPressed() || transferMagSwitchLeft.isPressed();
+	}
+
+	public Command ShootAllArtifacts() {
+		return new ParallelCommandGroup(
+				new InstantCommand(() -> finalizedCycle = true),
+				new WaitUntilCommand(() -> arifactShotCount == artifactCollectCount));
+	}
+
+	public void Update(Transfer transfer) {
+
+		if (ArtifactInIntake() && !intakePressed && !finalizedCycle) {
+			artifactCollectCount += 1;
+			intakePressed = true;
+		} else if (!ArtifactInIntake() && intakePressed) {
+			intakePressed = false;
+		}
+
+		if (ArtifactInTransfer() && !transferPressed && finalizedCycle) {//  && transfer.reachedLowerTarget && transfer.reachedUpperTarget) {
+			arifactShotCount += 1;
+			transferPressed = true;
+		} else if (!ArtifactInTransfer() && transferPressed) {
+			transferPressed = false;
+		}
 
 
+	}
+
+	public void Telemetry(TelemetryManager TelemetryManager) {
+		TelemetryManager.addData("Artifact Count", artifactCollectCount);
+		TelemetryManager.addData("Artifact Shot Count", arifactShotCount);
+
+	}
+
+	public void Telemetry(Telemetry Telemetry) {
+		Telemetry.addData("Artifact Count", artifactCollectCount);
+		Telemetry.addData("Artifact Shot Count", arifactShotCount);
+		Telemetry.addData("transfer", ArtifactInTransfer());
+
+	}
 
 
-
-
-
-    }
+}

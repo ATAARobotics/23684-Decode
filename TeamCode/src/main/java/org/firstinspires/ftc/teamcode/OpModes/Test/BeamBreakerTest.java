@@ -8,22 +8,22 @@ import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
 @TeleOp(name = "Beam Breaker Test", group = "Test")
 public class BeamBreakerTest extends LinearOpMode {
 
-    @Override
-    public void runOpMode() {
-        BeamBreaker beamBreaker = new BeamBreaker(hardwareMap);
+	@Override
+	public void runOpMode() {
+		BeamBreaker beamBreaker = new BeamBreaker(hardwareMap);
 
-        telemetry.addData("Status", "Waiting for start");
-        telemetry.update();
+		telemetry.addData("Status", "Waiting for start");
+		telemetry.update();
 
-        waitForStart();
+		waitForStart();
 
-        while (opModeIsActive()) {
+		while (opModeIsActive()) {
 			boolean isBeamBroken = beamBreaker.isBeamBroken();
-            String beamStatus = isBeamBroken ? "Closed" : "Open";
+			String beamStatus = isBeamBroken ? "Closed" : "Open";
 
-            telemetry.addData("Beam Status", beamStatus);
-            telemetry.addData("Beam Broken", isBeamBroken);
-            telemetry.update();
-        }
-    }
+			telemetry.addData("Beam Status", beamStatus);
+			telemetry.addData("Beam Broken", isBeamBroken);
+			telemetry.update();
+		}
+	}
 }

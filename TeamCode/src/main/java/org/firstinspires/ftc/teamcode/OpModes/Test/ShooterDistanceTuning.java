@@ -38,7 +38,7 @@ public class ShooterDistanceTuning extends OpMode {
 	private Intake intake;
 	private Transfer transfer;
 	private Follower follower;
-	private TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+	private final TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 	private Supplier<PathChain> pathChain;
 	private boolean aButtonPressed = false;
 

@@ -185,7 +185,7 @@ public class Shooter extends SubsystemBase {
 		this.lowerTarget = lowerTarget;
 	}
 
-	public double TotalCurrentDrawn(){
+	public double TotalCurrentDrawn() {
 		return upperShooter.getCurrent(CurrentUnit.AMPS) + lowerShooter.getCurrent(CurrentUnit.AMPS);
 	}
 

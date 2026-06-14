@@ -4,7 +4,6 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
-import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
@@ -22,31 +21,49 @@ public class BeamBreaker extends SubsystemBase {
 	 */
 	private int ballCount = 0;
 
-	/** Previous beam state for edge detection */
+	/**
+	 * Previous beam state for edge detection
+	 */
 	private boolean lastBeamState = false;
 
-	/** Whether intake was last detected running IN */
+	/**
+	 * Whether intake was last detected running IN
+	 */
 	private boolean lastIntakeIn = true;
 
-	/** Timestamp of last valid edge (milliseconds) */
+	/**
+	 * Timestamp of last valid edge (milliseconds)
+	 */
 	private long lastEdgeTime = 0;
 
-	/** Minimum time between valid edges to suppress noise */
+	/**
+	 * Minimum time between valid edges to suppress noise
+	 */
 	private static final long DEBOUNCE_MS = 50;
 
-	/** Noise suppression window for rapid break→clear→break sequences (ms) */
+	/**
+	 * Noise suppression window for rapid break→clear→break sequences (ms)
+	 */
 	private static final long NOISE_SUPPRESS_MS = 300;
 
-	/** Time of last broken→clear transition for noise detection */
+	/**
+	 * Time of last broken→clear transition for noise detection
+	 */
 	private long lastClearTime = 0;
 
-	/** Last event description for telemetry */
+	/**
+	 * Last event description for telemetry
+	 */
 	private String lastEvent = "None";
 
-	/** Last direction logged ("IN" or "OUT") */
+	/**
+	 * Last direction logged ("IN" or "OUT")
+	 */
 	private String lastDirection = "STOPPED";
 
-	/** Whether an edge was debounced this loop */
+	/**
+	 * Whether an edge was debounced this loop
+	 */
 	private boolean debounceActive = false;
 
 	public BeamBreaker(HardwareMap hardwareMap) {

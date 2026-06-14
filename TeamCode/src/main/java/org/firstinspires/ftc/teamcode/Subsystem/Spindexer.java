@@ -14,13 +14,12 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import org.firstinspires.ftc.teamcode.Utils.PIDFController;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.SpindexerPosition;
-import org.firstinspires.ftc.teamcode.Utils.SqurPIDFController;
 
 @Configurable
 public class Spindexer extends SubsystemBase {
 	public static double P1 = 0.02;
 
-	public static  double P2 = 0.04;
+	public static double P2 = 0.04;
 	public static double I = 0;
 	public static double D = 0.006;
 	public static double F = 0;
@@ -44,7 +43,7 @@ public class Spindexer extends SubsystemBase {
 	public final DcMotorEx spindexerMotor;
 
 	AnalogInput spindexerAnalog;
-PIDFController secondSpindexerPIDF;
+	PIDFController secondSpindexerPIDF;
 
 
 	double targetTicks = 0;
@@ -72,7 +71,6 @@ PIDFController secondSpindexerPIDF;
 		spindexerAnalog = hardwareMap.get(AnalogInput.class, "spindexerAnalog");
 
 		secondSpindexerPIDF = new PIDFController(P1, I, D, F);
-
 
 
 		if (RobotPosition.isSpindexerSet) {
@@ -119,7 +117,8 @@ PIDFController secondSpindexerPIDF;
 		double normalizedDegrees = ((degrees % 360) + 360) % 360;
 
 		// Slot 1 is at 0 degrees, Slot 2 at 120, Slot 3 at 240
-		if (Math.abs(normalizedDegrees - 0) <= SLOT_TOLERANCE || Math.abs(normalizedDegrees - 360) <= SLOT_TOLERANCE) return 1;
+		if (Math.abs(normalizedDegrees - 0) <= SLOT_TOLERANCE || Math.abs(normalizedDegrees - 360) <= SLOT_TOLERANCE)
+			return 1;
 		if (Math.abs(normalizedDegrees - 120) <= SLOT_TOLERANCE) return 2;
 		if (Math.abs(normalizedDegrees - 240) <= SLOT_TOLERANCE) return 3;
 
@@ -147,13 +146,13 @@ PIDFController secondSpindexerPIDF;
 		double distTo120 = Math.abs(normalizedDegrees - 120);
 		double distTo240 = Math.abs(normalizedDegrees - 240);
 
-		if (slot == 0){
+		if (slot == 0) {
 			return distTo0;
 		}
-		if (slot == 1){
+		if (slot == 1) {
 			return distTo120;
 		}
-		if (slot == 2){
+		if (slot == 2) {
 			return distTo240;
 		}
 
@@ -221,8 +220,6 @@ PIDFController secondSpindexerPIDF;
 		return new CommandBase() {
 
 
-
-
 			@Override
 			public void initialize() {
 //				double currentDegrees = getDegrees();
@@ -245,16 +242,15 @@ PIDFController secondSpindexerPIDF;
 
 			@Override
 			public void execute() {
-				if(Math.abs(target - getDegrees()) > 60){
-					if(getDegrees() > target){
+				if (Math.abs(target - getDegrees()) > 60) {
+					if (getDegrees() > target) {
 						power = secondSpindexerPIDF.getOutput(getDegrees(), target);
-					}else{
+					} else {
 						power = 0.8;
 					}
-				}else if(Math.abs(target - getDegrees()) < SLOT_TOLERANCE/2){
+				} else if (Math.abs(target - getDegrees()) < SLOT_TOLERANCE / 2) {
 					power = 0;
-				}
-				else {
+				} else {
 					power = secondSpindexerPIDF.getOutput(getDegrees(), target);
 				}
 				spindexerMotor.setPower(power);
@@ -267,7 +263,7 @@ PIDFController secondSpindexerPIDF;
 				spindexerMotor.setPower(0);
 				isAtTarget = true;
 				Nextslot++;
-				if(Nextslot > 2) Nextslot = 0;
+				if (Nextslot > 2) Nextslot = 0;
 				stop = false;
 			}
 
@@ -294,8 +290,8 @@ PIDFController secondSpindexerPIDF;
 		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * DEGREES_PER_TICK);
 		telemetry.addData("Spindexer Target (degrees)", target);
 		telemetry.addData(" Slot", Nextslot);
-		telemetry.addData("stop",stop);
-		telemetry.addData("velo",spindexerMotor.getVelocity());
+		telemetry.addData("stop", stop);
+		telemetry.addData("velo", spindexerMotor.getVelocity());
 		telemetry.addData("Distance from Slot", getDistanceFromSlot(Nextslot));
 		telemetry.addData("Aligned with Slot", isAlignedWithSlot() ? "Yeperoosie" : "Nuh uh");
 		telemetry.addData("Spindexer Power", power);
@@ -307,9 +303,9 @@ PIDFController secondSpindexerPIDF;
 		double currentPosTicks = getPosition();
 
 		telemetry.addData("Spindexer Position (degrees)", currentPosTicks * DEGREES_PER_TICK);
-		telemetry.addData("Spindexer Target (degrees)", SpindexerPosition.getNextIntakePosition((int)getDegrees()));
+		telemetry.addData("Spindexer Target (degrees)", SpindexerPosition.getNextIntakePosition((int) getDegrees()));
 		telemetry.addData(" Slot", Nextslot);
-		telemetry.addData("velo",spindexerMotor.getVelocity());
+		telemetry.addData("velo", spindexerMotor.getVelocity());
 		telemetry.addData("Distance from Slot", getDistanceFromSlot(Nextslot));
 		telemetry.addData("Aligned with Slot", isAlignedWithSlot() ? "Yeperoosie" : "Nuh uh");
 		telemetry.addData("Spindexer Power", power);

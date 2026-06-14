@@ -8,15 +8,15 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 @Configurable
 public class Colour extends SubsystemBase {
-	private NormalizedColorSensor slot2;
-	private NormalizedColorSensor slot3;
+	private final NormalizedColorSensor slot2;
+	private final NormalizedColorSensor slot3;
 	private int lastSpindexerSlot = -1;
 	private SlotColour lastSlot2SensorColour = SlotColour.NONE;
 	private SlotColour lastSlot3SensorColour = SlotColour.NONE;
 	private int slot2ConfirmationCount = 0;
 	private int slot3ConfirmationCount = 0;
 	private static final int CONFIRMATION_THRESHOLD = 10; // ~300-500ms at 30-50ms per update cycle
-	
+
 	// Logging fields for sensor data
 	public double slot2Hue = 0;
 	public double slot2Saturation = 0;
@@ -24,14 +24,14 @@ public class Colour extends SubsystemBase {
 	public double slot2Red = 0;
 	public double slot2Green = 0;
 	public double slot2Blue = 0;
-	
+
 	public double slot3Hue = 0;
 	public double slot3Saturation = 0;
 	public double slot3Value = 0;
 	public double slot3Red = 0;
 	public double slot3Green = 0;
 	public double slot3Blue = 0;
-	
+
 	public boolean isUpdating = false;
 	public int updateCount = 0;
 	public long lastUpdateTime = 0;
@@ -110,7 +110,7 @@ public class Colour extends SubsystemBase {
 		isUpdating = true;
 		updateCount++;
 		lastUpdateTime = System.currentTimeMillis();
-		
+
 		int slot = (int) spindexerSlot;
 		boolean spindexerTurned = (slot != lastSpindexerSlot);
 		lastSpindexerSlot = slot;
@@ -157,7 +157,7 @@ public class Colour extends SubsystemBase {
 				colours.setSlot2(filteredSlot3Colour);
 				break;
 		}
-		
+
 		isUpdating = false;
 	}
 
@@ -179,6 +179,7 @@ public class Colour extends SubsystemBase {
 	 * When spindexerSlot is 1, sets slot1 to NONE.
 	 * When spindexerSlot is 2, sets slot2 to NONE.
 	 * When spindexerSlot is 3, sets slot3 to NONE.
+	 *
 	 * @param spindexerSlot the current spindexer slot position
 	 */
 	public void clearCurrentSlot(double spindexerSlot) {

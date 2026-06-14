@@ -88,8 +88,8 @@ public class Limelight {
 			telemetry.addData("LL Latency", llResult.getCaptureLatency() + llResult.getTargetingLatency());
 			telemetry.addData("LL MT2 Pose", botPose.toString());
 
-			telemetry.addData("Blue Goal Found?", blueGoalFound()? "give that man a TRUE" : "false");
-			telemetry.addData("Red Goal Found?", redGoalFound()? "give that man a TRUE" : "false");
+			telemetry.addData("Blue Goal Found?", blueGoalFound() ? "give that man a TRUE" : "false");
+			telemetry.addData("Red Goal Found?", redGoalFound() ? "give that man a TRUE" : "false");
 
 			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
 			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
