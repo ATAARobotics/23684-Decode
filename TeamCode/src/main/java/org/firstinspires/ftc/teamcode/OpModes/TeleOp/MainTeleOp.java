@@ -271,8 +271,6 @@ public abstract class MainTeleOp extends OpMode {
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 		}
 
-
-
 		if (gamepad1.cross && !aButtonPressed) {
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
@@ -458,6 +456,12 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addLine("=== TRANSFER ===");
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
 		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
+
+		panelsTelemetry.addLine("=== SHOOTER ===");
+		panelsTelemetry.addData("Shooter Lower RPM", shooter.lowerRPM);
+		panelsTelemetry.addData("Shooter Upper RPM", shooter.upperRPM);
+		panelsTelemetry.addData("Shooter Lower Target", shooter.lowerTarget);
+		panelsTelemetry.addData("Shooter Upper Target", shooter.upperTarget);
 
 		spindexer.Telemetry(panelsTelemetry);
 
