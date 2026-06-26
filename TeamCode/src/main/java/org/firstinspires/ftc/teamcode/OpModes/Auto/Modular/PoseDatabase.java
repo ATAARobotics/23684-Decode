@@ -29,16 +29,16 @@ public class PoseDatabase {
 	public static final Pose RED_SHOOT = new Pose(83.000, 17.328, Math.toRadians(-114.14));
 
 	public static final Pose RED_SPIKE_1_INTERMEDIATE = new Pose(98.000, 34.500, Math.toRadians(0));
-	public static final Pose RED_SPIKE_1_COLLECT = new Pose(141.000, 34.500, Math.toRadians(0));
+	public static final Pose RED_SPIKE_1_COLLECT = new Pose(136.000, 34.500, Math.toRadians(0));
 
 	public static final Pose RED_SPIKE_2_INTERMEDIATE = new Pose(98.000, 58.000, Math.toRadians(0));
-	public static final Pose RED_SPIKE_2_COLLECT = new Pose(141.000, 58.000, Math.toRadians(0));
+	public static final Pose RED_SPIKE_2_COLLECT = new Pose(136.000, 58.000, Math.toRadians(0));
 
 	public static final Pose RED_SPIKE_3_INTERMEDIATE = new Pose(98.000, 82.000, Math.toRadians(0));
-	public static final Pose RED_SPIKE_3_COLLECT = new Pose(127.000, 82.000, Math.toRadians(0));
+	public static final Pose RED_SPIKE_3_COLLECT = new Pose(122.000, 82.000, Math.toRadians(0));
 
 	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = new Pose(122.2, 9.128, Math.toRadians(0));
-	public static final Pose RED_HUMAN_PLAYER_COLLECT = new Pose(127.000, 9.128, Math.toRadians(0));
+	public static final Pose RED_HUMAN_PLAYER_COLLECT = new Pose(123.000, 9.128, Math.toRadians(0));
 	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE = new Pose(137.5, 9.128, Math.toRadians(0));
 
 	public static final Pose RED_HUMAN_PLAYER_COLLECT_CLOSE = new Pose(129.000, 9.128, Math.toRadians(0));

@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
+import org.firstinspires.ftc.teamcode.Utils.Team;
 import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
 
 
@@ -25,13 +26,15 @@ public class VisualTurretingDrive extends OpMode {
 	PIDFController headingPIDController;
 	TeleOpDrive teleOpDrive;
 
-	public static double P = 0.03, I, D, F = 0.001;
+	public static double P = 0.025, I, D = 0.00025, F = 0.001;
+
+	double headingdeadzone =0;
 
 	Follower follower;
 
 	Limelight limelight;
 
-	public static double calculateShotAngle(double x, double y, double goalX, double goalY) {
+	public double calculateShotAngle(double x, double y, double goalX, double goalY) {
 		double deltaX = goalX - x;
 		double deltaY = goalY - y;
 		return Math.atan2(-deltaY, -deltaX);
@@ -61,17 +64,19 @@ public class VisualTurretingDrive extends OpMode {
 	public void loop() {
 		follower.update();
 		if (limelight.blueGoalFound()) {
-			currentHeading = limelight.AngleFrom(Limelight.BLUEGOAL);
+			currentHeading = limelight.AngleFrom(Team.BLUE);
 			targetHeading = 0;
 			headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
 			headingPIDController.updatePosition(-currentHeading);
+			headingdeadzone = 1;
 
 
 		} else {
-			currentHeading = follower.getPose().getHeading();
-			targetHeading = calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144);
+			currentHeading = follower.getHeading();
+			targetHeading = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), 0, 144);
 			headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
 			headingPIDController.updatePosition(-currentHeading);
+			headingdeadzone = 3;
 		}
 
 
@@ -83,7 +88,7 @@ public class VisualTurretingDrive extends OpMode {
 			double headingError = targetHeading - currentHeading;
 			headingError = Math.IEEEremainder(headingError, 2 * Math.PI);
 
-			if (Math.abs(headingError) < Math.toRadians(7)) {
+			if (Math.abs(headingError) < Math.toRadians(headingdeadzone)) {
 				headingCorrection = 0;
 			} else {
 				headingPIDController.setTargetPosition(targetHeading);
@@ -100,7 +105,8 @@ public class VisualTurretingDrive extends OpMode {
 		telemetry.addLine(follower.getPose().toString());
 
 		limelight.Telemetry(telemetry);
-		telemetry.addData("target", targetHeading);
+		telemetry.addData("heading",follower.getHeading());
+		telemetry.addData("target", Math.toDegrees(targetHeading));
 		telemetry.addData("error", Math.abs(targetHeading - currentHeading));
 		telemetry.update();
 

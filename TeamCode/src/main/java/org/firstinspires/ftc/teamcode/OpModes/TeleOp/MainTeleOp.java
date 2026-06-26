@@ -3,6 +3,9 @@ package org.firstinspires.ftc.teamcode.OpModes.TeleOp;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.control.LowPassFilter;
+import com.pedropathing.control.PIDFCoefficients;
+import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -25,12 +28,14 @@ import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
 import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
+import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.Team;
+import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
 
 import java.util.function.Supplier;
 
@@ -43,6 +48,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Spindexer spindexer;
+	protected Limelight limelight;
 	protected Gate gate;
 	protected Colour colour;
 	protected BeamBreaker beamBreaker;
@@ -65,6 +71,8 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean spindexerMidCrossed = false;
 	protected boolean spindexerDownCrossed = false;
 
+	protected boolean breakedfollowing = false;
+
 	// Rumble state tracking
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
@@ -86,6 +94,29 @@ public abstract class MainTeleOp extends OpMode {
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 	TouchSensor intakeTouchSensor;
+	PIDFController headingPIDController;
+	TeleOpDrive teleOpDrive;
+
+	double heading;
+
+	boolean headingLock = true;
+	double currentHeading, headingdeadzone;
+
+	double targetHeading = Math.toRadians(180);
+	double headingCorrection;
+
+	double HumanplayerHeading = 0;
+
+	private double Goalx(Team team){
+		if(team == Team.BLUE){
+			return 0;
+		}else if (team == Team.RED){
+			return 144;
+		}
+		return 0;
+	}
+
+	public static double P = 0.025, I, D = 0.00025, F = 0.001;
 
 	@Override
 	public void init() {
@@ -102,6 +133,7 @@ public abstract class MainTeleOp extends OpMode {
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
 		//scheduler.schedule(shooter.SetTarget(0, 0));
+		teleOpDrive = new TeleOpDrive(hardwareMap);
 
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
@@ -109,6 +141,7 @@ public abstract class MainTeleOp extends OpMode {
 		beamBreaker = new BeamBreaker(hardwareMap);
 		gate = new Gate(hardwareMap);
 		spindexer.zeroSpindexer();
+		limelight = new Limelight(hardwareMap, follower);
 		if (RobotPosition.isSpindexerSet) {
 			RobotPosition.isSpindexerSet = false;
 		}
@@ -122,36 +155,50 @@ public abstract class MainTeleOp extends OpMode {
 		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensorLeft");
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
+		headingPIDController = new PIDFController(new PIDFCoefficients(P, I, D, F));
 
 		telemetry.addData("Status", "Initialized - Waiting for START");
 		telemetry.update();
 
+
 		// TODO: Rename
 		pathBackBlue = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(61.5, 16))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(295), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(91.32791353961615, 17.417498010350027))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(-56.53501255275879), 0.8))
+				.setNoDeceleration()
 				.build();
 
 		pathFrontBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(120.4, 95.7))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(340.7), 0.8))
+				.setNoDeceleration()
 				.build();
 
 		redGoalShootingPath = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(39.03, 101.80))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(203), 0.8))
+				.setNoDeceleration()
 				.build();
 
 		redAudienceShootingPath = () -> follower.pathBuilder()
-				.addPath(new Path(new BezierLine(follower::getPose, new Pose(79, 15))))
-				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(247.5), 0.8))
+				.addPath(new Path(new BezierLine(follower::getPose, new Pose(51.63920244832678,  22.730028047336372))))
+				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(-122.85147071400115), 0.8))
+				.setNoDeceleration()
 				.build();
+
+		//Location: (51.63920244832678, 22.730028047336372, -122.85147071400115, class
 	}
 
 	@Override
 	public void start() {
 		// Called when START is pressed
 		// Spindexer already initializes from RobotPosition in constructor
+//		if (RobotPosition.isPoseSet) {
+//			follower.setPose(RobotPosition.robotPose);
+//			RobotPosition.isPoseSet = false;
+//		} else {
+//			follower.setPose(getStartingPose());
+//		}
 		timer.reset();
 		timer.startTime();
 		scheduler.schedule(gate.closeGate());
@@ -276,7 +323,9 @@ public abstract class MainTeleOp extends OpMode {
 			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 		}
 
+
 		if (gamepad1.a && !aButtonPressed) {
+			breakedfollowing = false;
 			if (getTeam() == Team.RED) {
 				follower.followPath(redAudienceShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -287,6 +336,7 @@ public abstract class MainTeleOp extends OpMode {
 		} else if (!gamepad1.a && aButtonPressed) {
 			aButtonPressed = false;
 		} else if (gamepad1.b && !b1ButtonPressed) {
+			breakedfollowing = false;
 			if (getTeam() == Team.RED) {
 				follower.followPath(redGoalShootingPath.get(), true);
 			} else if (getTeam() == Team.BLUE) {
@@ -299,11 +349,73 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad1.b && !gamepad1.a) {
-			if (!follower.isTeleopDrive()) {
-				follower.startTeleOpDrive(true);
+
+//			if (!follower.isTeleopDrive()) {
+//				follower.startTeleOpDrive(true);
+//			}
+
+			if(!breakedfollowing){
+				follower.breakFollowing();
+				breakedfollowing = true;
 			}
 
-			follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+
+
+			if(getTeam() == Team.RED){
+				HumanplayerHeading = Math.toRadians(0);
+			} else if (getTeam() == Team.BLUE) {
+				HumanplayerHeading = Math.toRadians(180);
+			}
+
+			if(gamepad1.left_trigger > 0){
+				currentHeading = follower.getHeading();
+				targetHeading = HumanplayerHeading;
+				headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
+				headingPIDController.updatePosition(-currentHeading);
+				headingdeadzone = 3;
+			}else {
+
+				if (limelight.goalsFound(getTeam())) {
+					currentHeading = limelight.AngleFrom(getTeam());
+					targetHeading = 0;
+					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
+					headingPIDController.updatePosition(-currentHeading);
+					headingdeadzone = 1;
+
+
+				} else {
+					currentHeading = follower.getHeading();
+					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(),follower.getPose().getY(),Goalx(getTeam()),144);
+					headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
+					headingPIDController.updatePosition(-currentHeading);
+					headingdeadzone = 3;
+				}
+			}
+
+
+			headingLock = gamepad1.right_trigger > 0;
+
+			if (headingLock || gamepad1.left_trigger > 0) {
+
+
+				double headingError = targetHeading - currentHeading;
+				headingError = Math.IEEEremainder(headingError, 2 * Math.PI);
+
+				if (Math.abs(headingError) < Math.toRadians(headingdeadzone)) {
+					headingCorrection = 0;
+				} else {
+					headingPIDController.setTargetPosition(targetHeading);
+					headingCorrection = headingPIDController.run();
+				}
+
+				//follower.setTeleOpDrive(-gamepad1.left_stick_y,-gamepad1.left_stick_x, -headingCorrection,true);
+				teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
+
+
+			} else {
+				//follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+				teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+			}
 		}
 	}
 
@@ -492,7 +604,16 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Slot 2", colour.colours.getSlot2().toString());
 		panelsTelemetry.addData("Slot 3", colour.colours.getSlot3().toString());
 
+
+
 		panelsTelemetry.update();
+
+		limelight.Telemetry(telemetry);
+		telemetry.addData("heading",follower.getHeading());
+		telemetry.addData("target", Math.toDegrees(targetHeading));
+		telemetry.addData("error", Math.abs(targetHeading - currentHeading));
+		telemetry.addData("power",headingPIDController.run());
+		telemetry.update();
 	}
 
 	/**
