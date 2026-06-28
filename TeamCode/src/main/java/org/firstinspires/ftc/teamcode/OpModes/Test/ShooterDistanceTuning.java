@@ -101,7 +101,6 @@ public class ShooterDistanceTuning extends OpMode {
 		panelsTelemetry.update();
 
 		scheduler.run();
-		shooter.periodic();
 	}
 
 	private void handleDriveInput() {

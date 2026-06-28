@@ -152,6 +152,11 @@ public abstract class MainTeleOp extends OpMode {
 		rgbIndicator.setTransfer(transfer);
 		rgbIndicator.setBeamBreaker(beamBreaker);
 		rgbIndicator.setFollower(follower);
+		// Re-fetch scheduler: scheduler.reset() above nulled the singleton, so
+		// the subsystems constructed below registered on a fresh instance. Repoint
+		// the local reference at that instance so scheduler.run() invokes their
+		// periodic() methods.
+		scheduler = CommandScheduler.getInstance();
 		//distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
 		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensorLeft");
 
@@ -219,9 +224,6 @@ public abstract class MainTeleOp extends OpMode {
 		handleDriveInput();
 		handleOperatorInput();
 		handleRumbleFeedback();
-		shooter.periodic();
-		transfer.periodic();
-		rgbIndicator.periodic();
 
 		if (shooterTriggered) {
 			if (gate.getCurrentPosition() != Gate.OPEN_POSITION) {
