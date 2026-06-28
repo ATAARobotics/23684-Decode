@@ -8,6 +8,9 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 public class Gate extends SubsystemBase {
 
+	public static final double OPEN_POSITION = 0;
+	public static final double CLOSE_POSITION = 1;
+
 	Servo gateServo;
 
 	public Gate(HardwareMap hw) {
@@ -15,11 +18,15 @@ public class Gate extends SubsystemBase {
 	}
 
 	public Command openGate() {
-		return new InstantCommand(() -> gateServo.setPosition(0), this);
+		return new InstantCommand(() -> gateServo.setPosition(OPEN_POSITION), this);
 	}
 
 	public Command closeGate() {
-		return new InstantCommand(() -> gateServo.setPosition(1), this);
+		return new InstantCommand(() -> gateServo.setPosition(CLOSE_POSITION), this);
+	}
+
+	public double getCurrentPosition() {
+		return gateServo.getPosition();
 	}
 
 }

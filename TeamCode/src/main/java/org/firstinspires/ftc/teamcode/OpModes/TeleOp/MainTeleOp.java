@@ -78,8 +78,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasPathBusy = false;
 	protected boolean warnedEndGame = false;
 
-	protected boolean openGate = false;
-
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
 
@@ -218,8 +216,11 @@ public abstract class MainTeleOp extends OpMode {
 		handleRumbleFeedback();
 		shooter.periodic();
 
-		if (openGate) {
-			scheduler.schedule(gate.openGate());
+		boolean shooterTriggered = gamepad2.right_trigger > 0.5;
+		if (shooterTriggered) {
+			if (gate.getCurrentPosition() != Gate.OPEN_POSITION) {
+				scheduler.schedule(gate.openGate());
+			}
 		} else {
 			scheduler.schedule(gate.closeGate());
 		}
@@ -444,7 +445,6 @@ public abstract class MainTeleOp extends OpMode {
 					new SequentialCommandGroup(
 							shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
-							new InstantCommand(() -> openGate = true),
 							shooter.WaitForTarget().withTimeout(2500),
 							transfer.TransferOut(),
 							spindexer.DirectPower(1)
@@ -454,7 +454,6 @@ public abstract class MainTeleOp extends OpMode {
 			scheduler.schedule(shooter.SetTarget(0, 0));
 			scheduler.schedule(transfer.TransferStop());
 			scheduler.schedule(spindexer.DirectPower(0));
-			openGate = false;
 			if (ballCount > 0) {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
@@ -579,6 +578,7 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Shooter Upper RPM", shooter.upperRPM);
 		panelsTelemetry.addData("Shooter Lower Target", shooter.lowerTarget);
 		panelsTelemetry.addData("Shooter Upper Target", shooter.upperTarget);
+		panelsTelemetry.addData("Gate Position", gate.getCurrentPosition());
 
 		spindexer.Telemetry(panelsTelemetry);
 
