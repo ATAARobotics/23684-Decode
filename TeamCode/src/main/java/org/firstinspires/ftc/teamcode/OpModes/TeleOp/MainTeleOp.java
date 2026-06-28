@@ -81,6 +81,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean warnedHeadinglock = false;
 
 	protected boolean openGate = false;
+	protected boolean wasBeamAtThree = false;
 
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
@@ -220,8 +221,11 @@ public abstract class MainTeleOp extends OpMode {
 		handleRumbleFeedback();
 		shooter.periodic();
 
-		if (openGate) {
-			scheduler.schedule(gate.openGate());
+		boolean shooterTriggered = gamepad2.right_trigger > 0.5;
+		if (shooterTriggered) {
+			if (gate.getCurrentPosition() != Gate.OPEN_POSITION) {
+				scheduler.schedule(gate.openGate());
+			}
 		} else {
 			scheduler.schedule(gate.closeGate());
 		}
@@ -451,7 +455,6 @@ public abstract class MainTeleOp extends OpMode {
 					new SequentialCommandGroup(
 							shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
-							new InstantCommand(() -> openGate = true),
 							shooter.WaitForTarget().withTimeout(2500),
 							transfer.TransferOut(),
 							spindexer.DirectPower(1)
@@ -461,11 +464,11 @@ public abstract class MainTeleOp extends OpMode {
 			scheduler.schedule(shooter.SetTarget(0, 0));
 			scheduler.schedule(transfer.TransferStop());
 			scheduler.schedule(spindexer.DirectPower(0));
-			openGate = false;
 			if (ballCount > 0) {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
 				prespinTriggered = false;
+				wasBeamAtThree = false;
 			}
 			rightTriggerPressed = false;
 		}
@@ -475,12 +478,13 @@ public abstract class MainTeleOp extends OpMode {
 			beamBreaker.resetBallCount();
 			ballCount = 0;
 			prespinTriggered = false;
+			wasBeamAtThree = false;
 			g2AButtonPressed = true;
 		} else if (!gamepad2.a && g2AButtonPressed) {
 			g2AButtonPressed = false;
 		}
 
-		if (gamepad2.yWasPressed() || prespinTriggered) {
+		if (gamepad2.yWasPressed()) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
 		}
 
@@ -647,5 +651,11 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		wasShooterAtTarget = transfer.reachedAverageTarget;
+
+		// Driver 2: Rumble when beam breaker first reaches 3 artifacts
+		if (ballCount >= 3 && !wasBeamAtThree) {
+			gamepad2.rumble(250);
+		}
+		wasBeamAtThree = ballCount >= 3;
 	}
 }
