@@ -77,6 +77,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
 	protected boolean warnedEndGame = false;
+	protected boolean wasBeamAtThree = false;
 
 	ElapsedTime timer = new ElapsedTime();
 	private Servo rgbServo;
@@ -458,6 +459,7 @@ public abstract class MainTeleOp extends OpMode {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
 				prespinTriggered = false;
+				wasBeamAtThree = false;
 			}
 			rightTriggerPressed = false;
 		}
@@ -467,6 +469,7 @@ public abstract class MainTeleOp extends OpMode {
 			beamBreaker.resetBallCount();
 			ballCount = 0;
 			prespinTriggered = false;
+			wasBeamAtThree = false;
 			g2AButtonPressed = true;
 		} else if (!gamepad2.a && g2AButtonPressed) {
 			g2AButtonPressed = false;
@@ -640,5 +643,11 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		wasShooterAtTarget = transfer.reachedAverageTarget;
+
+		// Driver 2: Rumble when beam breaker first reaches 3 artifacts
+		if (ballCount >= 3 && !wasBeamAtThree) {
+			gamepad2.rumble(250);
+		}
+		wasBeamAtThree = ballCount >= 3;
 	}
 }
