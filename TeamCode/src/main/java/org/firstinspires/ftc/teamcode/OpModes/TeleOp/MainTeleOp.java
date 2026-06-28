@@ -78,6 +78,8 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasPathBusy = false;
 	protected boolean warnedEndGame = false;
 
+	protected boolean warnedHeadinglock = false;
+
 	protected boolean openGate = false;
 
 	ElapsedTime timer = new ElapsedTime();
@@ -124,7 +126,7 @@ public abstract class MainTeleOp extends OpMode {
 		follower = Constants.createFollower(hardwareMap);
 		if (RobotPosition.isPoseSet) {
 			follower.setStartingPose(RobotPosition.robotPose);
-			RobotPosition.isPoseSet = false;
+//			RobotPosition.isPoseSet = false;
 		} else {
 			follower.setStartingPose(getStartingPose());
 		}
@@ -193,12 +195,12 @@ public abstract class MainTeleOp extends OpMode {
 	public void start() {
 		// Called when START is pressed
 		// Spindexer already initializes from RobotPosition in constructor
-//		if (RobotPosition.isPoseSet) {
-//			follower.setPose(RobotPosition.robotPose);
-//			RobotPosition.isPoseSet = false;
-//		} else {
-//			follower.setPose(getStartingPose());
-//		}
+		if (RobotPosition.isPoseSet) {
+			follower.setPose(RobotPosition.robotPose);
+			RobotPosition.isPoseSet = false;
+		} else {
+			follower.setPose(getStartingPose());
+		}
 		timer.reset();
 		timer.startTime();
 		scheduler.schedule(gate.closeGate());
@@ -403,6 +405,10 @@ public abstract class MainTeleOp extends OpMode {
 
 				if (Math.abs(headingError) < Math.toRadians(headingdeadzone)) {
 					headingCorrection = 0;
+					if(warnedHeadinglock) {
+						gamepad2.rumble(100);
+						warnedHeadinglock = false;
+					}
 				} else {
 					headingPIDController.setTargetPosition(targetHeading);
 					headingCorrection = headingPIDController.run();
@@ -413,6 +419,7 @@ public abstract class MainTeleOp extends OpMode {
 
 
 			} else {
+				warnedHeadinglock = false;
 				//follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 				teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
 			}
@@ -473,7 +480,7 @@ public abstract class MainTeleOp extends OpMode {
 			g2AButtonPressed = false;
 		}
 
-		if (gamepad2.yWasPressed()) {
+		if (gamepad2.yWasPressed() || prespinTriggered) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
 		}
 

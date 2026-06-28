@@ -39,7 +39,7 @@ public class BeamBreaker extends SubsystemBase {
 	/**
 	 * Minimum time between valid edges to suppress noise
 	 */
-	private static final long DEBOUNCE_MS = 50;
+	private static final long DEBOUNCE_MS = 0;
 
 	/**
 	 * Noise suppression window for rapid break→clear→break sequences (ms)
@@ -77,7 +77,7 @@ public class BeamBreaker extends SubsystemBase {
 	 * @return true when beam is blocked (object present), false otherwise
 	 */
 	public boolean isBeamBroken() {
-		return intakeBeamBreaker.getState();
+		return !intakeBeamBreaker.getState();
 	}
 
 	/**
