@@ -23,6 +23,11 @@ public class TeleOpDrive {
 		backLeftMotor.setDirection(Constants.driveConstants.leftRearMotorDirection);
 		frontRightMotor.setDirection(Constants.driveConstants.rightFrontMotorDirection);
 		backRightMotor.setDirection(Constants.driveConstants.rightRearMotorDirection);
+
+		frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 	}
 
 	public void TeleopDrive(Follower follower, double xDir, double yDir, double hDir) {
@@ -31,8 +36,6 @@ public class TeleOpDrive {
 		double x = xDir;
 		double rx = hDir;
 
-
-		double botHeading = follower.getPose().getHeading();
 
 		// Rotate the movement direction counter to the bot's rotation
 		double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);

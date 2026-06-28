@@ -109,17 +109,18 @@ public abstract class MainTeleOp extends OpMode {
 	double headingCorrection;
 
 	double HumanplayerHeading = 0;
+	double Goalx = 0;
 
-	private double Goalx(Team team){
-		if(team == Team.BLUE){
-			return 0;
-		}else if (team == Team.RED){
-			return 144;
-		}
-		return 0;
-	}
+//	private double Goalx(Team team){
+//		if(team == Team.BLUE){
+//			return 0;
+//		}else if (team == Team.RED){
+//			return 144;
+//		}
+//		return 0;
+//	}
 
-	public static double P = 0.025, I, D = 0.00025, F = 0.001;
+	public static double P = 0.0275, I, D = 0.00025, F = 0.001;
 
 	@Override
 	public void init() {
@@ -365,8 +366,10 @@ public abstract class MainTeleOp extends OpMode {
 
 			if(getTeam() == Team.RED){
 				HumanplayerHeading = Math.toRadians(0);
+				Goalx = 144;
 			} else if (getTeam() == Team.BLUE) {
 				HumanplayerHeading = Math.toRadians(180);
+				Goalx = 0;
 			}
 
 			if(gamepad1.left_trigger > 0){
@@ -387,7 +390,7 @@ public abstract class MainTeleOp extends OpMode {
 
 				} else {
 					currentHeading = follower.getHeading();
-					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(),follower.getPose().getY(),Goalx(getTeam()),144);
+					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(),follower.getPose().getY(),Goalx,144);
 					headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
 					headingPIDController.updatePosition(-currentHeading);
 					headingdeadzone = 3;
@@ -406,7 +409,7 @@ public abstract class MainTeleOp extends OpMode {
 				if (Math.abs(headingError) < Math.toRadians(headingdeadzone)) {
 					headingCorrection = 0;
 					if(warnedHeadinglock) {
-						gamepad2.rumble(100);
+						gamepad2.rumble(300);
 						warnedHeadinglock = false;
 					}
 				} else {
@@ -480,7 +483,7 @@ public abstract class MainTeleOp extends OpMode {
 			g2AButtonPressed = false;
 		}
 
-		if (gamepad2.yWasPressed()) {
+		if (gamepad2.yWasPressed() || ballCount >= 3) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
 		}
 

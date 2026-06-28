@@ -221,7 +221,7 @@ public class Limelight extends SubsystemBase {
 						return fiducial.getTargetXDegrees();
 					}
 				} else if (tag == Team.RED) {
-					if (fiducial.getFiducialId() == BLUEGOAL) {
+					if (fiducial.getFiducialId() == REDGOAL) {
 						return fiducial.getTargetXDegrees();
 					}
 				}
