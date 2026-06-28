@@ -32,7 +32,7 @@ public class RGBIndicator extends SubsystemBase {
 	public static final double SERVO_YELLOW = 0.388;
 	public static final double SERVO_AZURE = 0.555;
 	public static final double SERVO_GREEN = 0.500;
-	public static final double SERVO_RED = 0.28;
+	public static final double SERVO_RED = 0.277;
 	public static final double SERVO_BLUE = 0.611;
 	public static final double SERVO_VIOLET = 0.722;
 	public static final double SERVO_WHITE = 1.0;
@@ -93,9 +93,12 @@ public class RGBIndicator extends SubsystemBase {
 				position = SERVO_YELLOW;
 			} else if (count == 2) {
 				position = SERVO_AZURE;
-			} else {
+			} else if (count == 3) {
 				boolean flashOn = (now % (2 * SLOW_FLASH_PERIOD_MS)) < SLOW_FLASH_PERIOD_MS;
 				position = flashOn ? SERVO_BLUE : SERVO_VIOLET;
+			} else {
+				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;
+				position = flashOn ? SERVO_RED : SERVO_BLUE;
 			}
 		} else {
 			position = SERVO_IDLE_PURPLE;
