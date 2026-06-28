@@ -14,7 +14,6 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
@@ -29,6 +28,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Colour;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
+import org.firstinspires.ftc.teamcode.Subsystem.RGBIndicator;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -52,6 +52,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Gate gate;
 	protected Colour colour;
 	protected BeamBreaker beamBreaker;
+	protected RGBIndicator rgbIndicator;
 	protected int ballCount = 0;
 	protected boolean lastIntakeIn = true;
 	protected boolean prespinTriggered = false;
@@ -84,7 +85,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasBeamAtThree = false;
 
 	ElapsedTime timer = new ElapsedTime();
-	private Servo rgbServo;
 
 	// Performance monitoring
 	private long maxLoopTime = 0;
@@ -152,8 +152,15 @@ public abstract class MainTeleOp extends OpMode {
 		// Set shooter dependency for conditional transfer
 		transfer.setShooter(shooter);
 		//transfer.setSpindexer(spindexer);
-		// TODO: Make subsystem
-		rgbServo = hardwareMap.get(Servo.class, "rgbIndicator");
+		rgbIndicator = new RGBIndicator(hardwareMap);
+		rgbIndicator.setTransfer(transfer);
+		rgbIndicator.setBeamBreaker(beamBreaker);
+		rgbIndicator.setFollower(follower);
+		// Re-fetch scheduler: scheduler.reset() above nulled the singleton, so
+		// the subsystems constructed below registered on a fresh instance. Repoint
+		// the local reference at that instance so scheduler.run() invokes their
+		// periodic() methods.
+		scheduler = CommandScheduler.getInstance();
 		//distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
 		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensorLeft");
 
@@ -212,16 +219,16 @@ public abstract class MainTeleOp extends OpMode {
 	public void loop() {
 		long startTime = System.nanoTime();
 
+		boolean shooterTriggered = gamepad2.right_trigger > 0.5;
+		rgbIndicator.setShooterTriggered(shooterTriggered);
+
 		// CRITICAL - Must complete quickly for responsive driving
 		scheduler.run();
 		follower.update();
 		handleDriveInput();
 		handleOperatorInput();
-		updateRGBIndicator();
 		handleRumbleFeedback();
-		shooter.periodic();
 
-		boolean shooterTriggered = gamepad2.right_trigger > 0.5;
 		if (shooterTriggered) {
 			if (gate.getCurrentPosition() != Gate.OPEN_POSITION) {
 				scheduler.schedule(gate.openGate());
@@ -305,17 +312,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected abstract Pose getStartingPose();
 
 	protected abstract Team getTeam();
-
-	/**
-	 * Update RGB indicator color
-	 */
-	private void updateRGBIndicator() {
-		if (rightTriggerPressed) {
-			rgbServo.setPosition(transfer.reachedUpperTarget && transfer.reachedLowerTarget ? 0.50 : 0.28);
-		} else {
-			rgbServo.setPosition(0.65);
-		}
-	}
 
 	/**
 	 * Handle driving input from gamepad1

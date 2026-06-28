@@ -82,6 +82,12 @@ public abstract class OverFlowAuto extends OpMode {
 		touch = new Touch(hardwareMap);
 		touch.init();
 
+		// Re-fetch scheduler: scheduler.reset() above nulled the singleton, so
+		// the subsystems constructed below registered on a fresh instance. Repoint
+		// the local reference at that instance so scheduler.run() invokes their
+		// periodic() methods.
+		scheduler = CommandScheduler.getInstance();
+
 		paths = new Paths(follower, getTeam());
 
 		panelsTelemetry.debug("Status", "Initialized");
@@ -198,8 +204,6 @@ public abstract class OverFlowAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
-		shooter.periodic();
-		transfer.periodic();
 		touch.Update(transfer);
 
 		telemetry.addData("loop end time", timer.milliseconds());

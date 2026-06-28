@@ -79,6 +79,12 @@ public abstract class AudienceHumanAuto extends OpMode {
 		transfer.setSpindexer(spindexer);
 		touch = new Touch(hardwareMap);
 
+		// Re-fetch scheduler: scheduler.reset() above nulled the singleton, so
+		// the subsystems constructed below registered on a fresh instance. Repoint
+		// the local reference at that instance so scheduler.run() invokes their
+		// periodic() methods.
+		scheduler = CommandScheduler.getInstance();
+
 		paths = new Paths(follower, getTeam());
 
 		panelsTelemetry.debug("Status", "Initialized");
@@ -199,8 +205,6 @@ public abstract class AudienceHumanAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
-		shooter.periodic();
-		transfer.periodic();
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
