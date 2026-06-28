@@ -20,9 +20,7 @@ public class Transfer extends SubsystemBase {
 	public boolean reachedUpperTarget;
 	public boolean reachedLowerTarget;
 	public boolean reachedAverageTarget;
-	public boolean spindexerAtTarget;
 	private Shooter shooter;
-	private Spindexer spindexer;
 
 	public Transfer(HardwareMap hardwareMap) {
 		transferLeft = hardwareMap.get(CRServo.class, "transferLeft");
@@ -51,10 +49,6 @@ public class Transfer extends SubsystemBase {
 
 	public void setShooter(Shooter shooter) {
 		this.shooter = shooter;
-	}
-
-	public void setSpindexer(Spindexer spindexer) {
-		this.spindexer = spindexer;
 	}
 
 	public Command IntakeDoorIn() {
@@ -119,7 +113,7 @@ public class Transfer extends SubsystemBase {
 
 	public void updateAutomaticTransfer(boolean passive) {
 		if (shooter != null) {
-			if (reachedUpperTarget && reachedLowerTarget) {// && spindexerAtTarget) {
+			if (reachedUpperTarget && reachedLowerTarget) {
 				transferLeft.setPower(1);
 				transferRight.setPower(1);
 			} else if (!passive) {

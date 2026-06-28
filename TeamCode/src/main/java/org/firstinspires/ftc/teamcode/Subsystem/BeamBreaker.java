@@ -7,6 +7,8 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
+import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
+
 /**
  * Beam breaker subsystem for counting artifacts entering/exiting the robot.
  * <p>
@@ -192,6 +194,7 @@ public class BeamBreaker extends SubsystemBase {
 	 * @param telemetry Panels telemetry wrapper
 	 */
 	public void telemetry(TelemetryManager.TelemetryWrapper telemetry) {
+		if (RobotConfig.COMPETITION) return;
 		String intakeState = lastIntakeIn ? "IN" : "OUT";
 		telemetry.addLine("=== BEAM BREAKER ===");
 		telemetry.addData("Beam Broken", isBeamBroken());

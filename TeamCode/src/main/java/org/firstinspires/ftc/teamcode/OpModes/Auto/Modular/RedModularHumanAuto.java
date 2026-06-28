@@ -5,8 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
-@Autonomous(name = "Red Triple Human Auto", group = "Red", preselectTeleOp = "Red TeleOp")
-public class RedOnlyHuman extends ModularAuto {
+@Autonomous(name = "Blue Human Auto", group = "Red", preselectTeleOp = "Red TeleOp")
+public class RedModularHumanAuto extends ModularAuto {
 	@Override
 	protected Pose getStartingPose() {
 		return PoseDatabase.RED_START;

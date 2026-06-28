@@ -14,7 +14,6 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -24,15 +23,15 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
-import org.firstinspires.ftc.teamcode.Subsystem.Colour;
+import org.firstinspires.ftc.teamcode.Subsystem.Conveyor;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.RGBIndicator;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
-import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
+import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
@@ -41,16 +40,15 @@ import java.util.function.Supplier;
 
 @Configurable
 public abstract class MainTeleOp extends OpMode {
-	public double spindexerPower = 1;
+	public double conveyorPower = 1;
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
 	protected Intake intake;
 	protected Transfer transfer;
-	protected Spindexer spindexer;
+	protected Conveyor conveyor;
 	protected Limelight limelight;
 	protected Gate gate;
-	protected Colour colour;
 	protected BeamBreaker beamBreaker;
 	protected RGBIndicator rgbIndicator;
 	protected int ballCount = 0;
@@ -66,11 +64,6 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean g2AButtonPressed = false;
 	protected boolean b1ButtonPressed = false;
 	protected boolean b2ButtonPressed = false;
-	protected boolean dpadUpPressed = false;
-	protected boolean dpadDownPressed = false;
-	protected boolean spindexerUpCrossed = false;
-	protected boolean spindexerMidCrossed = false;
-	protected boolean spindexerDownCrossed = false;
 
 	protected boolean breakedfollowing = false;
 
@@ -86,8 +79,14 @@ public abstract class MainTeleOp extends OpMode {
 
 	ElapsedTime timer = new ElapsedTime();
 
-	// Performance monitoring
-	private long maxLoopTime = 0;
+	// Drive-input cache. Joystick values drift by ~0.001 per loop even when the
+	// driver is holding still. Each call to TeleopDrive writes 4 hardware power
+	// values; skip the call entirely when the (x, y, h) inputs haven't changed
+	// beyond DRIVE_SNAP_THRESHOLD to cut a hardware-write cluster per loop.
+	private static final double DRIVE_SNAP_THRESHOLD = 0.005;
+	private double prevDriveX = Double.NaN;
+	private double prevDriveY = Double.NaN;
+	private double prevDriveH = Double.NaN;
 
 	private Supplier<PathChain> pathBackBlue;
 	private Supplier<PathChain> pathFrontBlue;
@@ -96,7 +95,6 @@ public abstract class MainTeleOp extends OpMode {
 
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
-	TouchSensor intakeTouchSensor;
 	PIDFController headingPIDController;
 	TeleOpDrive teleOpDrive;
 
@@ -141,18 +139,12 @@ public abstract class MainTeleOp extends OpMode {
 
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
-		spindexer = new Spindexer(hardwareMap);
+		conveyor = new Conveyor(hardwareMap);
 		beamBreaker = new BeamBreaker(hardwareMap);
 		gate = new Gate(hardwareMap);
-		spindexer.zeroSpindexer();
 		limelight = new Limelight(hardwareMap, follower);
-		if (RobotPosition.isSpindexerSet) {
-			RobotPosition.isSpindexerSet = false;
-		}
-		colour = new Colour(hardwareMap);
 		// Set shooter dependency for conditional transfer
 		transfer.setShooter(shooter);
-		//transfer.setSpindexer(spindexer);
 		rgbIndicator = new RGBIndicator(hardwareMap);
 		rgbIndicator.setTransfer(transfer);
 		rgbIndicator.setBeamBreaker(beamBreaker);
@@ -163,16 +155,16 @@ public abstract class MainTeleOp extends OpMode {
 		// periodic() methods.
 		scheduler = CommandScheduler.getInstance();
 		//distanceSensor = hardwareMap.get(DistanceSensor.class, "intakeDistanceSensor");
-		intakeTouchSensor = hardwareMap.get(TouchSensor.class, "intakeTouchSensorLeft");
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 		headingPIDController = new PIDFController(new PIDFCoefficients(P, I, D, F));
 
-		telemetry.addData("Status", "Initialized - Waiting for START");
-		telemetry.update();
+		if (!RobotConfig.COMPETITION) {
+			telemetry.addData("Status", "Initialized - Waiting for START");
+			telemetry.update();
+		}
 
 
-		// TODO: Rename
 		pathBackBlue = () -> follower.pathBuilder()
 				.addPath(new Path(new BezierLine(follower::getPose, new Pose(91.32791353961615, 17.417498010350027))))
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(-56.53501255275879), 0.8))
@@ -196,20 +188,11 @@ public abstract class MainTeleOp extends OpMode {
 				.setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(-122.85147071400115), 0.8))
 				.setNoDeceleration()
 				.build();
-
-		//Location: (51.63920244832678, 22.730028047336372, -122.85147071400115, class
 	}
 
 	@Override
 	public void start() {
 		// Called when START is pressed
-		// Spindexer already initializes from RobotPosition in constructor
-		if (RobotPosition.isPoseSet) {
-			follower.setPose(RobotPosition.robotPose);
-			RobotPosition.isPoseSet = false;
-		} else {
-			follower.setPose(getStartingPose());
-		}
 		timer.reset();
 		timer.startTime();
 		scheduler.schedule(gate.closeGate());
@@ -218,8 +201,6 @@ public abstract class MainTeleOp extends OpMode {
 
 	@Override
 	public void loop() {
-		long startTime = System.nanoTime();
-
 		boolean shooterTriggered = gamepad2.right_trigger > 0.5;
 		rgbIndicator.setShooterTriggered(shooterTriggered);
 
@@ -236,16 +217,6 @@ public abstract class MainTeleOp extends OpMode {
 			}
 		} else {
 			scheduler.schedule(gate.closeGate());
-		}
-
-		int currentSlot = spindexer.getCurrentSlot();
-		if (currentSlot != -1) {
-			colour.update(currentSlot);
-		}
-
-		// Clear slot when transfer is running forward
-		if (transfer.transferLeft.getPower() > 0.5) {
-			colour.clearCurrentSlot(currentSlot);
 		}
 
 		// --- Beam Breaker Update ---
@@ -274,12 +245,6 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		displayTelemetry();
-		// Performance monitoring
-		long loopTime = System.nanoTime() - startTime;
-
-		if (loopTime > maxLoopTime) {
-			maxLoopTime = loopTime;
-		}
 
 		if (gamepad1.xWasPressed()) {
 			gamepad1.rumble(300);
@@ -290,21 +255,11 @@ public abstract class MainTeleOp extends OpMode {
 				follower.setPose(new Pose(7.1, 18, Math.toRadians(180)));
 			}
 		}
-
-		// ALWAYS log performance stats to driver station (critical for monitoring during competition)
-		// This is separate from dashboard telemetry and always visible to the driver
-		telemetry.addData("Loop Time", "Current: %.2fms", loopTime / 1_000_000.0);
-		telemetry.addData("Loop Time", "Max: %.2fms", maxLoopTime / 1_000_000.0);
-
-		telemetry.update();
 	}
 
 	@Override
 	public void stop() {
 		// Called when OpMode is stopped
-		// Ensure we don't reuse values if TeleOp is accidentally stopped and restarted
-		RobotPosition.isSpindexerSet = false;
-		RobotPosition.spindexerTicks = 0;
 	}
 
 	/**
@@ -418,15 +373,33 @@ public abstract class MainTeleOp extends OpMode {
 				}
 
 				//follower.setTeleOpDrive(-gamepad1.left_stick_y,-gamepad1.left_stick_x, -headingCorrection,true);
-				teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
+				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
 
 
 			} else {
 				warnedHeadinglock = false;
 				//follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
-				teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
 			}
 		}
+	}
+
+	/**
+	 * Writes driver power to the drivetrain only when the input snapshot has
+	 * changed beyond {@link #DRIVE_SNAP_THRESHOLD}. Avoids four redundant
+	 * motor-power hardware writes per loop while the driver is holding steady.
+	 */
+	private void writeDriveIfChanged(double x, double y, double h) {
+		if (!Double.isNaN(prevDriveX)
+				&& Math.abs(x - prevDriveX) < DRIVE_SNAP_THRESHOLD
+				&& Math.abs(y - prevDriveY) < DRIVE_SNAP_THRESHOLD
+				&& Math.abs(h - prevDriveH) < DRIVE_SNAP_THRESHOLD) {
+			return;
+		}
+		teleOpDrive.TeleopDrive(follower, x, y, h);
+		prevDriveX = x;
+		prevDriveY = y;
+		prevDriveH = h;
 	}
 
 	/**
@@ -437,16 +410,14 @@ public abstract class MainTeleOp extends OpMode {
 		if (gamepad2.left_trigger > 0.5 && !leftTriggerPressed) {
 			scheduler.schedule(intake.In());
 			scheduler.schedule(transfer.IntakeDoorOut());
-			scheduler.schedule(spindexer.DirectPower(spindexerPower));
+			scheduler.schedule(conveyor.In());
 			leftTriggerPressed = true;
 		} else if (gamepad2.left_trigger <= 0.5 && leftTriggerPressed) {
 			scheduler.schedule(intake.Stop());
 			scheduler.schedule(transfer.IntakeDoorStop());
-			scheduler.schedule(spindexer.DirectPower(0));
+			scheduler.schedule(conveyor.Stop());
 			leftTriggerPressed = false;
 		}
-
-		boolean lockTransfer = false;
 
 		// Right Trigger: Shooter with conditional transfer (only when trigger held)
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
@@ -456,13 +427,13 @@ public abstract class MainTeleOp extends OpMode {
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
 							shooter.WaitForTarget().withTimeout(2500),
 							transfer.TransferOut(),
-							spindexer.DirectPower(1)
+							conveyor.In()
 					));
 			rightTriggerPressed = true;
 		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
 			scheduler.schedule(shooter.SetTarget(0, 0));
 			scheduler.schedule(transfer.TransferStop());
-			scheduler.schedule(spindexer.DirectPower(0));
+			scheduler.schedule(conveyor.Stop());
 			if (ballCount > 0) {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
@@ -500,74 +471,38 @@ public abstract class MainTeleOp extends OpMode {
 		if (gamepad2.b && !b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorIn());
 			scheduler.schedule(intake.Out());
-			scheduler.schedule(spindexer.DirectPower(-spindexerPower));
+			scheduler.schedule(conveyor.Out());
 			b2ButtonPressed = true;
 		} else if (!gamepad2.b && b2ButtonPressed) {
 			scheduler.schedule(transfer.IntakeDoorStop());
 			scheduler.schedule(intake.Stop());
-			scheduler.schedule(spindexer.DirectPower(0));
+			scheduler.schedule(conveyor.Stop());
 			b2ButtonPressed = false;
 		}
 
-		// Dpad Up: Run spindexer while held, go to next target on release
-		if (gamepad2.dpad_up && !dpadUpPressed) {
-			scheduler.schedule(spindexer.NextTarget());
-			scheduler.schedule(transfer.IntakeDoorOut());
-			dpadUpPressed = true;
-		} else if (!gamepad2.dpad_up && dpadUpPressed) {
-			scheduler.schedule(transfer.IntakeDoorStop());
-			dpadUpPressed = false;
-			spindexerMidCrossed = true;
-			spindexerUpCrossed = false;
-			spindexerDownCrossed = false;
-		}
-
-		// Right bumper: Adjust spindexer power
+		// Right bumper: Adjust conveyor power
 		if (gamepad2.right_bumper) {
-			spindexerPower = 0.6;
+			conveyorPower = 0.6;
 		} else {
-			spindexerPower = 1;
+			conveyorPower = 1;
 		}
 
-		// Dpad Down: Manual spindexer control
-		if (gamepad2.dpad_down && !dpadDownPressed) {
-			scheduler.schedule(spindexer.DirectPower(spindexerPower));
-			scheduler.schedule(transfer.IntakeDoorOut());
-			dpadUpPressed = true;
-		} else if (!gamepad2.dpad_down && dpadDownPressed) {
-			scheduler.schedule(transfer.IntakeDoorStop());
-			dpadDownPressed = false;
-			spindexerMidCrossed = true;
-			spindexerUpCrossed = false;
-			spindexerDownCrossed = false;
-		}
-
-		// Left joystick: Spindexer control proportional to joystick movement (inverted Y axis)
+		// Left joystick: Conveyor control proportional to joystick movement (inverted Y axis)
 		double leftJoystickY = -gamepad2.left_stick_y;
 
-		// Dead zone: stop spindexer
+		// Dead zone: stop conveyor
 		if (Math.abs(gamepad2.left_stick_y) < 0.2) {
-			leftJoystickY = 0;
-			if (!spindexerMidCrossed) {
-				scheduler.schedule(spindexer.DirectPower(0));
-				scheduler.schedule(transfer.IntakeDoorStop());
-				spindexerMidCrossed = true;
-				spindexerUpCrossed = false;
-				spindexerDownCrossed = false;
-			}
+			scheduler.schedule(conveyor.Stop());
+			scheduler.schedule(transfer.IntakeDoorStop());
 		} else {
 			// Proportional control: power is proportional to joystick position
-			scheduler.schedule(new PerpetualCommand(spindexer.DirectPower(leftJoystickY * spindexerPower)));
+			scheduler.schedule(new PerpetualCommand(conveyor.DirectPower(leftJoystickY * conveyorPower)));
 
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
 			} else {
 				scheduler.schedule(transfer.IntakeDoorIn());
 			}
-
-			spindexerMidCrossed = false;
-			spindexerUpCrossed = false;
-			spindexerDownCrossed = false;
 		}
 	}
 
@@ -575,55 +510,21 @@ public abstract class MainTeleOp extends OpMode {
 	 * Display telemetry information
 	 */
 	protected void displayTelemetry() {
-		panelsTelemetry.addLine("=== MAIN TELEOP ===");
-		panelsTelemetry.addData("Drive Mode", "Mecanum");
+		if (RobotConfig.COMPETITION) return;
+
 		panelsTelemetry.addData("Location", follower.getPose().toString());
 		Drawing.drawRobot(follower.getPose());
 
-		panelsTelemetry.addLine("=== TRANSFER ===");
 		panelsTelemetry.addData("Shooter At Target", transfer.reachedAverageTarget);
-		panelsTelemetry.addData("Spindexer At Target", transfer.spindexerAtTarget);
 
-		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Shooter Lower RPM", shooter.lowerRPM);
 		panelsTelemetry.addData("Shooter Upper RPM", shooter.upperRPM);
 		panelsTelemetry.addData("Shooter Lower Target", shooter.lowerTarget);
 		panelsTelemetry.addData("Shooter Upper Target", shooter.upperTarget);
 
-		spindexer.Telemetry(panelsTelemetry);
-
 		beamBreaker.telemetry(panelsTelemetry);
 
-		panelsTelemetry.addLine("=== COLOUR SENSORS ===");
-		panelsTelemetry.addData("Update Count", colour.updateCount);
-		panelsTelemetry.addData("Is Updating", colour.isUpdating);
-		panelsTelemetry.addData("Last Update (ms ago)", System.currentTimeMillis() - colour.lastUpdateTime);
-
-		panelsTelemetry.addLine("--- Slot 2 Sensor ---");
-		panelsTelemetry.addData("RGB", "R=%.2f G=%.2f B=%.2f", colour.slot2Red, colour.slot2Green, colour.slot2Blue);
-		panelsTelemetry.addData("HSV", "H=%.1f° S=%.2f V=%.2f", colour.slot2Hue, colour.slot2Saturation, colour.slot2Value);
-		panelsTelemetry.addData("Detected Colour", colour.colours.getSlot2().toString());
-
-		panelsTelemetry.addLine("--- Slot 3 Sensor ---");
-		panelsTelemetry.addData("RGB", "R=%.2f G=%.2f B=%.2f", colour.slot3Red, colour.slot3Green, colour.slot3Blue);
-		panelsTelemetry.addData("HSV", "H=%.1f° S=%.2f V=%.2f", colour.slot3Hue, colour.slot3Saturation, colour.slot3Value);
-		panelsTelemetry.addData("Detected Colour", colour.colours.getSlot3().toString());
-
-		panelsTelemetry.addLine("--- Mapped Slots ---");
-		panelsTelemetry.addData("Slot 1", colour.colours.getSlot1().toString());
-		panelsTelemetry.addData("Slot 2", colour.colours.getSlot2().toString());
-		panelsTelemetry.addData("Slot 3", colour.colours.getSlot3().toString());
-
-
-
 		panelsTelemetry.update();
-
-		limelight.Telemetry(telemetry);
-		telemetry.addData("heading",follower.getHeading());
-		telemetry.addData("target", Math.toDegrees(targetHeading));
-		telemetry.addData("error", Math.abs(targetHeading - currentHeading));
-		telemetry.addData("power",headingPIDController.run());
-		telemetry.update();
 	}
 
 	/**

@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
+import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 
 @TeleOp(name = "Beam Breaker Test", group = "Test")
 public class BeamBreakerTest extends OpMode {
@@ -12,8 +13,10 @@ public class BeamBreakerTest extends OpMode {
 
 	@Override
 	public void init() {
-		telemetry.addData("Status", "Waiting for start");
-		telemetry.update();
+		if (!RobotConfig.COMPETITION) {
+			telemetry.addData("Status", "Waiting for start");
+			telemetry.update();
+		}
 		beamBreaker = new BeamBreaker(hardwareMap);
 	}
 
@@ -22,9 +25,11 @@ public class BeamBreakerTest extends OpMode {
 		boolean isBeamBroken = beamBreaker.isBeamBroken();
 		String beamStatus = isBeamBroken ? "Closed" : "Open";
 
-		telemetry.addData("Beam Status", beamStatus);
-		telemetry.addData("Beam Broken", isBeamBroken);
-		telemetry.update();
+		if (!RobotConfig.COMPETITION) {
+			telemetry.addData("Beam Status", beamStatus);
+			telemetry.addData("Beam Broken", isBeamBroken);
+			telemetry.update();
+		}
 
 	}
 }

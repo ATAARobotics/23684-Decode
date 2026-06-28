@@ -20,11 +20,12 @@ import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.Conveyor;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
-import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
 import org.firstinspires.ftc.teamcode.Utils.Team;
@@ -42,7 +43,7 @@ public abstract class ModularAuto extends OpMode {
 	protected CommandScheduler scheduler;
 	protected Intake intake;
 	protected Shooter shooter;
-	protected Spindexer spindexer;
+	protected Conveyor conveyor;
 	protected Transfer transfer;
 
 	protected Gate gate;
@@ -82,10 +83,9 @@ public abstract class ModularAuto extends OpMode {
 
 		intake = new Intake(hardwareMap);
 		shooter = new Shooter(hardwareMap);
-		spindexer = new Spindexer(hardwareMap);
+		conveyor = new Conveyor(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		transfer.setShooter(shooter);
-		transfer.setSpindexer(spindexer);
 		gate = new Gate(hardwareMap);
 
 		// Re-fetch scheduler: scheduler.reset() above nulled the singleton, so
@@ -96,8 +96,10 @@ public abstract class ModularAuto extends OpMode {
 
 		setRoute();
 
-		panelsTelemetry.debug("Status", "Modular Auto Initialized");
-		panelsTelemetry.update(telemetry);
+		if (!RobotConfig.COMPETITION) {
+			panelsTelemetry.debug("Status", "Modular Auto Initialized");
+			panelsTelemetry.update(telemetry);
+		}
 	}
 
 	protected abstract Pose getStartingPose();
@@ -116,8 +118,6 @@ public abstract class ModularAuto extends OpMode {
 
 	@Override
 	public void start() {
-		spindexer.zeroSpindexer();
-
 		SequentialCommandGroup fullAuto = new SequentialCommandGroup();
 
 		for (RouteItem item : route) {
@@ -248,7 +248,7 @@ public abstract class ModularAuto extends OpMode {
 						new SequentialCommandGroup(
 								transfer.TransferIn(),
 								intake.In(),
-								spindexer.DirectPower(1),
+								conveyor.In(),
 								transfer.IntakeDoorOut()
 						)
 				),
@@ -287,7 +287,7 @@ public abstract class ModularAuto extends OpMode {
 								new WaitCommand(100),
 								transfer.TransferIn(),
 								intake.In(),
-								spindexer.DirectPower(1),
+								conveyor.In(),
 								transfer.IntakeDoorOut()
 						)
 				),
@@ -296,7 +296,7 @@ public abstract class ModularAuto extends OpMode {
 						new SequentialCommandGroup(
 								transfer.TransferIn(),
 								intake.In(),
-								spindexer.DirectPower(1),
+								conveyor.In(),
 								transfer.IntakeDoorOut()
 						)
 				),
@@ -354,7 +354,7 @@ public abstract class ModularAuto extends OpMode {
 								new WaitCommand(100),
 								transfer.TransferIn(),
 								intake.In(),
-								spindexer.DirectPower(1),
+								conveyor.In(),
 								transfer.IntakeDoorOut()
 						)
 				),
@@ -363,7 +363,7 @@ public abstract class ModularAuto extends OpMode {
 						new SequentialCommandGroup(
 								transfer.TransferIn(),
 								intake.In(),
-								spindexer.DirectPower(1),
+								conveyor.In(),
 								transfer.IntakeDoorOut()
 						)
 				),
@@ -412,7 +412,7 @@ public abstract class ModularAuto extends OpMode {
 
 		return new SequentialCommandGroup(
 				intake.Slow(),
-				spindexer.DirectPower(0),
+				conveyor.Stop(),
 				new ParallelCommandGroup(
 						new FollowPathCommand(follower, toShoot),
 						new SequentialCommandGroup(
@@ -428,10 +428,10 @@ public abstract class ModularAuto extends OpMode {
 	private Command getShootSequence(int waitTime) {
 		return new SequentialCommandGroup(
 				new WaitCommand(SHOOT_WAIT),
-				new ShootArtifacts(shooter, spindexer, transfer, intake, gate, waitTime),
+				new ShootArtifacts(shooter, conveyor, transfer, intake, gate, waitTime),
 				shooter.SetTarget(0, 0),
 				gate.closeGate(),
-				spindexer.DirectPower(0),
+				conveyor.Stop(),
 				intake.Stop(),
 				transfer.TransferStop(),
 				transfer.IntakeDoorStop()
@@ -442,6 +442,8 @@ public abstract class ModularAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
+
+		if (RobotConfig.COMPETITION) return;
 
 		panelsTelemetry.addData("Current Step", currentStepName);
 
@@ -463,9 +465,6 @@ public abstract class ModularAuto extends OpMode {
 		if (follower != null) {
 			RobotPosition.robotPose = follower.getPose();
 			RobotPosition.isPoseSet = true;
-		}
-		if (spindexer != null) {
-			spindexer.savePosition();
 		}
 		CommandScheduler.getInstance().reset();
 	}

@@ -21,6 +21,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
 
@@ -137,6 +138,7 @@ public class Limelight extends SubsystemBase {
 	}
 
 	public void Telemetry(Telemetry telemetry) {
+		if (RobotConfig.COMPETITION) return;
 		LLResult llResult = limelight.getLatestResult();
 
 		telemetry.addData("Filtered Pose", new Pose(xLowPassFilter.getState(), yLowPassFilter.getState(), heading).toString());

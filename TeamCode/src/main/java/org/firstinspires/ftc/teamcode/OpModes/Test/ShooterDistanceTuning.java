@@ -15,10 +15,11 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.Conveyor;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
-import org.firstinspires.ftc.teamcode.Subsystem.Spindexer;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.ShootAngle;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
@@ -34,7 +35,7 @@ public class ShooterDistanceTuning extends OpMode {
 
 	private CommandScheduler scheduler;
 	private Shooter shooter;
-	private Spindexer spindexer;
+	private Conveyor conveyor;
 	private Intake intake;
 	private Transfer transfer;
 	private Follower follower;
@@ -47,7 +48,7 @@ public class ShooterDistanceTuning extends OpMode {
 		scheduler = CommandScheduler.getInstance();
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 		shooter = new Shooter(hardwareMap);
-		spindexer = new Spindexer(hardwareMap);
+		conveyor = new Conveyor(hardwareMap);
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
 		follower = Constants.createFollower(hardwareMap);
@@ -73,7 +74,7 @@ public class ShooterDistanceTuning extends OpMode {
 
 		shooter.updatePIDCoefficients();
 		scheduler.schedule(shooter.SetTarget(upperMotorRPM, lowerMotorRPM));
-		scheduler.schedule(spindexer.DirectPower(gamepad2.left_stick_y * spindexerSpeed));
+		scheduler.schedule(conveyor.DirectPower(gamepad2.left_stick_y * spindexerSpeed));
 
 		if (gamepad2.xWasPressed()) {
 			scheduler.schedule(intake.In());
@@ -89,6 +90,11 @@ public class ShooterDistanceTuning extends OpMode {
 		} else if (gamepad2.bWasReleased()) {
 			scheduler.schedule(intake.Stop());
 			scheduler.schedule(transfer.IntakeDoorStop());
+		}
+
+		if (RobotConfig.COMPETITION) {
+			scheduler.run();
+			return;
 		}
 
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
