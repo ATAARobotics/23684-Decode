@@ -64,6 +64,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean gamepad2AWasPressed = false;
 	protected boolean gamepad1BWasPressed = false;
 	protected boolean gamepad2BWasPressed = false;
+	protected boolean leftJoystickDeadzone = true;
 
 	protected boolean brokeFollowing = false;
 
@@ -401,11 +402,16 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		double leftJoystickY = -gamepad2.left_stick_y;
+		boolean inDeadzone = Math.abs(gamepad2.left_stick_y) < 0.2;
 
-		if (Math.abs(gamepad2.left_stick_y) < 0.2) {
-			scheduler.schedule(conveyor.Stop());
-			scheduler.schedule(transfer.IntakeDoorStop());
+		if (inDeadzone) {
+			if (!leftJoystickDeadzone) {
+				scheduler.schedule(conveyor.Stop());
+				scheduler.schedule(transfer.IntakeDoorStop());
+				leftJoystickDeadzone = true;
+			}
 		} else {
+			leftJoystickDeadzone = false;
 			scheduler.schedule(new PerpetualCommand(conveyor.DirectPower(leftJoystickY * conveyorPower)));
 
 			if (leftJoystickY > 0) {
