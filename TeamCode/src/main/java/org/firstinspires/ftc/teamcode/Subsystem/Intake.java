@@ -15,8 +15,6 @@ public class Intake extends SubsystemBase {
 	public static final double IN_SPEED = 1;
 	public static final double OUT_SPEED = -1;
 	public static final double SLOW_SPEED = 0.5;
-	public static final double SLOW_SPEED_OUT = -0.1;
-
 	public Intake(HardwareMap hardwareMap) {
 		intake = hardwareMap.get(DcMotorEx.class, "intake");
 		intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -31,12 +29,6 @@ public class Intake extends SubsystemBase {
 	public Command Slow() {
 		return new InstantCommand(
 				() -> intake.setPower(SLOW_SPEED), this
-		);
-	}
-
-	public Command SlowOut() {
-		return new InstantCommand(
-				() -> intake.setPower(SLOW_SPEED_OUT), this
 		);
 	}
 

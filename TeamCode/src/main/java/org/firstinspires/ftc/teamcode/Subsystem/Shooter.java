@@ -185,19 +185,11 @@ public class Shooter extends SubsystemBase {
 		this.lowerTarget = lowerTarget;
 	}
 
-	public double TotalCurrentDrawn() {
-		return upperShooter.getCurrent(CurrentUnit.AMPS) + lowerShooter.getCurrent(CurrentUnit.AMPS);
-	}
-
 	public Command SetTarget(double upperTarget, double lowerTarget) {
 		return new InstantCommand(() -> setTarget(upperTarget, lowerTarget), this);
 	}
 
 	public Command WaitForTarget() {
 		return new WaitUntilCommand(this::isAtTargetRPM);
-	}
-
-	public Command WaitForDrop() {
-		return new WaitUntilCommand(this::isRPMDropped);
 	}
 }

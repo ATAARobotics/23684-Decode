@@ -99,18 +99,6 @@ public class Transfer extends SubsystemBase {
 		);
 	}
 
-	public Command SetAutomaticTransfer(boolean run) {
-		return new InstantCommand(() -> runAutomaticTransfer = run, this);
-	}
-
-	public boolean isShooterReady(double shooterRpm, double targetRpm) {
-		return Math.abs(shooterRpm - targetRpm) <= SHOOTER_RPM_TOLERANCE;
-	}
-
-	public void updateAutomaticTransfer() {
-		updateAutomaticTransfer(true);
-	}
-
 	public void updateAutomaticTransfer(boolean passive) {
 		if (shooter != null) {
 			if (reachedUpperTarget && reachedLowerTarget) {
