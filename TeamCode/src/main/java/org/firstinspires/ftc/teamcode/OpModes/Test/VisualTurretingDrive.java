@@ -64,7 +64,7 @@ public class VisualTurretingDrive extends OpMode {
 	@Override
 	public void loop() {
 		follower.update();
-		if (limelight.blueGoalFound()) {
+		if (limelight.goalsFound(Team.BLUE)) {
 			currentHeading = limelight.AngleFrom(Team.BLUE);
 			targetHeading = 0;
 			headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));

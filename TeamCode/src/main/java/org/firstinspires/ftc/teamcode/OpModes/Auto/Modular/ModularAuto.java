@@ -14,7 +14,6 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
-import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
@@ -95,6 +94,10 @@ public abstract class ModularAuto extends OpMode {
 		scheduler = CommandScheduler.getInstance();
 
 		setRoute();
+
+		// Repoint at the post-reset scheduler singleton so the subsystems registered
+		// above drive the auto routine.
+		scheduler = CommandScheduler.getInstance();
 
 		if (!RobotConfig.COMPETITION) {
 			panelsTelemetry.debug("Status", "Modular Auto Initialized");
@@ -192,11 +195,8 @@ public abstract class ModularAuto extends OpMode {
 				currentExpectedPose = parkPose;
 				return new FollowPathCommand(follower, parkPath);
 
-			case WAIT:
-				return new WaitCommand(0); // Handled by item.isWait logic, but here for completeness
-
 			default:
-				return new WaitCommand(0);
+				throw new IllegalStateException("Unhandled route step: " + step);
 		}
 	}
 
