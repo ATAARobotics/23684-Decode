@@ -8,8 +8,8 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 public class Conveyor extends SubsystemBase {
-	public static final double FORWARD_SPEED = 1;
-	public static final double REVERSE_SPEED = -1;
+	public static final double FORWARD_SPEED = -1;
+	public static final double REVERSE_SPEED = 1;
 
 	private final DcMotorEx motor;
 
