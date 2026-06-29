@@ -14,8 +14,8 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
  * <ol>
  *   <li>Shooter triggered:
  *     <ul>
- *       <li>Outside both shooting zones: rapid flash between shooter-status (green/red) and white.</li>
- *       <li>Inside a shooting zone: solid green if shooter at target, solid red otherwise.</li>
+ *       <li>None of the 13.5&times;15.5 robot footprint corners lie in either shooting zone triangle: rapid flash between shooter-status (green/red) and white.</li>
+ *       <li>At least one corner of the robot footprint lies in a shooting zone: solid green if shooter at target, solid red otherwise.</li>
  *     </ul>
  *   </li>
  *   <li>Shooter not triggered: ball-count driven color (purple/yellow/azure, or slow blue/violet flash at 3+).</li>
@@ -42,6 +42,9 @@ public class RGBIndicator extends SubsystemBase {
 
 	private static final double[] ZONE_A = {0.0, 144.0, 72.0, 72.0, 144.0, 144.0};
 	private static final double[] ZONE_B = {48.0, 0.0, 72.0, 24.0, 96.0, 0.0};
+
+	private static final double ROBOT_FORWARD_EXTENT = 13.5;
+	private static final double ROBOT_SIDEWAYS_EXTENT = 15.5;
 
 	private final Servo rgbServo;
 	private Transfer transfer;
@@ -77,7 +80,7 @@ public class RGBIndicator extends SubsystemBase {
 		if (shooterTriggered && transfer != null && follower != null) {
 			boolean atTarget = transfer.reachedAverageTarget;
 			Pose pose = follower.getPose();
-			boolean inZone = isInTriangle(pose, ZONE_A) || isInTriangle(pose, ZONE_B);
+			boolean inZone = isAnyCornerInZone(pose, ZONE_A, ZONE_B);
 
 			if (!inZone) {
 				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;
@@ -125,5 +128,31 @@ public class RGBIndicator extends SubsystemBase {
 
 	private static double sign(double px, double py, double x2, double y2, double x3, double y3) {
 		return (px - x3) * (y2 - y3) - (x2 - x3) * (py - y3);
+	}
+
+	private static boolean isAnyCornerInZone(Pose p, double[] triA, double[] triB) {
+		double cx = p.getX();
+		double cy = p.getY();
+		double heading = p.getHeading();
+
+		double halfForward = ROBOT_FORWARD_EXTENT / 2.0;
+		double halfSideways = ROBOT_SIDEWAYS_EXTENT / 2.0;
+
+		double cos = Math.cos(heading);
+		double sin = Math.sin(heading);
+
+		for (int sx = -1; sx <= 1; sx += 2) {
+			for (int sy = -1; sy <= 1; sy += 2) {
+				double lx = sx * halfSideways;
+				double ly = sy * halfForward;
+				double fx = ly * cos - lx * sin;
+				double fy = lx * cos + ly * sin;
+				Pose corner = new Pose(cx + fx, cy + fy);
+				if (isInTriangle(corner, triA) || isInTriangle(corner, triB)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
