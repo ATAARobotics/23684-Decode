@@ -8,14 +8,15 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 public class Conveyor extends SubsystemBase {
-	public static final double FORWARD_SPEED = -1;
-	public static final double REVERSE_SPEED = 1;
+	public static final double FORWARD_SPEED = 1;
+	public static final double REVERSE_SPEED = -1;
 
 	private final DcMotorEx motor;
 
 	public Conveyor(HardwareMap hardwareMap) {
 		motor = hardwareMap.get(DcMotorEx.class, "spindexerMotor");
 		motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		motor.setDirection(DcMotor.Direction.REVERSE);
 		motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 	}
 
