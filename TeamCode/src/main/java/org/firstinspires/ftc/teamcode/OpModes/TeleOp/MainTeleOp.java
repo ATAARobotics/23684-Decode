@@ -446,9 +446,6 @@ public abstract class MainTeleOp extends OpMode {
 
 		panelsTelemetry.update();
 
-		limelight.Telemetry(telemetry);
-		telemetry.addData("target heading",Math.toDegrees(targetHeading));
-		telemetry.update();
 	}
 
 	private void handleRumbleFeedback() {
