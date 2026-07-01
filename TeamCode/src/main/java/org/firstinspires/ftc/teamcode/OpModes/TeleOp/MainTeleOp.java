@@ -15,6 +15,7 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
@@ -39,8 +40,6 @@ import java.util.function.Supplier;
 
 @Configurable
 public abstract class MainTeleOp extends OpMode {
-	public double conveyorPower = 1;
-
 	protected Follower follower;
 	protected CommandScheduler scheduler;
 	protected Shooter shooter;
@@ -51,12 +50,10 @@ public abstract class MainTeleOp extends OpMode {
 	protected Gate gate;
 	protected BeamBreaker beamBreaker;
 	protected RGBIndicator rgbIndicator;
-
 	protected int ballCount = 0;
 	protected boolean lastIntakeIn = true;
 	protected boolean prespinTriggered = false;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
-
 	protected boolean leftTriggerPressed = false;
 	protected boolean rightTriggerPressed = false;
 	protected boolean xButtonPressed = false;
@@ -65,17 +62,13 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean gamepad1BWasPressed = false;
 	protected boolean gamepad2BWasPressed = false;
 	protected boolean leftJoystickDeadzone = true;
-
 	protected boolean brokeFollowing = false;
-
 	protected boolean wasShooterAtTarget = false;
 	protected boolean wasPathBusy = false;
 	protected boolean warnedEndGame = false;
 	protected boolean headingLockRumbleSent = false;
 	protected boolean wasBeamAtThree = false;
-
 	ElapsedTime timer = new ElapsedTime();
-
 	// Drive-input cache. Joystick values drift by ~0.001 per loop even when the
 	// driver is holding still. Each call to TeleopDrive writes 4 hardware power
 	// values; skip the call entirely when (x, y, h) inputs haven't changed
@@ -84,25 +77,20 @@ public abstract class MainTeleOp extends OpMode {
 	private double prevDriveX = Double.NaN;
 	private double prevDriveY = Double.NaN;
 	private double prevDriveH = Double.NaN;
-
 	private Supplier<PathChain> pathAudienceShoot;
 	private Supplier<PathChain> pathGoalShoot;
-
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 	PIDFController headingPIDController;
 	TeleOpDrive teleOpDrive;
-
 	boolean headingLock = true;
 	double currentHeading;
 	double headingDeadzone;
-
 	double targetHeading = Math.toRadians(180);
 	double headingCorrection;
-
 	double humanPlayerHeading = 0;
 	double goalX = 0;
-
+	boolean openGate = false;
 	public static double P = 0.0275, I, D = 0.00025, F = 0.001;
 
 	@Override
@@ -184,12 +172,14 @@ public abstract class MainTeleOp extends OpMode {
 		handleOperatorInput();
 		handleRumbleFeedback();
 
-		if (shooterTriggered) {
+		if (openGate) {
 			if (gate.getCurrentPosition() != Gate.OPEN_POSITION) {
 				scheduler.schedule(gate.openGate());
 			}
 		} else {
-			scheduler.schedule(gate.closeGate());
+			if (gate.getCurrentPosition() != Gate.CLOSE_POSITION) {
+				scheduler.schedule(gate.closeGate());
+			}
 		}
 
 		double intakePower = intake.getPower();
@@ -349,6 +339,7 @@ public abstract class MainTeleOp extends OpMode {
 					new SequentialCommandGroup(
 							shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
+							new InstantCommand(() -> openGate = true),
 							shooter.WaitForTarget().withTimeout(2500),
 							transfer.TransferOut(),
 							conveyor.In()
@@ -364,6 +355,7 @@ public abstract class MainTeleOp extends OpMode {
 				prespinTriggered = false;
 				wasBeamAtThree = false;
 			}
+			openGate = false;
 			rightTriggerPressed = false;
 		}
 
@@ -377,8 +369,9 @@ public abstract class MainTeleOp extends OpMode {
 			gamepad2AWasPressed = false;
 		}
 
-		if (gamepad2.yWasPressed() || ballCount >= 3) {
+		if (gamepad2.yWasPressed() || (ballCount >= 3 && !prespinTriggered)) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+			prespinTriggered = true;
 		}
 
 		if (gamepad2.x && !xButtonPressed) {
@@ -401,12 +394,6 @@ public abstract class MainTeleOp extends OpMode {
 			gamepad2BWasPressed = false;
 		}
 
-		if (gamepad2.right_bumper) {
-			conveyorPower = 0.6;
-		} else {
-			conveyorPower = 1;
-		}
-
 		double leftJoystickY = -gamepad2.left_stick_y;
 		boolean inDeadzone = Math.abs(gamepad2.left_stick_y) < 0.2;
 
@@ -418,7 +405,7 @@ public abstract class MainTeleOp extends OpMode {
 			}
 		} else {
 			leftJoystickDeadzone = false;
-			scheduler.schedule(new PerpetualCommand(conveyor.DirectPower(leftJoystickY * conveyorPower)));
+			scheduler.schedule(new PerpetualCommand(conveyor.DirectPower(leftJoystickY)));
 
 			if (leftJoystickY > 0) {
 				scheduler.schedule(transfer.IntakeDoorOut());
