@@ -110,7 +110,7 @@ public abstract class MainTeleOp extends OpMode {
 		follower = Constants.createFollower(hardwareMap);
 		if (RobotPosition.isPoseSet) {
 			follower.setStartingPose(RobotPosition.robotPose);
-			RobotPosition.isPoseSet = false;
+			//RobotPosition.isPoseSet = false;
 		} else {
 			follower.setStartingPose(getStartingPose());
 		}
@@ -165,6 +165,12 @@ public abstract class MainTeleOp extends OpMode {
 		timer.startTime();
 		scheduler.schedule(gate.closeGate());
 		scheduler.run();
+		if (RobotPosition.isPoseSet) { //TODO: find out why to robot starts in a random positon without this
+			follower.setPose(RobotPosition.robotPose);
+			RobotPosition.isPoseSet = false;
+		} else {
+			follower.setPose(getStartingPose());
+		}
 	}
 
 	@Override
@@ -254,30 +260,30 @@ public abstract class MainTeleOp extends OpMode {
 
 			if (getTeam() == Team.RED) {
 				humanPlayerHeading = Math.toRadians(0);
-				goalX = 144;
+				goalX = 129.717;
 			} else if (getTeam() == Team.BLUE) {
 				humanPlayerHeading = Math.toRadians(180);
-				goalX = 0;
+				goalX = 15.024;
 			}
 
 			if (gamepad1.left_trigger > 0) {
 				currentHeading = follower.getHeading();
 				targetHeading = humanPlayerHeading;
 				headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
-				headingPIDController.updatePosition(-currentHeading);
+				headingPIDController.updatePosition(currentHeading);
 				headingDeadzone = 3;
 			} else {
 				if (limelight.goalsFound(getTeam())) {
 					currentHeading = limelight.AngleFrom(getTeam());
 					targetHeading = 0;
 					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
-					headingPIDController.updatePosition(-currentHeading);
+					headingPIDController.updatePosition(currentHeading);
 					headingDeadzone = 1;
 				} else {
 					currentHeading = follower.getHeading();
-					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 144);
+					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
 					headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
-					headingPIDController.updatePosition(-currentHeading);
+					headingPIDController.updatePosition(currentHeading);
 					headingDeadzone = 3;
 				}
 			}
@@ -296,7 +302,7 @@ public abstract class MainTeleOp extends OpMode {
 					}
 				} else {
 					headingPIDController.setTargetPosition(targetHeading);
-					headingCorrection = headingPIDController.run();
+					headingCorrection = -headingPIDController.run();
 				}
 
 				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
@@ -439,6 +445,10 @@ public abstract class MainTeleOp extends OpMode {
 		beamBreaker.telemetry(panelsTelemetry);
 
 		panelsTelemetry.update();
+
+		limelight.Telemetry(telemetry);
+		telemetry.addData("target heading",Math.toDegrees(targetHeading));
+		telemetry.update();
 	}
 
 	private void handleRumbleFeedback() {
