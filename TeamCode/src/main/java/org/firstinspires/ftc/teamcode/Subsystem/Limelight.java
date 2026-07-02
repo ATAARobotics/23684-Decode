@@ -53,11 +53,13 @@ public class Limelight extends SubsystemBase {
 	LowPassFilter yLowPassFilter;
 
 	public double calculateShotAngle(double x, double y, double goalX, double goalY) {
-		double deltaX = Math.abs(goalX - x);
-		double deltaY = Math.abs(goalY - y);
+		double deltaX = goalX - x;
+		double deltaY = goalY - y;
 
 		double Tanang = Math.atan2(deltaY,deltaX);
-		return -MathFunctions.normalizeAngle(Tanang);
+		double finalang = Tanang + Math.PI;
+		return MathFunctions.normalizeAngleSigned(finalang);
+		// this works! for now... theres a 98.42% it will break tomarrow
 	}
 	public Limelight(HardwareMap hardwareMap) {
 		limelight = hardwareMap.get(Limelight3A.class, "limelight");
@@ -162,7 +164,7 @@ public class Limelight extends SubsystemBase {
 						return true;
 					}
 				} else if (tag == Team.RED) {
-					if (fiducial.getFiducialId() == BLUEGOAL) {
+					if (fiducial.getFiducialId() == REDGOAL) {
 						return true;
 					}
 				}

@@ -8,6 +8,7 @@ import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
@@ -249,10 +250,10 @@ public abstract class MainTeleOp extends OpMode {
 			}
 
 			if (getTeam() == Team.RED) {
-				humanPlayerHeading = Math.toRadians(0);
+				humanPlayerHeading = MathFunctions.normalizeAngle(Math.toRadians(180));
 				goalX = 129.717;
 			} else if (getTeam() == Team.BLUE) {
-				humanPlayerHeading = Math.toRadians(180);
+				humanPlayerHeading = MathFunctions.normalizeAngle(Math.toRadians(0));
 				goalX = 15.024;
 			}
 
@@ -432,6 +433,12 @@ public abstract class MainTeleOp extends OpMode {
 		beamBreaker.telemetry(panelsTelemetry);
 
 		panelsTelemetry.update();
+
+		limelight.Telemetry(telemetry);
+		telemetry.addData("target",Math.toDegrees(targetHeading));
+		telemetry.addData("goalx",goalX);
+		telemetry.update();
+
 
 	}
 
