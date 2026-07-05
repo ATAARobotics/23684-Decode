@@ -12,6 +12,7 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -20,6 +21,7 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
+import com.seattlesolvers.solverslib.util.Timing;
 
 import org.firstinspires.ftc.teamcode.OpModes.Auto.Modular.PoseDatabase;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
@@ -90,6 +92,12 @@ public abstract class MainTeleOp extends OpMode {
 	double targetHeading = Math.toRadians(180);
 	double headingCorrection;
 	double humanPlayerHeading = 0;
+
+
+	long headinglocktime = 0;
+    //Timing.Timer Headinglocktimer = new Timing.Timer(headinglocktime);
+
+	Timer headinglocktimer;
 	double goalX = 0;
 	boolean openGate = false;
 	public static double P = 0.0275, I, D = 0.00025, F = 0.001;
@@ -118,6 +126,8 @@ public abstract class MainTeleOp extends OpMode {
 		gate = new Gate(hardwareMap);
 		limelight = new Limelight(hardwareMap, follower);
 		transfer.setShooter(shooter);
+
+		headinglocktimer = new Timer();
 
 		rgbIndicator = new RGBIndicator(hardwareMap);
 		rgbIndicator.setTransfer(transfer);
@@ -244,7 +254,7 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad1.b && !gamepad1.a) {
-			if (!brokeFollowing) {
+			if (!brokeFollowing || follower.isBusy()) {
 				follower.breakFollowing();
 				brokeFollowing = true;
 			}
@@ -265,12 +275,14 @@ public abstract class MainTeleOp extends OpMode {
 				headingDeadzone = 3;
 			} else {
 				if (limelight.goalsFound(getTeam())) {
+					headinglocktimer.resetTimer();
+
 					currentHeading = limelight.AngleFrom(getTeam());
 					targetHeading = 0;
 					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
 					headingPIDController.updatePosition(currentHeading);
 					headingDeadzone = 1;
-				} else {
+				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTimeSeconds() > 0.02){
 					currentHeading = follower.getHeading();
 					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
 					headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);

@@ -34,7 +34,7 @@ import java.util.List;
 
 @Configurable
 public abstract class ModularAuto extends OpMode {
-	public static int COLLECTION_WAIT = 20;
+	public static int COLLECTION_WAIT = 1;
 	public static int HUMAN_PLAYER_COLLECTION_WAIT = 30;
 	public static int SHOOT_WAIT = 150;
 
@@ -156,6 +156,7 @@ public abstract class ModularAuto extends OpMode {
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, preloadPath),
 								shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+
 						),
 						transfer.IntakeDoorOut(),
 						getShootSequence(1050)
@@ -165,7 +166,7 @@ public abstract class ModularAuto extends OpMode {
 				return getCollectSpikeCommand(1, COLLECTION_WAIT);
 
 			case COLLECT_SPIKE_2:
-				return getCollectSpikeCommand(2, COLLECTION_WAIT - 300);
+				return getCollectSpikeCommand(2, COLLECTION_WAIT);
 
 			case COLLECT_SPIKE_3:
 				return getCollectSpikeCommand(3, COLLECTION_WAIT);
@@ -236,15 +237,15 @@ public abstract class ModularAuto extends OpMode {
 		currentExpectedPose = collect;
 
 		SequentialCommandGroup command = new SequentialCommandGroup(
-				new ParallelCommandGroup(
+				//new ParallelCommandGroup(
 						new FollowPathCommand(follower, toSpike),
 						new SequentialCommandGroup(
 								transfer.TransferIn(),
 								intake.In(),
 								conveyor.In(),
 								transfer.IntakeDoorOut()
-						)
-				),
+						),
+				//),
 				new FollowPathCommand(follower, forwardPath),
 				new WaitCommand(collectionWait),
 				transfer.TransferStop()
@@ -339,8 +340,8 @@ public abstract class ModularAuto extends OpMode {
 				new ParallelCommandGroup(
 						new FollowPathCommand(follower, toShoot),
 						new SequentialCommandGroup(
-								new WaitCommand(prespinWaitMs),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+								//new WaitCommand(prespinWaitMs),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER)
 						)
 				),
 				transfer.IntakeDoorOut(),
@@ -350,7 +351,6 @@ public abstract class ModularAuto extends OpMode {
 
 	private Command getShootSequence(int waitTime) {
 		return new SequentialCommandGroup(
-				new WaitCommand(SHOOT_WAIT),
 				new ShootArtifacts(shooter, conveyor, transfer, intake, gate, waitTime),
 				shooter.SetTarget(0, 0),
 				gate.closeGate(),

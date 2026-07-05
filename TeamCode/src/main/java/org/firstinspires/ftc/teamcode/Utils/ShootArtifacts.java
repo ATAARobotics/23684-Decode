@@ -13,8 +13,8 @@ public class ShootArtifacts extends SequentialCommandGroup {
 	public ShootArtifacts(Shooter shooter, Conveyor conveyor, Transfer transfer, Intake intake, Gate gate, int waitTime) {
 		addCommands(
 				gate.openGate(),
-				shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM),
-				shooter.WaitForTarget().withTimeout(3000L),
+				shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER),
+				shooter.WaitForTarget().withTimeout(2500L),
 				transfer.TransferOut(),
 				conveyor.In(),
 				new WaitCommand(waitTime),
