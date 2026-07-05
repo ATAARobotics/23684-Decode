@@ -78,15 +78,12 @@ public class RGBIndicator extends SubsystemBase {
 		double position;
 
 		if (shooterTriggered && transfer != null && follower != null) {
-			boolean atTarget = transfer.reachedAverageTarget;
 			Pose pose = follower.getPose();
 			boolean inZone = isAnyCornerInZone(pose, ZONE_A, ZONE_B);
 
 			if (!inZone) {
 				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;
-				position = flashOn ? (atTarget ? SERVO_GREEN : SERVO_RED) : SERVO_WHITE;
-			} else {
-				position = atTarget ? SERVO_GREEN : SERVO_RED;
+				position = flashOn ? SERVO_RED : SERVO_WHITE;
 			}
 		} else if (beamBreaker != null) {
 			int count = beamBreaker.getBallCount();
@@ -98,7 +95,7 @@ public class RGBIndicator extends SubsystemBase {
 				position = SERVO_AZURE;
 			} else if (count == 3) {
 				boolean flashOn = (now % (2 * SLOW_FLASH_PERIOD_MS)) < SLOW_FLASH_PERIOD_MS;
-				position = flashOn ? SERVO_BLUE : SERVO_VIOLET;
+				position = flashOn ? SERVO_BLUE : SERVO_GREEN;
 			} else {
 				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;
 				position = flashOn ? SERVO_RED : SERVO_BLUE;
