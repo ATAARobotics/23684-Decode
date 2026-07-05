@@ -173,12 +173,6 @@ public abstract class ModularAuto extends OpMode {
 			case COLLECT_HUMAN_PLAYER:
 				return getCollectHumanPlayerCommand();
 
-			case COLLECT_HUMAN_PLAYER_WIGGLE:
-				return getCollectHumanPlayerCommandWithWiggle(false);
-
-			case COLLECT_HUMAN_PLAYER_CLOSE_WIGGLE:
-				return getCollectHumanPlayerCommandWithWiggle(true);
-
 			case SHOOT:
 				return getShootStepCommand(1000);
 
@@ -298,73 +292,6 @@ public abstract class ModularAuto extends OpMode {
 								transfer.IntakeDoorOut()
 						)
 				),
-				new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
-				transfer.TransferStop()
-		);
-	}
-
-	private Command getCollectHumanPlayerCommandWithWiggle(boolean close) {
-		Team team = getTeam();
-		Pose intermediate = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_INTERMEDIATE : PoseDatabase.RED_HUMAN_PLAYER_INTERMEDIATE;
-		Pose collect;
-		Pose wiggle;
-		if (!close) {
-			collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT;
-			wiggle = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_WIGGLE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_WIGGLE;
-		} else {
-			collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_CLOSE;
-			wiggle = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_WIGGLE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_WIGGLE_CLOSE;
-		}
-
-		PathChain toHP = follower.pathBuilder()
-				.addPath(new BezierLine(currentExpectedPose, intermediate))
-				.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
-				.build();
-
-		toHP.setDecelerationType(PathChain.DecelerationType.NONE);
-
-		PathChain forwardPath = follower.pathBuilder()
-				.addPath(new BezierLine(intermediate, collect))
-				.setConstantHeadingInterpolation(collect.getHeading())
-				.build();
-
-		forwardPath.setDecelerationType(PathChain.DecelerationType.NONE);
-
-		double wiggleOffset = (team == Team.BLUE) ? 1.5 : -1.5;
-		Pose shallowWiggle = new Pose(wiggle.getX() + wiggleOffset, wiggle.getY(), wiggle.getHeading());
-		PathChain wigglePath = follower.pathBuilder()
-				.addPath(new BezierLine(wiggle, shallowWiggle))
-				.setConstantHeadingInterpolation(collect.getHeading())
-				.addPath(new BezierLine(shallowWiggle, wiggle))
-				.setConstantHeadingInterpolation(collect.getHeading())
-				.build();
-
-		wigglePath.setDecelerationType(PathChain.DecelerationType.NONE);
-
-		currentExpectedPose = wiggle;
-
-		return new SequentialCommandGroup(
-				new ParallelCommandGroup(
-						new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.9),
-						new SequentialCommandGroup(
-								new WaitCommand(100),
-								transfer.TransferIn(),
-								intake.In(),
-								conveyor.In(),
-								transfer.IntakeDoorOut()
-						)
-				),
-				new ParallelCommandGroup(
-						new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
-						new SequentialCommandGroup(
-								transfer.TransferIn(),
-								intake.In(),
-								conveyor.In(),
-								transfer.IntakeDoorOut()
-						)
-				),
-				new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
-				new FollowPathCommand(follower, wigglePath).setGlobalMaxPower(1),
 				new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
 				transfer.TransferStop()
 		);
