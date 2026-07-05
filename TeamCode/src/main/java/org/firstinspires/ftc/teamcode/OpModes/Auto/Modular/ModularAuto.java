@@ -156,7 +156,6 @@ public abstract class ModularAuto extends OpMode {
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, preloadPath),
 								shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
-
 						),
 						transfer.IntakeDoorOut(),
 						getShootSequence(1050)
@@ -284,7 +283,6 @@ public abstract class ModularAuto extends OpMode {
 				new ParallelCommandGroup(
 						new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.9),
 						new SequentialCommandGroup(
-								new WaitCommand(100),
 								transfer.TransferIn(),
 								intake.In(),
 								conveyor.In(),
@@ -316,9 +314,7 @@ public abstract class ModularAuto extends OpMode {
 		} else {
 			collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_CLOSE;
 			wiggle = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_WIGGLE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_WIGGLE_CLOSE;
-
 		}
-
 
 		PathChain toHP = follower.pathBuilder()
 				.addPath(new BezierLine(currentExpectedPose, intermediate))
