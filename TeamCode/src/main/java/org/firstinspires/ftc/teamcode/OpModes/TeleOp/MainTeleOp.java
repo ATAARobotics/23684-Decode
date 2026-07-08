@@ -90,8 +90,16 @@ public abstract class MainTeleOp extends OpMode {
 	double currentHeading;
 	double headingDeadzone;
 	double targetHeading = Math.toRadians(180);
+
+	double tar;
 	double headingCorrection;
 	double humanPlayerHeading = 0;
+
+	public double anglewrap(double degrees){
+		while(degrees >180 ) degrees -= 360;
+		while (degrees < -180) degrees +=360;
+		return degrees;
+	}
 
 
 	long headinglocktime = 0;
@@ -100,7 +108,9 @@ public abstract class MainTeleOp extends OpMode {
 	Timer headinglocktimer;
 	double goalX = 0;
 	boolean openGate = false;
-	public static double P = 0.0275, I, D = 0.00025, F = 0.001;
+	public static double P = 0.03, I, D = 0.0003, F = 0.001;
+
+	public static double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
 
 	@Override
 	public void init() {
@@ -254,7 +264,8 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (!gamepad1.b && !gamepad1.a) {
-			if (!brokeFollowing || follower.isBusy()) {
+
+			if (!brokeFollowing && follower.isBusy()) {
 				follower.breakFollowing();
 				brokeFollowing = true;
 			}
@@ -268,11 +279,11 @@ public abstract class MainTeleOp extends OpMode {
 			}
 
 			if (gamepad1.left_trigger > 0) {
-				currentHeading = follower.getHeading();
-				targetHeading = humanPlayerHeading;
-				headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
-				headingPIDController.updatePosition(currentHeading);
-				headingDeadzone = 3;
+//				currentHeading = follower.getHeading();
+//				targetHeading = humanPlayerHeading;
+//				headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
+//				headingPIDController.updatePosition(currentHeading);
+//				headingDeadzone = 3;
 			} else {
 				if (limelight.goalsFound(getTeam())) {
 					headinglocktimer.resetTimer();
@@ -282,12 +293,16 @@ public abstract class MainTeleOp extends OpMode {
 					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
 					headingPIDController.updatePosition(currentHeading);
 					headingDeadzone = 1;
-				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTimeSeconds() > 0.02){
+					headingPIDController.setTargetPosition(targetHeading);
+					headingPIDController.updateError(targetHeading - currentHeading);
+
+				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 200){
 					currentHeading = follower.getHeading();
-					targetHeading = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
-					headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
-					headingPIDController.updatePosition(currentHeading);
-					headingDeadzone = 3;
+					tar = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
+					targetHeading = 0;
+					headingPIDController.setCoefficients(new PIDFCoefficients(P2,I2,D2,F2));
+					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
+					headingDeadzone = 7;
 				}
 			}
 
@@ -297,6 +312,9 @@ public abstract class MainTeleOp extends OpMode {
 				double headingError = targetHeading - currentHeading;
 				headingError = Math.IEEEremainder(headingError, 2 * Math.PI);
 
+				double ori = 1;
+				//if (Math.abs(headingError) > 180) ori = 1;
+//				else ori = -1;
 				if (Math.abs(headingError) < Math.toRadians(headingDeadzone)) {
 					headingCorrection = 0;
 					if (headingLockRumbleSent) {
@@ -304,11 +322,10 @@ public abstract class MainTeleOp extends OpMode {
 						headingLockRumbleSent = false;
 					}
 				} else {
-					headingPIDController.setTargetPosition(targetHeading);
 					headingCorrection = -headingPIDController.run();
 				}
 
-				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
+				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection );
 			} else {
 				headingLockRumbleSent = false;
 				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
@@ -447,8 +464,10 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.update();
 
 		limelight.Telemetry(telemetry);
+		telemetry.addData("pose", follower.getPose().toString());
 		telemetry.addData("target",Math.toDegrees(targetHeading));
-		telemetry.addData("goalx",goalX);
+//		telemetry.addData("goalx",goalX);
+		telemetry.addData("headinglocktimer",headinglocktimer.getElapsedTime());
 		telemetry.update();
 
 

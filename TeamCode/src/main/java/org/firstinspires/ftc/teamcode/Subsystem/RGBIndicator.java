@@ -84,6 +84,8 @@ public class RGBIndicator extends SubsystemBase {
 			if (!inZone) {
 				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;
 				position = flashOn ? SERVO_RED : SERVO_WHITE;
+			}else{
+				position = SERVO_VIOLET;
 			}
 		} else if (beamBreaker != null) {
 			int count = beamBreaker.getBallCount();

@@ -19,10 +19,10 @@ public class Shooter extends SubsystemBase {
 	public static boolean TUNING_MODE = false;
 	// --- PID Controller Constants ---
 	public static double UPPER_P = 0.013, UPPER_I = 0, UPPER_D = 0;
-	public static double LOWER_P = 0.002, LOWER_I = 0.00, LOWER_D = 0;
+	public static double LOWER_P = 0.006, LOWER_I = 0.00, LOWER_D = 0;
 	// --- Feedforward Constants ---
 	public static double UPPER_KS = 0.035, UPPER_KV = 0.0003;
-	public static double LOWER_KS = 0.05, LOWER_KV = 0.00035;
+	public static double LOWER_KS = 0.05, LOWER_KV = 0.00023;
 	// --- Only for Tuning ---
 	private static double PREV_UPPER_P = 0, PREV_UPPER_I = 0, PREV_UPPER_D = 0;
 	private static double PREV_LOWER_P = 0, PREV_LOWER_I = 0, PREV_LOWER_D = 0;
@@ -31,7 +31,8 @@ public class Shooter extends SubsystemBase {
 	// --- Motor Power Constants ---
 	public static double STOP_POWER = 0.0;
 	// --- RPM & Control Constants ---
-	public static double RPM_TOLERANCE = 70;
+	public static double RPM_TOLERANCE_UPPER = 100;
+	public static double RPM_TOLERANCE_LOWER = 500;
 	public static double DROP_RPM_TOLERANCE = 150;
 	public static double TICKS_PER_REVOLUTION = 28.0;
 
@@ -39,7 +40,7 @@ public class Shooter extends SubsystemBase {
 	public static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
 	public static double AUDIENCE_RPM = 2000;
 	public static double AUDIENCE_RPM_UPPER = 1980;
-	public static double AUDIENCE_RPM_LOWER = 1980;
+	public static double AUDIENCE_RPM_LOWER = 2100;
 	public static double GOAL_RPM_UPPER = 2000;
 	public static double GOAL_RPM_LOWER = 2000;
 
@@ -129,11 +130,20 @@ public class Shooter extends SubsystemBase {
 	}
 
 	public boolean isAtTargetRPM() {
-		// Check Upper: Must be a valid target (>100) AND within tolerance
-		boolean upperReady = (upperTarget >= 100) && (Math.abs(upperRPM - upperTarget) <= RPM_TOLERANCE);
 
+		double uppertolerance;
+		double lowertolerance;
+
+		if(upperRPM >= upperTarget) uppertolerance = RPM_TOLERANCE_UPPER;
+		else uppertolerance = RPM_TOLERANCE_LOWER;
+
+		if(lowerRPM >= lowerTarget) lowertolerance = RPM_TOLERANCE_UPPER;
+		else lowertolerance = RPM_TOLERANCE_LOWER;
+
+		// Check Upper: Must be a valid target (>100) AND within tolerance
+		boolean upperReady = (upperTarget >= 100) && (Math.abs(upperRPM - upperTarget) <= uppertolerance);
 		// Check Lower: Must be a valid target (>100) AND within tolerance
-		boolean lowerReady = (lowerTarget >= 100) && (Math.abs(lowerRPM - lowerTarget) <= RPM_TOLERANCE);
+		boolean lowerReady = (lowerTarget >= 100) && (Math.abs(lowerRPM - lowerTarget) <= lowertolerance);
 
 		return upperReady && lowerReady;
 	}

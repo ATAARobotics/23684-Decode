@@ -26,6 +26,8 @@ public class BlueModularDoubleHumanAuto extends ModularAuto {
 		addStep(RouteStep.SHOOT);
 		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
 		addStep(RouteStep.SHOOT);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT);
 		addStep(RouteStep.PARK);
 	}
 }

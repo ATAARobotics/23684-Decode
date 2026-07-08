@@ -14,8 +14,10 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
@@ -35,7 +37,7 @@ import java.util.List;
 @Configurable
 public abstract class ModularAuto extends OpMode {
 	public static int COLLECTION_WAIT = 1;
-	public static int HUMAN_PLAYER_COLLECTION_WAIT = 30;
+	public static int HUMAN_PLAYER_COLLECTION_WAIT = 500;
 	public static int SHOOT_WAIT = 150;
 
 	protected Follower follower;
@@ -149,13 +151,13 @@ public abstract class ModularAuto extends OpMode {
 			case SHOOT_PRELOAD:
 				PathChain preloadPath = follower.pathBuilder()
 						.addPath(new BezierLine(currentExpectedPose, shootPose))
-						.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
+						.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
 						.build();
 				currentExpectedPose = shootPose;
 				return new SequentialCommandGroup(
 						new ParallelCommandGroup(
-								new FollowPathCommand(follower, preloadPath),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+								new FollowPathCommand(follower, preloadPath)
+								//shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
 
 						),
 						transfer.IntakeDoorOut(),
@@ -223,7 +225,7 @@ public abstract class ModularAuto extends OpMode {
 
 		PathChain toSpike = follower.pathBuilder()
 				.addPath(new BezierLine(currentExpectedPose, intermediate))
-				.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
+				.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading(),0.8)
 				.build();
 		toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
 
@@ -278,7 +280,6 @@ public abstract class ModularAuto extends OpMode {
 				new ParallelCommandGroup(
 						new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.9),
 						new SequentialCommandGroup(
-								transfer.TransferIn(),
 								intake.In(),
 								conveyor.In(),
 								transfer.IntakeDoorOut()
@@ -287,7 +288,6 @@ public abstract class ModularAuto extends OpMode {
 				new ParallelCommandGroup(
 						new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
 						new SequentialCommandGroup(
-								transfer.TransferIn(),
 								intake.In(),
 								conveyor.In(),
 								transfer.IntakeDoorOut()
@@ -311,7 +311,8 @@ public abstract class ModularAuto extends OpMode {
 									new Pose(52.449, 89.5),
 									new Pose(15.351, 84.391),
 									shootPose))
-					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
+					.setBrakingStrength(0.8)
+					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
 					.build();
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
@@ -320,13 +321,16 @@ public abstract class ModularAuto extends OpMode {
 									new Pose(129.000, 89.500),
 									new Pose(61.063, 91.416),
 									shootPose)
-					).setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
+					)
+					.setBrakingStrength(0.8)
+					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
 					.build();
 			prespinWaitMs += 400;
 		} else {
 			toShoot = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, shootPose))
-					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading())
+					.setBrakingStrength(0.8)
+					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
 					.build();
 		}
 
@@ -335,14 +339,9 @@ public abstract class ModularAuto extends OpMode {
 		currentExpectedPose = shootPose;
 
 		return new SequentialCommandGroup(
-				intake.Slow(),
-				conveyor.Stop(),
+				intake.In(),
 				new ParallelCommandGroup(
-						new FollowPathCommand(follower, toShoot),
-						new SequentialCommandGroup(
-								//new WaitCommand(prespinWaitMs),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER)
-						)
+						new FollowPathCommand(follower, toShoot)
 				),
 				transfer.IntakeDoorOut(),
 				getShootSequence(1050)

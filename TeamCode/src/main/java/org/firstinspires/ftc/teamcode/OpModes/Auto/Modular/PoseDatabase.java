@@ -22,7 +22,7 @@ public class PoseDatabase {
 	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(22.000, 94.000, Math.toRadians(180));
 
 	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 19.128, Math.toRadians(180));
-	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(24.00, 19.128, Math.toRadians(180));
+	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 19.128, Math.toRadians(180));
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_WIGGLE = new Pose(15.8, 19.128, Math.toRadians(180));
 
 	public static final Pose BLUE_PARK = new Pose(40, 34, Math.toRadians(180));

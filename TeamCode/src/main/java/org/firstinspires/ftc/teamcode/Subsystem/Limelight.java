@@ -59,7 +59,7 @@ public class Limelight extends SubsystemBase {
 		double Tanang = Math.atan2(deltaY,deltaX);
 		double finalang = Tanang + Math.PI;
 		return MathFunctions.normalizeAngleSigned(finalang);
-		// this works! for now... theres a 98.42% it will break tomarrow
+		// this works! for now... theres a 98.42% it will break k-days
 	}
 	public Limelight(HardwareMap hardwareMap) {
 		limelight = hardwareMap.get(Limelight3A.class, "limelight");
