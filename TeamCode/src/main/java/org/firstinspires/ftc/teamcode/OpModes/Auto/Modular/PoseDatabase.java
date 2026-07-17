@@ -23,6 +23,8 @@ public class PoseDatabase {
 
 	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 19.128, Math.toRadians(180));
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 19.128, Math.toRadians(180));
+
+	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(44.00, 45.50, Math.toRadians(180));
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_WIGGLE = new Pose(15.8, 19.128, Math.toRadians(180));
 
 	public static final Pose BLUE_PARK = new Pose(40, 34, Math.toRadians(180));
@@ -44,11 +46,11 @@ public class PoseDatabase {
 	public static final Pose RED_SPIKE_3_INTERMEDIATE = new Pose(98.000, 82.000, Math.toRadians(0));
 	public static final Pose RED_SPIKE_3_COLLECT = new Pose(122.000, 82.000, Math.toRadians(0));
 
-	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = new Pose(122.2, 9.128, Math.toRadians(0));
-	public static final Pose RED_HUMAN_PLAYER_COLLECT = new Pose(123.000, 9.128, Math.toRadians(0));
+	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = new Pose(120.000, 9.128, Math.toRadians(0));
+	public static final Pose RED_HUMAN_PLAYER_COLLECT = new Pose(136.000, 9.128, Math.toRadians(0));
 	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE = new Pose(137.5, 9.128, Math.toRadians(0));
 
-	public static final Pose RED_HUMAN_PLAYER_COLLECT_CLOSE = new Pose(129.000, 9.128, Math.toRadians(0));
+	public static final Pose RED_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(120.000, 34.500, Math.toRadians(0));
 	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE_CLOSE = new Pose(139.5, 9.128, Math.toRadians(0));
 
 

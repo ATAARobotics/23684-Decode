@@ -108,9 +108,9 @@ public abstract class MainTeleOp extends OpMode {
 	Timer headinglocktimer;
 	double goalX = 0;
 	boolean openGate = false;
-	public static double P = 0.03, I, D = 0.0003, F = 0.001;
+	public static double P = 0.025, I = 0.0025, D = 0.002, F = 0.0018;
 
-	public static double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
+	private static double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
 
 	@Override
 	public void init() {
@@ -156,7 +156,7 @@ public abstract class MainTeleOp extends OpMode {
 			telemetry.update();
 		}
 
-		pathAudienceShoot = () -> buildShootPath(PoseDatabase.getAudienceShootPose(getTeam()), Math.toRadians(-56.535));
+		pathAudienceShoot = () -> buildShootPath(new Pose(33.098, 43.424), Math.toRadians(180));
 		pathGoalShoot = () -> buildShootPath(PoseDatabase.getGoalShootPose(getTeam()), Math.toRadians(340.7));
 	}
 
@@ -279,11 +279,13 @@ public abstract class MainTeleOp extends OpMode {
 			}
 
 			if (gamepad1.left_trigger > 0) {
-//				currentHeading = follower.getHeading();
-//				targetHeading = humanPlayerHeading;
-//				headingPIDController.setCoefficients(Constants.followerConstants.coefficientsHeadingPIDF);
-//				headingPIDController.updatePosition(currentHeading);
-//				headingDeadzone = 3;
+				currentHeading = follower.getHeading();
+				tar = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
+				targetHeading = 0;
+				headingPIDController.setCoefficients(new PIDFCoefficients(P2,I2,D2,F2));
+				headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
+				headingPIDController.updateFeedForwardInput(1);
+				headingDeadzone = 7;
 			} else {
 				if (limelight.goalsFound(getTeam())) {
 					headinglocktimer.resetTimer();
@@ -295,6 +297,7 @@ public abstract class MainTeleOp extends OpMode {
 					headingDeadzone = 1;
 					headingPIDController.setTargetPosition(targetHeading);
 					headingPIDController.updateError(targetHeading - currentHeading);
+					headingPIDController.updateFeedForwardInput(1);
 
 				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 200){
 					currentHeading = follower.getHeading();
@@ -302,6 +305,7 @@ public abstract class MainTeleOp extends OpMode {
 					targetHeading = 0;
 					headingPIDController.setCoefficients(new PIDFCoefficients(P2,I2,D2,F2));
 					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
+					headingPIDController.updateFeedForwardInput(1);
 					headingDeadzone = 7;
 				}
 			}
@@ -365,6 +369,12 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
+			if (ballCount > 0) {
+				beamBreaker.resetBallCount();
+				ballCount = 0;
+				prespinTriggered = false;
+				wasBeamAtThree = false;
+			}
 			scheduler.schedule(
 					new SequentialCommandGroup(
 							shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
@@ -399,9 +409,9 @@ public abstract class MainTeleOp extends OpMode {
 			gamepad2AWasPressed = false;
 		}
 
-		if (gamepad2.yWasPressed() || (ballCount >= 3 && !prespinTriggered)) {
+		if (gamepad2.yWasPressed() || (ballCount >= 3 && prespinTriggered)) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
-			prespinTriggered = true;
+			prespinTriggered = false;
 		}
 
 		if (gamepad2.x && !xButtonPressed) {
@@ -464,10 +474,8 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.update();
 
 		limelight.Telemetry(telemetry);
-		telemetry.addData("pose", follower.getPose().toString());
-		telemetry.addData("target",Math.toDegrees(targetHeading));
-//		telemetry.addData("goalx",goalX);
-		telemetry.addData("headinglocktimer",headinglocktimer.getElapsedTime());
+		telemetry.addData("ballcount", ballCount);
+		telemetry.addData("prespin Tiriggered?",prespinTriggered);
 		telemetry.update();
 
 

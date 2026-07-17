@@ -7,20 +7,25 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.seattlesolvers.solverslib.pedroCommand.TurnToCommand;
 
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
 import org.firstinspires.ftc.teamcode.Subsystem.Conveyor;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
@@ -33,12 +38,18 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Configurable
 public abstract class ModularAuto extends OpMode {
 	public static int COLLECTION_WAIT = 1;
 	public static int HUMAN_PLAYER_COLLECTION_WAIT = 500;
-	public static int SHOOT_WAIT = 150;
+	public  int ShootTime = 1050;
+
+	public int ballcount = 0;
+	public boolean shouldShoot = false;
+
+	boolean waitedOnce = false;
 
 	protected Follower follower;
 	protected CommandScheduler scheduler;
@@ -46,6 +57,8 @@ public abstract class ModularAuto extends OpMode {
 	protected Shooter shooter;
 	protected Conveyor conveyor;
 	protected Transfer transfer;
+
+	protected BeamBreaker beamBreaker;
 
 	protected Gate gate;
 	protected TelemetryManager panelsTelemetry;
@@ -88,6 +101,7 @@ public abstract class ModularAuto extends OpMode {
 		transfer = new Transfer(hardwareMap);
 		transfer.setShooter(shooter);
 		gate = new Gate(hardwareMap);
+		beamBreaker = new BeamBreaker(hardwareMap);
 
 		// Re-fetch scheduler: scheduler.reset() above nulled the singleton, so
 		// the subsystems constructed below registered on a fresh instance. Repoint
@@ -139,7 +153,10 @@ public abstract class ModularAuto extends OpMode {
 			}
 		}
 
-		scheduler.schedule(fullAuto);
+		scheduler.schedule(new SequentialCommandGroup(
+				fullAuto.withTimeout(29500),
+				getCommandForStep(RouteStep.PARK)
+		));
 		scheduler.run();
 	}
 
@@ -151,17 +168,17 @@ public abstract class ModularAuto extends OpMode {
 			case SHOOT_PRELOAD:
 				PathChain preloadPath = follower.pathBuilder()
 						.addPath(new BezierLine(currentExpectedPose, shootPose))
-						.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
+						.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.1)
 						.build();
 				currentExpectedPose = shootPose;
 				return new SequentialCommandGroup(
 						new ParallelCommandGroup(
-								new FollowPathCommand(follower, preloadPath)
-								//shooter.SetTarget(Shooter.AUDIENCE_RPM, Shooter.AUDIENCE_RPM)
+								new FollowPathCommand(follower, preloadPath),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER)
 
 						),
 						transfer.IntakeDoorOut(),
-						getShootSequence(1050)
+						getShootSequence(700)
 				);
 
 			case COLLECT_SPIKE_1:
@@ -182,14 +199,25 @@ public abstract class ModularAuto extends OpMode {
 			case SHOOT_LONG_PRESPIN:
 				return getShootStepCommand(2000);
 
+			case SHOOT_WITH_BEAMBREAKER:
+				return getShootWithBeamBreakerStepCommand(1000);
+
 			case PARK:
 				Pose parkPose = team == Team.BLUE ? PoseDatabase.BLUE_PARK : PoseDatabase.RED_PARK;
-				PathChain parkPath = follower.pathBuilder()
-						.addPath(new BezierLine(currentExpectedPose, parkPose))
-						.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), parkPose.getHeading())
+				 Supplier<PathChain> parkPath = () -> follower.pathBuilder()
+						.addPath(new BezierLine(follower.getPose(), parkPose))
+						.setLinearHeadingInterpolation(follower.getPose().getHeading(), parkPose.getHeading())
 						.build();
 				currentExpectedPose = parkPose;
-				return new FollowPathCommand(follower, parkPath);
+				return new ParallelCommandGroup(
+						new FollowPathCommand(follower, parkPath.get()),
+						conveyor.Stop(),
+						intake.Stop(),
+						transfer.TransferStop(),
+						shooter.SetTarget(0, 0),
+						gate.closeGate()
+
+				);
 
 			default:
 				throw new IllegalStateException("Unhandled route step: " + step);
@@ -223,11 +251,45 @@ public abstract class ModularAuto extends OpMode {
 			}
 		}
 
-		PathChain toSpike = follower.pathBuilder()
-				.addPath(new BezierLine(currentExpectedPose, intermediate))
-				.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading(),0.8)
-				.build();
-		toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
+		PathChain toSpike;
+
+		if (spikeNum == 1){
+			toSpike = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, intermediate))
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.25,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.25,
+											1,
+											HeadingInterpolator.linear(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2)
+									)
+							))
+					.build();
+			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
+		}else{
+			toSpike = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, intermediate))
+					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2).setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.5,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.5,
+											1,
+											HeadingInterpolator.linear(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2)
+									)
+							))
+					.build();
+			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
+		}
 
 		PathChain forwardPath = follower.pathBuilder()
 				.addPath(new BezierLine(intermediate, collect))
@@ -261,9 +323,14 @@ public abstract class ModularAuto extends OpMode {
 		Pose intermediate = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_INTERMEDIATE : PoseDatabase.RED_HUMAN_PLAYER_INTERMEDIATE;
 		Pose collect = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT : PoseDatabase.RED_HUMAN_PLAYER_COLLECT;
 
+		Pose collectSpikeone = (team == Team.BLUE) ? PoseDatabase.BLUE_SPIKE_1_COLLECT : PoseDatabase.RED_SPIKE_1_COLLECT;
+		Pose spikeOne = (team == Team.BLUE) ? PoseDatabase.BLUE_HUMAN_PLAYER_COLLECT_FARSIDE : PoseDatabase.RED_HUMAN_PLAYER_COLLECT_FARSIDE;
+
 		PathChain toHP = follower.pathBuilder()
 				.addPath(new BezierLine(currentExpectedPose, intermediate))
-				.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading())
+				.setHeadingInterpolation(HeadingInterpolator.linear(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2))
+				.addPath(new BezierLine(intermediate, collect))
+				.setConstantHeadingInterpolation(collect.getHeading())
 				.build();
 		toHP.setDecelerationType(PathChain.DecelerationType.NONE);
 
@@ -274,26 +341,78 @@ public abstract class ModularAuto extends OpMode {
 
 		forwardPath.setDecelerationType(PathChain.DecelerationType.NONE);
 
+		PathChain awayfromHp = follower.pathBuilder()
+				.addPath(new BezierLine(collect, intermediate))
+				.setConstantHeadingInterpolation(collect.getHeading())
+				.build();
+
+		PathChain toSpikeOne = follower.pathBuilder()
+				.addPath(new BezierLine(intermediate,spikeOne))
+				.setConstantHeadingInterpolation(collect.getHeading())
+				.build();
+
+		toSpikeOne.setDecelerationType(PathChain.DecelerationType.NONE);
+
+		PathChain collectSpikeOne = follower.pathBuilder()
+				.addPath(new BezierLine(spikeOne,collectSpikeone))
+				.setConstantHeadingInterpolation(collect.getHeading())
+				.build();
+
+		collectSpikeOne.setDecelerationType(PathChain.DecelerationType.NONE);
+
+		PathChain leaveSpikeOne = follower.pathBuilder()
+				.addPath(new BezierLine(collectSpikeone,spikeOne))
+				.setConstantHeadingInterpolation(collect.getHeading())
+				.build();
+
+
+		PathChain backtoHp = follower.pathBuilder()
+				.addPath(new BezierLine(spikeOne,intermediate))
+				.setConstantHeadingInterpolation(collect.getHeading())
+				.build();
+
+		backtoHp.setDecelerationType(PathChain.DecelerationType.NONE);
+
+
 		currentExpectedPose = collect;
 
 		return new SequentialCommandGroup(
+
 				new ParallelCommandGroup(
-						new FollowPathCommand(follower, toHP).setGlobalMaxPower(0.9),
+						new FollowPathCommand(follower,toHP).setGlobalMaxPower(1),
 						new SequentialCommandGroup(
 								intake.In(),
 								conveyor.In(),
 								transfer.IntakeDoorOut()
 						)
 				),
-				new ParallelCommandGroup(
-						new FollowPathCommand(follower, forwardPath).setGlobalMaxPower(1),
-						new SequentialCommandGroup(
-								intake.In(),
-								conveyor.In(),
-								transfer.IntakeDoorOut()
-						)
+				new RepeatCommand(
+					new SequentialCommandGroup(
+							new InstantCommand(()-> waitedOnce = false),
+
+							new InstantCommand(()-> waitedOnce = true),
+
+							new FollowPathCommand(follower,awayfromHp),
+
+							new InstantCommand(()-> waitedOnce = false),
+
+							new FollowPathCommand(follower,toSpikeOne),
+							new FollowPathCommand(follower,collectSpikeOne),
+							new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
+							new InstantCommand(()-> waitedOnce = true),
+
+							new FollowPathCommand(follower,leaveSpikeOne),
+							new FollowPathCommand(follower,backtoHp),
+
+		                    new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
+
+							new FollowPathCommand(follower, forwardPath),
+							new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT)
+
+
+							), () -> ballcount != 0 //&& waitedOnce
 				),
-				new WaitCommand(HUMAN_PLAYER_COLLECTION_WAIT),
+				new InstantCommand(()-> currentExpectedPose = follower.getPose()),
 				transfer.TransferStop()
 		);
 	}
@@ -311,8 +430,21 @@ public abstract class ModularAuto extends OpMode {
 									new Pose(52.449, 89.5),
 									new Pose(15.351, 84.391),
 									shootPose))
-					.setBrakingStrength(0.8)
-					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+											new HeadingInterpolator.PiecewiseNode(
+													0,
+													.5,
+													HeadingInterpolator.tangent.reverse()
+											),
+											new HeadingInterpolator.PiecewiseNode(
+													.5,
+													1,
+													HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+											)
+									))
 					.build();
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
@@ -322,15 +454,41 @@ public abstract class ModularAuto extends OpMode {
 									new Pose(61.063, 91.416),
 									shootPose)
 					)
-					.setBrakingStrength(0.8)
-					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.5,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.5,
+											1,
+											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+									)
+							))
 					.build();
 			prespinWaitMs += 400;
 		} else {
 			toShoot = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, shootPose))
-					.setBrakingStrength(0.8)
-					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.8)
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.5,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.5,
+											1,
+											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+									)
+							))
 					.build();
 		}
 
@@ -341,10 +499,125 @@ public abstract class ModularAuto extends OpMode {
 		return new SequentialCommandGroup(
 				intake.In(),
 				new ParallelCommandGroup(
-						new FollowPathCommand(follower, toShoot)
+						new SequentialCommandGroup(
+								new WaitUntilCommand(()-> follower.getCurrentTValue() >= 0.6),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER)
+						),
+						new FollowPathCommand(follower, toShoot),
+						new InstantCommand(()-> {
+							shouldShoot = ballcount > 0;
+							if (ballcount > 1) ShootTime = 1050;
+							else ShootTime = 500;
+						})
+
 				),
+
 				transfer.IntakeDoorOut(),
-				getShootSequence(1050)
+				getShootSequence(550),
+				new InstantCommand(()-> beamBreaker.resetBallCount())
+		);
+	}
+
+
+	private Command getShootWithBeamBreakerStepCommand(int prespinWaitMs) {
+		Team team = getTeam();
+		Pose shootPose = PoseDatabase.getShootPose(team);
+		PathChain toShoot;
+
+		// Special handling for Spike 3 return path
+		if (currentExpectedPose.equals(PoseDatabase.BLUE_SPIKE_3_COLLECT) && team == Team.BLUE) {
+			toShoot = follower.pathBuilder().addPath(
+							new BezierCurve(
+									new Pose(15.000, 89.500),
+									new Pose(52.449, 89.5),
+									new Pose(15.351, 84.391),
+									shootPose))
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.8,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.8,
+											1,
+											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+									)
+							))
+					.build();
+			prespinWaitMs += 400;
+		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
+			toShoot = follower.pathBuilder().addPath(
+							new BezierCurve(
+									new Pose(129.000, 89.500),
+									new Pose(61.063, 91.416),
+									shootPose)
+					)
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.9,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.9,
+											1,
+											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+									)
+							))
+					.build();
+			prespinWaitMs += 400;
+		} else {
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
+					.setBrakingStrength(0.8)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.5,
+											HeadingInterpolator.tangent.reverse()
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.5,
+											1,
+											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+									)
+							))
+					.build();
+		}
+
+		toShoot.setDecelerationType(PathChain.DecelerationType.NONE);
+
+		currentExpectedPose = shootPose;
+
+		return new SequentialCommandGroup(
+				intake.In(),
+				new ParallelCommandGroup(
+						new FollowPathCommand(follower, toShoot),
+						new SequentialCommandGroup(
+								new WaitUntilCommand(()-> follower.getCurrentTValue() >= 0.6),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER)
+						),
+						new InstantCommand(()-> {
+							shouldShoot = ballcount > 0;
+							if (ballcount > 1) ShootTime = 750;
+							else ShootTime = 250;
+						})
+				),
+				//new TurnToCommand(follower, shootPose.getHeading()),
+				transfer.IntakeDoorOut().interruptOn(()-> !shouldShoot),
+				new ConditionalCommand(
+						getShootSequence(550),
+						getShootSequence(100),
+						()-> ballcount > 1).interruptOn(()-> !shouldShoot),
+				new InstantCommand(()-> beamBreaker.resetBallCount())
 		);
 	}
 
@@ -364,6 +637,11 @@ public abstract class ModularAuto extends OpMode {
 	public void loop() {
 		follower.update();
 		scheduler.run();
+		beamBreaker.update(true);
+
+
+		ballcount = beamBreaker.getBallCount();
+
 
 		if (RobotConfig.COMPETITION) return;
 
@@ -380,6 +658,10 @@ public abstract class ModularAuto extends OpMode {
 
 		panelsTelemetry.update();
 		panelsTelemetry.update(telemetry);
+
+		telemetry.addData("ballcount", beamBreaker.getBallCount());
+		telemetry.addData("tvalue",follower.getCurrentTValue());
+		telemetry.update();
 	}
 
 	@Override

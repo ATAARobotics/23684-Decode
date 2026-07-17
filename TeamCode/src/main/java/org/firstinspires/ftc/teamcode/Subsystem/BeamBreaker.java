@@ -4,6 +4,7 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
@@ -16,7 +17,9 @@ import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
  */
 public class BeamBreaker extends SubsystemBase {
 
-	private final DigitalChannel intakeBeamBreaker;
+	public final DigitalChannel intakeBeamBreaker;
+
+	public final DigitalChannel intakeBeamBreakerUpper;
 
 	/**
 	 * Current count of balls in the robot.
@@ -46,7 +49,7 @@ public class BeamBreaker extends SubsystemBase {
 	/**
 	 * Noise suppression window for rapid break→clear→break sequences (ms)
 	 */
-	private static final long NOISE_SUPPRESS_MS = 300;
+	private static final long NOISE_SUPPRESS_MS = 80;
 
 	/**
 	 * Time of last broken→clear transition for noise detection
@@ -71,6 +74,9 @@ public class BeamBreaker extends SubsystemBase {
 	public BeamBreaker(HardwareMap hardwareMap) {
 		intakeBeamBreaker = hardwareMap.get(DigitalChannel.class, "intakeBeamBreaker");
 		intakeBeamBreaker.setMode(DigitalChannel.Mode.INPUT);
+
+		intakeBeamBreakerUpper = hardwareMap.get(DigitalChannel.class, "intakeBeamBreakerUpper");
+		intakeBeamBreakerUpper.setMode(DigitalChannel.Mode.INPUT);
 	}
 
 	/**
@@ -79,7 +85,7 @@ public class BeamBreaker extends SubsystemBase {
 	 * @return true when beam is blocked (object present), false otherwise
 	 */
 	public boolean isBeamBroken() {
-		return !intakeBeamBreaker.getState();
+		return !intakeBeamBreaker.getState() || !intakeBeamBreakerUpper.getState();
 	}
 
 	/**
@@ -115,6 +121,10 @@ public class BeamBreaker extends SubsystemBase {
 	public void resetBallCount() {
 		ballCount = 0;
 		lastEvent = "RESET";
+	}
+
+	public Command resetBallCountCommand() {
+		return new InstantCommand(()-> resetBallCount());
 	}
 
 	/**

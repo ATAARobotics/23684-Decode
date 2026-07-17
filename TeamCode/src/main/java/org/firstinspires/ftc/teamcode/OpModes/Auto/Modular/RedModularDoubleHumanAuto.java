@@ -23,9 +23,19 @@ public class RedModularDoubleHumanAuto extends ModularAuto {
 		addStep(RouteStep.COLLECT_SPIKE_1);
 		addStep(RouteStep.SHOOT);
 		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
-		addStep(RouteStep.SHOOT);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
 		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
-		addStep(RouteStep.SHOOT);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
 		addStep(RouteStep.PARK);
 	}
 }

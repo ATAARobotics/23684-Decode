@@ -21,12 +21,15 @@ public class BeamBreakerTest extends OpMode {
 
 	@Override
 	public void loop() {
+		beamBreaker.update(true);
 		boolean isBeamBroken = beamBreaker.isBeamBroken();
 		String beamStatus = isBeamBroken ? "Closed" : "Open";
 
 		if (!RobotConfig.COMPETITION) {
 			telemetry.addData("Beam Status", beamStatus);
-			telemetry.addData("Beam Broken", isBeamBroken);
+			telemetry.addData("Beam Broken Lower", !beamBreaker.intakeBeamBreaker.getState());
+			telemetry.addData("Beam Broken Upper", !beamBreaker.intakeBeamBreakerUpper.getState());
+			telemetry.addData("Beam Broken And", beamBreaker.isBeamBroken());
 			telemetry.update();
 		}
 

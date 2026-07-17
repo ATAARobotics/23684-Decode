@@ -147,6 +147,7 @@ public class Limelight extends SubsystemBase {
 			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
 
 				telemetry.addLine(fiducial.getFiducialId() + " : " + fiducial.getTargetXDegrees());
+				telemetry.addLine(fiducial.getFiducialId() + " : " + fiducial.getTargetPoseCameraSpace());
 
 
 			}
