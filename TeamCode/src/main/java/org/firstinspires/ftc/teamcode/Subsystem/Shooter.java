@@ -39,10 +39,11 @@ public class Shooter extends SubsystemBase {
 	// --- Pre-calculated constants ---
 	public static final double RPM_CONVERSION = 60.0 / TICKS_PER_REVOLUTION;
 	public static double AUDIENCE_RPM = 2000;
-	public static double AUDIENCE_RPM_UPPER = 1980;
-	public static double AUDIENCE_RPM_LOWER = 2100;
-	public static double GOAL_RPM_UPPER = 2000;
-	public static double GOAL_RPM_LOWER = 2000;
+	public static double AUDIENCE_RPM_UPPER = 1980; // 1835
+	public static double AUDIENCE_RPM_LOWER = 2100; // 2035
+
+	public static double GOAL_RPM_UPPER = 750;
+	public static double GOAL_RPM_LOWER = 3500;
 
 	private final DcMotorEx upperShooter;
 	private final DcMotorEx lowerShooter;

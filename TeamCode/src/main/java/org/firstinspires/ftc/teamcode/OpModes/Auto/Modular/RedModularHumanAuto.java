@@ -20,13 +20,20 @@ public class RedModularHumanAuto extends ModularAuto {
 	@Override
 	protected void setRoute() {
 		addStep(RouteStep.SHOOT_PRELOAD);
-		addStep(RouteStep.COLLECT_HUMAN_PLAYER_CLOSE_WIGGLE);
+		addStep(RouteStep.COLLECT_SPIKE_1);
 		addStep(RouteStep.SHOOT);
-		addStep(2000);
-		addStep(RouteStep.COLLECT_HUMAN_PLAYER_WIGGLE);
+		addStep(RouteStep.COLLECT_SPIKE_2);
 		addStep(RouteStep.SHOOT);
-		addStep(RouteStep.COLLECT_HUMAN_PLAYER_CLOSE_WIGGLE);
-		//addStep(RouteStep.SHOOT);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
 		addStep(RouteStep.PARK);
 	}
 }

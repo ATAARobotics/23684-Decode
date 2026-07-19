@@ -172,6 +172,7 @@ public abstract class ModularAuto extends OpMode {
 						.build();
 				currentExpectedPose = shootPose;
 				return new SequentialCommandGroup(
+						gate.closeGate(),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, preloadPath),
 								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER)
@@ -278,13 +279,18 @@ public abstract class ModularAuto extends OpMode {
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
 											0,
+											.1,
+											HeadingInterpolator.constant(currentExpectedPose.getHeading())
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.1,
 											.5,
 											HeadingInterpolator.tangent.reverse()
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.5,
 											1,
-											HeadingInterpolator.linear(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2)
+											HeadingInterpolator.linear(follower.getPose().getHeading(), intermediate.getHeading(),0.1)
 									)
 							))
 					.build();
@@ -424,47 +430,85 @@ public abstract class ModularAuto extends OpMode {
 
 		// Special handling for Spike 3 return path
 		if (currentExpectedPose.equals(PoseDatabase.BLUE_SPIKE_3_COLLECT) && team == Team.BLUE) {
+//			toShoot = follower.pathBuilder().addPath(
+//							new BezierCurve(
+//									new Pose(15.000, 89.000),
+//									new Pose(54.810, 88.063),
+//									shootPose))
+//					.setBrakingStrength(1)
+//					.setHeadingInterpolation(
+//							HeadingInterpolator.piecewise(
+//									new HeadingInterpolator.PiecewiseNode(
+//											0,
+//											.8,
+//											HeadingInterpolator.tangent.reverse()
+//									),
+//									new HeadingInterpolator.PiecewiseNode(
+//											.8,
+//											1,
+//											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+//									)
+//							))
+//					.build();
 			toShoot = follower.pathBuilder().addPath(
-							new BezierCurve(
-									new Pose(15.000, 89.500),
-									new Pose(52.449, 89.5),
-									new Pose(15.351, 84.391),
-									shootPose))
+							new BezierLine(currentExpectedPose.getPose(), new Pose(28.000, 94.000)))
 					.setBrakingStrength(1)
-					.setBrakingStart(0.7)
-					.setHeadingInterpolation(
-							HeadingInterpolator.piecewise(
-											new HeadingInterpolator.PiecewiseNode(
-													0,
-													.5,
-													HeadingInterpolator.tangent.reverse()
-											),
-											new HeadingInterpolator.PiecewiseNode(
-													.5,
-													1,
-													HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
-											)
-									))
+					.setConstantHeadingInterpolation(PoseDatabase.BLUE_SPIKE_3_COLLECT.getHeading())
+					.addPath(new BezierLine(new Pose(28.000, 94.000), shootPose))
+					.setGlobalHeadingInterpolation(HeadingInterpolator.piecewise(
+							new HeadingInterpolator.PiecewiseNode(
+									.0,
+									.1,
+									HeadingInterpolator.tangent.reverse()
+							),
+							new HeadingInterpolator.PiecewiseNode(
+									.0,
+									.8,
+									HeadingInterpolator.tangent
+							),
+							new HeadingInterpolator.PiecewiseNode(
+									.8,
+									1,
+									HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+							)
+					))
 					.build();
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
-			toShoot = follower.pathBuilder().addPath(
-							new BezierCurve(
-									new Pose(129.000, 89.500),
-									new Pose(61.063, 91.416),
-									shootPose)
-					)
+//			toShoot = follower.pathBuilder().addPath(
+//							new BezierCurve(
+//									new Pose(129.000, 89.500),
+//									new Pose(61.063, 91.416),
+//									shootPose)
+//					)
+//					.setBrakingStrength(1)
+//					.setBrakingStart(0.7)
+//					.setHeadingInterpolation(
+//							HeadingInterpolator.piecewise(
+//									new HeadingInterpolator.PiecewiseNode(
+//											0,
+//											.5,
+//											HeadingInterpolator.tangent.reverse()
+//									),
+//									new HeadingInterpolator.PiecewiseNode(
+//											.5,
+//											1,
+//											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+//									)
+//							))
+//					.build();
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
 					.setBrakingStrength(1)
-					.setBrakingStart(0.7)
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
 											0,
-											.5,
+											.8,
 											HeadingInterpolator.tangent.reverse()
 									),
 									new HeadingInterpolator.PiecewiseNode(
-											.5,
+											.8,
 											1,
 											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
 									)
@@ -480,8 +524,13 @@ public abstract class ModularAuto extends OpMode {
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
 											0,
+											.1,
+											HeadingInterpolator.constant(currentExpectedPose.getHeading())
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.1,
 											.5,
-											HeadingInterpolator.tangent.reverse()
+											HeadingInterpolator.tangent
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.5,
@@ -501,7 +550,8 @@ public abstract class ModularAuto extends OpMode {
 				new ParallelCommandGroup(
 						new SequentialCommandGroup(
 								new WaitUntilCommand(()-> follower.getCurrentTValue() >= 0.6),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER)
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER),
+								intake.Stop()
 						),
 						new FollowPathCommand(follower, toShoot),
 						new InstantCommand(()-> {
@@ -526,14 +576,31 @@ public abstract class ModularAuto extends OpMode {
 
 		// Special handling for Spike 3 return path
 		if (currentExpectedPose.equals(PoseDatabase.BLUE_SPIKE_3_COLLECT) && team == Team.BLUE) {
-			toShoot = follower.pathBuilder().addPath(
-							new BezierCurve(
-									new Pose(15.000, 89.500),
-									new Pose(52.449, 89.5),
-									new Pose(15.351, 84.391),
-									shootPose))
+//			toShoot = follower.pathBuilder().addPath(
+//							new BezierCurve(
+//									new Pose(15.000, 89.500),
+//									new Pose(52.449, 89.5),
+//									new Pose(15.351, 84.391),
+//									shootPose))
+//					.setBrakingStrength(1)
+//					.setBrakingStart(0.7)
+//					.setHeadingInterpolation(
+//							HeadingInterpolator.piecewise(
+//									new HeadingInterpolator.PiecewiseNode(
+//											0,
+//											.8,
+//											HeadingInterpolator.tangent.reverse()
+//									),
+//									new HeadingInterpolator.PiecewiseNode(
+//											.8,
+//											1,
+//											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+//									)
+//							))
+//					.build();
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
 					.setBrakingStrength(1)
-					.setBrakingStart(0.7)
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
@@ -550,23 +617,40 @@ public abstract class ModularAuto extends OpMode {
 					.build();
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
-			toShoot = follower.pathBuilder().addPath(
-							new BezierCurve(
-									new Pose(129.000, 89.500),
-									new Pose(61.063, 91.416),
-									shootPose)
-					)
+//			toShoot = follower.pathBuilder().addPath(
+//							new BezierCurve(
+//									new Pose(129.000, 89.500),
+//									new Pose(61.063, 91.416),
+//									shootPose)
+//					)
+//					.setBrakingStrength(1)
+//					.setBrakingStart(0.7)
+//					.setHeadingInterpolation(
+//							HeadingInterpolator.piecewise(
+//									new HeadingInterpolator.PiecewiseNode(
+//											0,
+//											.9,
+//											HeadingInterpolator.tangent.reverse()
+//									),
+//									new HeadingInterpolator.PiecewiseNode(
+//											.9,
+//											1,
+//											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+//									)
+//							))
+//					.build();
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
 					.setBrakingStrength(1)
-					.setBrakingStart(0.7)
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
 											0,
-											.9,
+											.8,
 											HeadingInterpolator.tangent.reverse()
 									),
 									new HeadingInterpolator.PiecewiseNode(
-											.9,
+											.8,
 											1,
 											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
 									)
@@ -576,13 +660,18 @@ public abstract class ModularAuto extends OpMode {
 		} else {
 			toShoot = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, shootPose))
-					.setBrakingStrength(0.8)
+					.setBrakingStrength(1)
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
 											0,
+											.1,
+											HeadingInterpolator.constant(PoseDatabase.BLUE_SPIKE_3_COLLECT.getHeading())
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.1,
 											.5,
-											HeadingInterpolator.tangent.reverse()
+											HeadingInterpolator.tangent
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.5,
@@ -603,7 +692,8 @@ public abstract class ModularAuto extends OpMode {
 						new FollowPathCommand(follower, toShoot),
 						new SequentialCommandGroup(
 								new WaitUntilCommand(()-> follower.getCurrentTValue() >= 0.6),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER)
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER),
+								intake.Stop()
 						),
 						new InstantCommand(()-> {
 							shouldShoot = ballcount > 0;
@@ -611,7 +701,7 @@ public abstract class ModularAuto extends OpMode {
 							else ShootTime = 250;
 						})
 				),
-				//new TurnToCommand(follower, shootPose.getHeading()),
+				new TurnToCommand(follower, shootPose.getHeading()),
 				transfer.IntakeDoorOut().interruptOn(()-> !shouldShoot),
 				new ConditionalCommand(
 						getShootSequence(550),

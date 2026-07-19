@@ -26,6 +26,10 @@ public class RedModularAudienceAuto extends ModularAuto {
 		addStep(RouteStep.SHOOT);
 		addStep(RouteStep.COLLECT_SPIKE_3);
 		addStep(RouteStep.SHOOT);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
+		addStep(RouteStep.COLLECT_HUMAN_PLAYER);
+		addStep(RouteStep.SHOOT_WITH_BEAMBREAKER);
 		addStep(RouteStep.PARK);
 	}
 }

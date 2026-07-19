@@ -21,6 +21,7 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
+import com.seattlesolvers.solverslib.controller.SquIDFController;
 import com.seattlesolvers.solverslib.util.Timing;
 
 import org.firstinspires.ftc.teamcode.OpModes.Auto.Modular.PoseDatabase;
@@ -36,6 +37,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
+import org.firstinspires.ftc.teamcode.Utils.SqurPIDFController;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
 
@@ -85,6 +87,7 @@ public abstract class MainTeleOp extends OpMode {
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
 	PIDFController headingPIDController;
+	SquIDFController limelightPIDController;
 	TeleOpDrive teleOpDrive;
 	boolean headingLock = true;
 	double currentHeading;
@@ -108,9 +111,9 @@ public abstract class MainTeleOp extends OpMode {
 	Timer headinglocktimer;
 	double goalX = 0;
 	boolean openGate = false;
-	public static double P = 0.025, I = 0.0025, D = 0.002, F = 0.0018;
+	public static double P = 0.095, I, D = 0.002, F = 0.0001;
 
-	private static double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
+	private  double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
 
 	@Override
 	public void init() {
@@ -149,7 +152,9 @@ public abstract class MainTeleOp extends OpMode {
 		scheduler = CommandScheduler.getInstance();
 
 		panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
-		headingPIDController = new PIDFController(new PIDFCoefficients(P, I, D, F));
+		headingPIDController = new PIDFController(new PIDFCoefficients(P2, I2, D2, F2));
+
+		limelightPIDController = new SquIDFController(P,I,D,F);
 
 		if (!RobotConfig.COMPETITION) {
 			telemetry.addData("Status", "Initialized - Waiting for START");
@@ -292,12 +297,14 @@ public abstract class MainTeleOp extends OpMode {
 
 					currentHeading = limelight.AngleFrom(getTeam());
 					targetHeading = 0;
-					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
-					headingPIDController.updatePosition(currentHeading);
+//					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
+//					headingPIDController.updatePosition(currentHeading);
+					limelightPIDController.setPIDF(P,I,D,F);
+					limelightPIDController.calculate(currentHeading, targetHeading);
 					headingDeadzone = 1;
-					headingPIDController.setTargetPosition(targetHeading);
-					headingPIDController.updateError(targetHeading - currentHeading);
-					headingPIDController.updateFeedForwardInput(1);
+//					headingPIDController.setTargetPosition(targetHeading);
+//					headingPIDController.updateError(targetHeading - currentHeading);
+//					headingPIDController.updateFeedForwardInput(1);
 
 				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 200){
 					currentHeading = follower.getHeading();
@@ -326,7 +333,7 @@ public abstract class MainTeleOp extends OpMode {
 						headingLockRumbleSent = false;
 					}
 				} else {
-					headingCorrection = -headingPIDController.run();
+					headingCorrection = (limelight.goalsFound(getTeam())) ? -limelightPIDController.calculate(currentHeading, targetHeading) : -headingPIDController.run();
 				}
 
 				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection );
@@ -473,9 +480,10 @@ public abstract class MainTeleOp extends OpMode {
 
 		panelsTelemetry.update();
 
-		limelight.Telemetry(telemetry);
-		telemetry.addData("ballcount", ballCount);
-		telemetry.addData("prespin Tiriggered?",prespinTriggered);
+		//limelight.Telemetry(telemetry);
+		//telemetry.addData("ballcount", ballCount);
+		//telemetry.addData("prespin Tiriggered?",prespinTriggered);
+		telemetry.addLine(follower.getPose().toString());
 		telemetry.update();
 
 
