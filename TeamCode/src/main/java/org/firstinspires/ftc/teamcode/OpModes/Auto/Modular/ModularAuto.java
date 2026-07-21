@@ -271,6 +271,8 @@ public abstract class ModularAuto extends OpMode {
 											HeadingInterpolator.linear(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2)
 									)
 							))
+					.setHeadingConstraint(Math.toDegrees(5))
+					.setTranslationalConstraint(4)
 					.build();
 			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
 		}else{
@@ -294,6 +296,8 @@ public abstract class ModularAuto extends OpMode {
 											HeadingInterpolator.linear(follower.getPose().getHeading(), intermediate.getHeading(),0.1)
 									)
 							))
+					.setHeadingConstraint(Math.toDegrees(5))
+					.setTranslationalConstraint(4)
 					.build();
 			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
 		}
@@ -493,7 +497,14 @@ public abstract class ModularAuto extends OpMode {
 							))
 					.build();
 			prespinWaitMs += 400;
-		} else {
+		}else if  (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_1_COLLECT) || currentExpectedPose.equals(PoseDatabase.BLUE_SPIKE_1_COLLECT)){
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(HeadingInterpolator.linear(currentExpectedPose.getHeading(), shootPose.getHeading(),0.6))
+					.build();
+		}else{
 			toShoot = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, shootPose))
 					.setBrakingStrength(1)
@@ -507,11 +518,11 @@ public abstract class ModularAuto extends OpMode {
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.1,
-											0.5,
+											.8,
 											HeadingInterpolator.tangent
 									),
 									new HeadingInterpolator.PiecewiseNode(
-											.5,
+											.8,
 											1,
 											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
 									)

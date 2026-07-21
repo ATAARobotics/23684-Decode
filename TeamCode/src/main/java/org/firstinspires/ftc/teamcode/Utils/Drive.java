@@ -83,16 +83,16 @@ public class Drive {
 		double frontRightPower = (y - x - rx) / denominator;
 		double backRightPower = (y + x - rx) / denominator;
 
-		Motorspeed(frontLeftMotor, frontLeftPower);
-		Motorspeed(backLeftMotor, backLeftPower);
-		Motorspeed(frontRightMotor, frontRightPower);
-		Motorspeed(backRightMotor, backRightPower);
+//		Motorspeed(frontLeftMotor, frontLeftPower);
+//		Motorspeed(backLeftMotor, backLeftPower);
+//		Motorspeed(frontRightMotor, frontRightPower);
+//		Motorspeed(backRightMotor, backRightPower);
 
 
-//		frontLeftMotor.setPower(frontLeftPower);
-//		backLeftMotor.setPower(backLeftPower);
-//		frontRightMotor.setPower(frontRightPower);
-//		backRightMotor.setPower(backRightPower);
+		frontLeftMotor.setPower(frontLeftPower);
+		backLeftMotor.setPower(backLeftPower);
+		frontRightMotor.setPower(frontRightPower);
+		backRightMotor.setPower(backRightPower);
 
 	}
 
