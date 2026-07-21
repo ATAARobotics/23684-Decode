@@ -5,7 +5,8 @@ import com.pedropathing.geometry.Pose;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 
 public class PoseDatabase {
-	// BLUE POSES
+	// BLUE POSES  — source of truth for the entire alliance pair.
+	// Every RED_* pose below is BLUE_*.mirror(FIELD_LENGTH) where FIELD_LENGTH = 141.5".
 	public static final Pose BLUE_START = new Pose(63.000, 9, Math.toRadians(270));
 	public static final Pose BLUE_SHOOT = new Pose(59.440, 17.328, Math.toRadians(294.935));
 
@@ -30,32 +31,34 @@ public class PoseDatabase {
 	public static final Pose BLUE_PARK = new Pose(40, 34, Math.toRadians(180));
 	public static final Pose BLUE_RESET_POSE = new Pose(142.720, 7.368, 0);
 
-	// RED POSES
-	public static final Pose RED_START = new Pose(81.000, 9, Math.toRadians(-90));
-	public static final Pose RED_SHOOT = new Pose(83.000, 17.328, Math.toRadians(-114.14));
+	// RED POSES  — every entry below is exactly BLUE_*.mirror(141.5).
+	// Field: 141.5" x 141.5" (custom). Mirror rule: (x, y, θ) → (141.5 − x, y, −θ).
+	// If you need a red-specific tweak, add it as a NEW blue pose and mirror it,
+	// not by editing a red constant — that breaks the symmetry invariant.
+	public static final double FIELD_LENGTH = 141.5;
 
-	public static final Pose RED_AUDIENCE_SHOOT = new Pose(51.639, 22.730, Math.toRadians(-122.851));
-	public static final Pose RED_GOAL_SHOOT = new Pose(39.03, 101.80, Math.toRadians(203));
+	public static final Pose RED_START = BLUE_START.mirror(FIELD_LENGTH);
+	public static final Pose RED_SHOOT = BLUE_SHOOT.mirror(FIELD_LENGTH);
 
-	public static final Pose RED_SPIKE_1_INTERMEDIATE = new Pose(98.000, 34.500, Math.toRadians(0));
-	public static final Pose RED_SPIKE_1_COLLECT = new Pose(136.000, 34.500, Math.toRadians(0));
+	public static final Pose RED_AUDIENCE_SHOOT = BLUE_AUDIENCE_SHOOT.mirror(FIELD_LENGTH);
+	public static final Pose RED_GOAL_SHOOT = BLUE_GOAL_SHOOT.mirror(FIELD_LENGTH);
 
-	public static final Pose RED_SPIKE_2_INTERMEDIATE = new Pose(98.000, 58.000, Math.toRadians(0));
-	public static final Pose RED_SPIKE_2_COLLECT = new Pose(136.000, 58.000, Math.toRadians(0));
+	public static final Pose RED_SPIKE_1_INTERMEDIATE = BLUE_SPIKE_1_INTERMEDIATE.mirror(FIELD_LENGTH);
+	public static final Pose RED_SPIKE_1_COLLECT = BLUE_SPIKE_1_COLLECT.mirror(FIELD_LENGTH);
 
-	public static final Pose RED_SPIKE_3_INTERMEDIATE = new Pose(98.000, 82.000, Math.toRadians(0));
-	public static final Pose RED_SPIKE_3_COLLECT = new Pose(123.000, 82.000, Math.toRadians(0));
+	public static final Pose RED_SPIKE_2_INTERMEDIATE = BLUE_SPIKE_2_INTERMEDIATE.mirror(FIELD_LENGTH);
+	public static final Pose RED_SPIKE_2_COLLECT = BLUE_SPIKE_2_COLLECT.mirror(FIELD_LENGTH);
 
-	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = new Pose(120.000, 9.128, Math.toRadians(0));
-	public static final Pose RED_HUMAN_PLAYER_COLLECT = new Pose(136.000, 9.128, Math.toRadians(0));
-	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE = new Pose(137.5, 9.128, Math.toRadians(0));
+	public static final Pose RED_SPIKE_3_INTERMEDIATE = BLUE_SPIKE_3_INTERMEDIATE.mirror(FIELD_LENGTH);
+	public static final Pose RED_SPIKE_3_COLLECT = BLUE_SPIKE_3_COLLECT.mirror(FIELD_LENGTH);
 
-	public static final Pose RED_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(120.000, 34.500, Math.toRadians(0));
-	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE_CLOSE = new Pose(139.5, 9.128, Math.toRadians(0));
+	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = BLUE_HUMAN_PLAYER_INTERMEDIATE.mirror(FIELD_LENGTH);
+	public static final Pose RED_HUMAN_PLAYER_COLLECT = BLUE_HUMAN_PLAYER_COLLECT.mirror(FIELD_LENGTH);
+	public static final Pose RED_HUMAN_PLAYER_COLLECT_FARSIDE = BLUE_HUMAN_PLAYER_COLLECT_FARSIDE.mirror(FIELD_LENGTH);
+	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE = BLUE_HUMAN_PLAYER_COLLECT_WIGGLE.mirror(FIELD_LENGTH);
 
-
-	public static final Pose RED_PARK = new Pose(105, 34, Math.toRadians(0));
-	public static final Pose RED_RESET_POSE = new Pose(7.1, 18, Math.toRadians(180));
+	public static final Pose RED_PARK = BLUE_PARK.mirror(FIELD_LENGTH);
+	public static final Pose RED_RESET_POSE = BLUE_RESET_POSE.mirror(FIELD_LENGTH);
 
 	public static Pose getShootPose(Team team) {
 		return team == Team.BLUE ? BLUE_SHOOT : RED_SHOOT;
