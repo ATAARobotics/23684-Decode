@@ -13,13 +13,13 @@ public class PoseDatabase {
 	public static final Pose BLUE_GOAL_SHOOT = new Pose(120.4, 95.7, Math.toRadians(340.7));
 
 	public static final Pose BLUE_SPIKE_1_INTERMEDIATE = new Pose(46.000, 45.50, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_1_COLLECT = new Pose(18.000, 45.50, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_1_COLLECT = new Pose(21.000, 45.50, Math.toRadians(180));
 
 	public static final Pose BLUE_SPIKE_2_INTERMEDIATE = new Pose(46.000, 67.500, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_2_COLLECT = new Pose(18.000, 67.500, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_2_COLLECT = new Pose(20.000, 67.500, Math.toRadians(180));
 
 	public static final Pose BLUE_SPIKE_3_INTERMEDIATE = new Pose(46.000, 94.000, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(22.000, 94.000, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(25.000, 94.000, Math.toRadians(180));
 
 	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 19.128, Math.toRadians(180));
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 19.128, Math.toRadians(180));
@@ -44,7 +44,7 @@ public class PoseDatabase {
 	public static final Pose RED_SPIKE_2_COLLECT = new Pose(136.000, 58.000, Math.toRadians(0));
 
 	public static final Pose RED_SPIKE_3_INTERMEDIATE = new Pose(98.000, 82.000, Math.toRadians(0));
-	public static final Pose RED_SPIKE_3_COLLECT = new Pose(122.000, 82.000, Math.toRadians(0));
+	public static final Pose RED_SPIKE_3_COLLECT = new Pose(123.000, 82.000, Math.toRadians(0));
 
 	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = new Pose(120.000, 9.128, Math.toRadians(0));
 	public static final Pose RED_HUMAN_PLAYER_COLLECT = new Pose(136.000, 9.128, Math.toRadians(0));

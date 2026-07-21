@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.Team;
-import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
+import org.firstinspires.ftc.teamcode.Utils.Drive;
 
 
 @Configurable
@@ -25,7 +25,7 @@ public class VisualTurretingDrive extends OpMode {
 	double headingCorrection;
 
 	PIDFController headingPIDController;
-	TeleOpDrive teleOpDrive;
+	Drive drive;
 
 	public static double P = 0.025, I, D = 0.00025, F = 0.001;
 
@@ -49,7 +49,7 @@ public class VisualTurretingDrive extends OpMode {
 
 		headingPIDController = new PIDFController(new PIDFCoefficients(P, I, D, F));
 
-		teleOpDrive = new TeleOpDrive(hardwareMap);
+		drive = new Drive(hardwareMap);
 
 		limelight = new Limelight(hardwareMap);
 
@@ -96,11 +96,11 @@ public class VisualTurretingDrive extends OpMode {
 				headingCorrection = headingPIDController.run();
 			}
 
-			teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
+			drive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
 
 
 		} else {
-			teleOpDrive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+			drive.TeleopDrive(follower, gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
 		}
 
 		if (RobotConfig.COMPETITION) return;

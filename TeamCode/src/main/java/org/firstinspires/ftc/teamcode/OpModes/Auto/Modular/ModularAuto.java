@@ -31,6 +31,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
+import org.firstinspires.ftc.teamcode.Utils.Drive;
 import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
@@ -453,14 +454,11 @@ public abstract class ModularAuto extends OpMode {
 			toShoot = follower.pathBuilder().addPath(
 							new BezierLine(currentExpectedPose.getPose(), new Pose(28.000, 94.000)))
 					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
 					.setConstantHeadingInterpolation(PoseDatabase.BLUE_SPIKE_3_COLLECT.getHeading())
 					.addPath(new BezierLine(new Pose(28.000, 94.000), shootPose))
-					.setGlobalHeadingInterpolation(HeadingInterpolator.piecewise(
-							new HeadingInterpolator.PiecewiseNode(
-									.0,
-									.1,
-									HeadingInterpolator.tangent.reverse()
-							),
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
 							new HeadingInterpolator.PiecewiseNode(
 									.0,
 									.8,
@@ -475,37 +473,17 @@ public abstract class ModularAuto extends OpMode {
 					.build();
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
-//			toShoot = follower.pathBuilder().addPath(
-//							new BezierCurve(
-//									new Pose(129.000, 89.500),
-//									new Pose(61.063, 91.416),
-//									shootPose)
-//					)
-//					.setBrakingStrength(1)
-//					.setBrakingStart(0.7)
-//					.setHeadingInterpolation(
-//							HeadingInterpolator.piecewise(
-//									new HeadingInterpolator.PiecewiseNode(
-//											0,
-//											.5,
-//											HeadingInterpolator.tangent.reverse()
-//									),
-//									new HeadingInterpolator.PiecewiseNode(
-//											.5,
-//											1,
-//											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
-//									)
-//							))
-//					.build();
-			toShoot = follower.pathBuilder()
-					.addPath(new BezierLine(currentExpectedPose, shootPose))
+			toShoot = follower.pathBuilder().addPath(
+							new BezierLine(currentExpectedPose.getPose(), new Pose(115, 82.000)))
 					.setBrakingStrength(1)
+					.setConstantHeadingInterpolation(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getHeading())
+					.addPath(new BezierLine(new Pose(115.000, 82.000), shootPose))
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
-											0,
+											.0,
 											.8,
-											HeadingInterpolator.tangent.reverse()
+											HeadingInterpolator.tangent
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.8,
@@ -529,7 +507,7 @@ public abstract class ModularAuto extends OpMode {
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.1,
-											.5,
+											0.5,
 											HeadingInterpolator.tangent
 									),
 									new HeadingInterpolator.PiecewiseNode(
@@ -561,7 +539,6 @@ public abstract class ModularAuto extends OpMode {
 						})
 
 				),
-
 				transfer.IntakeDoorOut(),
 				getShootSequence(550),
 				new InstantCommand(()-> beamBreaker.resetBallCount())

@@ -22,7 +22,6 @@ import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.controller.SquIDFController;
-import com.seattlesolvers.solverslib.util.Timing;
 
 import org.firstinspires.ftc.teamcode.OpModes.Auto.Modular.PoseDatabase;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
@@ -37,9 +36,8 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
-import org.firstinspires.ftc.teamcode.Utils.SqurPIDFController;
 import org.firstinspires.ftc.teamcode.Utils.Team;
-import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
+import org.firstinspires.ftc.teamcode.Utils.Drive;
 
 import java.util.function.Supplier;
 
@@ -86,9 +84,9 @@ public abstract class MainTeleOp extends OpMode {
 	private Supplier<PathChain> pathGoalShoot;
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
-	PIDFController headingPIDController;
+    PIDFController headingPIDController;
 	SquIDFController limelightPIDController;
-	TeleOpDrive teleOpDrive;
+	Drive drive;
 	boolean headingLock = true;
 	double currentHeading;
 	double headingDeadzone;
@@ -96,6 +94,8 @@ public abstract class MainTeleOp extends OpMode {
 
 	double tar;
 	double headingCorrection;
+
+	double correctionspeed;
 	double humanPlayerHeading = 0;
 
 	public double anglewrap(double degrees){
@@ -111,7 +111,7 @@ public abstract class MainTeleOp extends OpMode {
 	Timer headinglocktimer;
 	double goalX = 0;
 	boolean openGate = false;
-	public static double P = 0.095, I, D = 0.002, F = 0.0001;
+	public static double P = 0.06, I, D = 0.002, F = 0.0001;
 
 	private  double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
 
@@ -130,7 +130,7 @@ public abstract class MainTeleOp extends OpMode {
 		scheduler.setBulkReading(hardwareMap, LynxModule.BulkCachingMode.AUTO);
 
 		shooter = new Shooter(hardwareMap);
-		teleOpDrive = new TeleOpDrive(hardwareMap);
+		drive = new Drive(hardwareMap);
 
 		intake = new Intake(hardwareMap);
 		transfer = new Transfer(hardwareMap);
@@ -285,61 +285,63 @@ public abstract class MainTeleOp extends OpMode {
 
 			if (gamepad1.left_trigger > 0) {
 				currentHeading = follower.getHeading();
-				tar = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
+				tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
 				targetHeading = 0;
-				headingPIDController.setCoefficients(new PIDFCoefficients(P2,I2,D2,F2));
+				headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
 				headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
-				headingPIDController.updateFeedForwardInput(1);
+				correctionspeed = -headingPIDController.run();
 				headingDeadzone = 7;
-			} else {
+		} else {
 				if (limelight.goalsFound(getTeam())) {
 					headinglocktimer.resetTimer();
 
 					currentHeading = limelight.AngleFrom(getTeam());
 					targetHeading = 0;
-//					headingPIDController.setCoefficients(new PIDFCoefficients(P, I, D, F));
-//					headingPIDController.updatePosition(currentHeading);
-					limelightPIDController.setPIDF(P,I,D,F);
-					limelightPIDController.calculate(currentHeading, targetHeading);
+					limelightPIDController.setPIDF(P, I, D, F);
 					headingDeadzone = 1;
-//					headingPIDController.setTargetPosition(targetHeading);
-//					headingPIDController.updateError(targetHeading - currentHeading);
-//					headingPIDController.updateFeedForwardInput(1);
+					correctionspeed = -limelightPIDController.calculate(currentHeading, targetHeading);
 
-				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 200){
+				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
 					currentHeading = follower.getHeading();
-					tar = limelight.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
+					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
 					targetHeading = 0;
-					headingPIDController.setCoefficients(new PIDFCoefficients(P2,I2,D2,F2));
+
+					if (Math.abs(Math.toDegrees(tar - currentHeading)) > 70) {
+						correctionspeed = -headingPIDController.run();
+					} else {
+						correctionspeed = MathFunctions.clamp(-headingPIDController.run(), -0.5, 0.5);
+					}
+					headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
 					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
 					headingPIDController.updateFeedForwardInput(1);
 					headingDeadzone = 7;
 				}
-			}
 
-			headingLock = gamepad1.right_trigger > 0;
 
-			if (headingLock || gamepad1.left_trigger > 0) {
-				double headingError = targetHeading - currentHeading;
-				headingError = Math.IEEEremainder(headingError, 2 * Math.PI);
+				headingLock = gamepad1.right_trigger > 0;
 
-				double ori = 1;
-				//if (Math.abs(headingError) > 180) ori = 1;
+				if (headingLock || gamepad1.left_trigger > 0) {
+					double headingError = targetHeading - currentHeading;
+					headingError = Math.IEEEremainder(headingError, 2 * Math.PI);
+
+					double ori = 1;
+					//if (Math.abs(headingError) > 180) ori = 1;
 //				else ori = -1;
-				if (Math.abs(headingError) < Math.toRadians(headingDeadzone)) {
-					headingCorrection = 0;
-					if (headingLockRumbleSent) {
-						gamepad2.rumble(300);
-						headingLockRumbleSent = false;
+					if (Math.abs(headingError) < Math.toRadians(headingDeadzone)) {
+						headingCorrection = 0;
+						if (headingLockRumbleSent) {
+							gamepad2.rumble(300);
+							headingLockRumbleSent = false;
+						}
+					} else {
+						headingCorrection = correctionspeed;
 					}
-				} else {
-					headingCorrection = (limelight.goalsFound(getTeam())) ? -limelightPIDController.calculate(currentHeading, targetHeading) : -headingPIDController.run();
-				}
 
-				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection );
-			} else {
-				headingLockRumbleSent = false;
-				writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+					writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
+				} else {
+					headingLockRumbleSent = false;
+					writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+				}
 			}
 		}
 	}
@@ -356,7 +358,7 @@ public abstract class MainTeleOp extends OpMode {
 				&& Math.abs(h - prevDriveH) < DRIVE_SNAP_THRESHOLD) {
 			return;
 		}
-		teleOpDrive.TeleopDrive(follower, x, y, h);
+		drive.TeleopDrive(follower, x, y, h);
 		prevDriveX = x;
 		prevDriveY = y;
 		prevDriveH = h;
@@ -480,10 +482,11 @@ public abstract class MainTeleOp extends OpMode {
 
 		panelsTelemetry.update();
 
-		//limelight.Telemetry(telemetry);
+		limelight.Telemetry(telemetry);
 		//telemetry.addData("ballcount", ballCount);
 		//telemetry.addData("prespin Tiriggered?",prespinTriggered);
 		telemetry.addLine(follower.getPose().toString());
+		telemetry.addData("error",Math.toDegrees(tar - follower.getHeading()));
 		telemetry.update();
 
 

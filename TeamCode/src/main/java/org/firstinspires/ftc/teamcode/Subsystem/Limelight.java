@@ -12,7 +12,6 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
-import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -23,11 +22,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Utils.Team;
-import org.firstinspires.ftc.teamcode.Utils.TeleOpDrive;
+import org.firstinspires.ftc.teamcode.Utils.Drive;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 
 public class Limelight extends SubsystemBase {
@@ -39,8 +36,10 @@ public class Limelight extends SubsystemBase {
 	double targetHeading = Math.toRadians(180);
 	double headingCorrection;
 
+	double angle;
+
 	PIDFController headingPIDController;
-	TeleOpDrive teleOpDrive;
+	Drive drive;
 
 	public static double P = 0.03, I, D, F = 0.001;
 
@@ -51,6 +50,8 @@ public class Limelight extends SubsystemBase {
 
 	LowPassFilter xLowPassFilter;
 	LowPassFilter yLowPassFilter;
+
+	LowPassFilter poiLowPassFilter;
 
 	public double calculateShotAngle(double x, double y, double goalX, double goalY) {
 		double deltaX = goalX - x;
@@ -68,6 +69,7 @@ public class Limelight extends SubsystemBase {
 
 		xLowPassFilter = new LowPassFilter(0.4);
 		yLowPassFilter = new LowPassFilter(0.4);
+		poiLowPassFilter = new LowPassFilter(0.99);
 	}
 
 	public Limelight(HardwareMap hardwareMap,Follower follower) {
@@ -77,13 +79,13 @@ public class Limelight extends SubsystemBase {
 
 		xLowPassFilter = new LowPassFilter(0.4);
 		yLowPassFilter = new LowPassFilter(0.4);
-
+		poiLowPassFilter = new LowPassFilter(0.4);
 		this.follower = follower;
 		this.follower.setStartingPose(new Pose(63.450, 9, Math.toRadians(270)));
 
 		headingPIDController = new PIDFController(new PIDFCoefficients(P, I, D, F));
 
-		teleOpDrive = new TeleOpDrive(hardwareMap);
+		drive = new Drive(hardwareMap);
 	}
 
 
@@ -139,18 +141,16 @@ public class Limelight extends SubsystemBase {
 			telemetry.addData("LL MT2 Pose", botPose.toString());
 
 			telemetry.addData("Blue Goal Found?", blueGoalFound() ? "give that man a TRUE" : "false");
-			telemetry.addData("Distance From Blue Goal", distanceFrom(Team.BLUE));
+			telemetry.addData("Distance From Blue Goal", AngleFrom(Team.BLUE));
 			telemetry.addData("Red Goal Found?", redGoalFound() ? "give that man a TRUE" : "false");
-			telemetry.addData("Distance From Red Goal", distanceFrom(Team.RED));
-
-			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
-			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
-
-				telemetry.addLine(fiducial.getFiducialId() + " : " + fiducial.getTargetXDegrees());
-				telemetry.addLine(fiducial.getFiducialId() + " : " + fiducial.getTargetPoseCameraSpace());
+			telemetry.addData("Distance From Red Goal",AngleFrom(Team.RED));
 
 
-			}
+
+//			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
+//			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
+//				telemetry.addLine(fiducial.getFiducialId() + " : " + fiducial.getTargetXDegrees());
+//			}
 		}
 	}
 
@@ -208,21 +208,26 @@ public class Limelight extends SubsystemBase {
 	public double AngleFrom(Team tag) {
 		LLResult llResult = limelight.getLatestResult();
 
+		poiLowPassFilter.update(angle,1);
+
 		if (llResult != null && llResult.isValid()) {
 			List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
 			for (LLResultTypes.FiducialResult fiducial : fiducialResults) {
 				if (tag == Team.BLUE) {
 					if (fiducial.getFiducialId() == BLUEGOAL) {
-						return fiducial.getTargetXDegrees();
+						angle = fiducial.getTargetXDegrees();
+						return poiLowPassFilter.getState();
 					}
 				} else if (tag == Team.RED) {
 					if (fiducial.getFiducialId() == REDGOAL) {
-						return fiducial.getTargetXDegrees();
+						angle = fiducial.getTargetXDegrees();
+						return poiLowPassFilter.getState();
 					}
-				}
+				}else angle = 0;
+
 
 			}
-		}
+		} else angle = 0;
 		return 0;
 
 	}
@@ -299,7 +304,7 @@ public class Limelight extends SubsystemBase {
 					headingPIDController.setTargetPosition(targetHeading);
 					headingCorrection = headingPIDController.run();
 				}
-				teleOpDrive.TeleopDrive(follower,0,0, headingCorrection);
+				drive.TeleopDrive(follower,0,0, headingCorrection);
 			}
 			@Override
 			public boolean isFinished(){return Math.abs(headingError) < Math.toRadians(7);}
