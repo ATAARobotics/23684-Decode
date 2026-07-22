@@ -14,22 +14,21 @@ public class PoseDatabase {
 	public static final Pose BLUE_AUDIENCE_SHOOT = new Pose(91.328, 17.417, Math.toRadians(-56.535));
 	public static final Pose BLUE_GOAL_SHOOT = new Pose(120.4, 95.7, Math.toRadians(340.7));
 
-	public static final Pose BLUE_SPIKE_1_INTERMEDIATE = new Pose(46.000, 45.50, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_1_COLLECT = new Pose(21.000, 45.50, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_1_INTERMEDIATE = new Pose(46.000, 35.5, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_1_COLLECT = new Pose(21.000, 35.5, Math.toRadians(180));
 
-	public static final Pose BLUE_SPIKE_2_INTERMEDIATE = new Pose(46.000, 67.500, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_2_COLLECT = new Pose(20.000, 67.500, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_2_INTERMEDIATE = new Pose(46.000, 59.7, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_2_COLLECT = new Pose(20.000, 59.7, Math.toRadians(180));
 
-	public static final Pose BLUE_SPIKE_3_INTERMEDIATE = new Pose(46.000, 94.000, Math.toRadians(180));
-	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(25.000, 94.000, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_3_INTERMEDIATE = new Pose(46.000, 83.87, Math.toRadians(180));
+	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(25.000, 83.87, Math.toRadians(180));
 
-	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 19.128, Math.toRadians(180));
-	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 19.128, Math.toRadians(180));
+	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 10.5, Math.toRadians(180));
+	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 10.5, Math.toRadians(180));
 
-	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(44.00, 45.50, Math.toRadians(180));
-	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_WIGGLE = new Pose(15.8, 19.128, Math.toRadians(180));
+	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(44.00, 35.5, Math.toRadians(180));
 
-	public static final Pose BLUE_PARK = new Pose(40, 34, Math.toRadians(180));
+	public static final Pose BLUE_PARK = new Pose(38.5, 33, Math.toRadians(180));
 	public static final Pose BLUE_RESET_POSE = new Pose(142.720, 7.368, 0);
 
 	// RED POSES  — every entry below is exactly PoseUtils.mirror(BLUE_*, 141.5).
@@ -56,7 +55,6 @@ public class PoseDatabase {
 	public static final Pose RED_HUMAN_PLAYER_INTERMEDIATE = PoseUtils.mirror(BLUE_HUMAN_PLAYER_INTERMEDIATE, FIELD_LENGTH);
 	public static final Pose RED_HUMAN_PLAYER_COLLECT = PoseUtils.mirror(BLUE_HUMAN_PLAYER_COLLECT, FIELD_LENGTH);
 	public static final Pose RED_HUMAN_PLAYER_COLLECT_FARSIDE = PoseUtils.mirror(BLUE_HUMAN_PLAYER_COLLECT_FARSIDE, FIELD_LENGTH);
-	public static final Pose RED_HUMAN_PLAYER_COLLECT_WIGGLE = PoseUtils.mirror(BLUE_HUMAN_PLAYER_COLLECT_WIGGLE, FIELD_LENGTH);
 
 	public static final Pose RED_PARK = PoseUtils.mirror(BLUE_PARK, FIELD_LENGTH);
 	public static final Pose RED_RESET_POSE = PoseUtils.mirror(BLUE_RESET_POSE, FIELD_LENGTH);
