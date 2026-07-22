@@ -277,15 +277,15 @@ public abstract class MainTeleOp extends OpMode {
 
 			if (getTeam() == Team.RED) {
 				humanPlayerHeading = MathFunctions.normalizeAngle(Math.toRadians(180));
-				goalX = 129.717;
+				goalX = 141.5;
 			} else if (getTeam() == Team.BLUE) {
 				humanPlayerHeading = MathFunctions.normalizeAngle(Math.toRadians(0));
-				goalX = 15.024;
+				goalX = 0;
 			}
 
 			if (gamepad1.left_trigger > 0) {
 				currentHeading = follower.getHeading();
-				tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
+				tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
 				targetHeading = 0;
 				headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
 				headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
@@ -303,7 +303,7 @@ public abstract class MainTeleOp extends OpMode {
 
 				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
 					currentHeading = follower.getHeading();
-					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 130.927);
+					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
 					targetHeading = 0;
 
 					if (Math.abs(Math.toDegrees(tar - currentHeading)) > 70) {

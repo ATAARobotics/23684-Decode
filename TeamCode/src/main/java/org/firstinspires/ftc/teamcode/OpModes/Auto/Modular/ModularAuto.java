@@ -273,7 +273,7 @@ public abstract class ModularAuto extends OpMode {
 									)
 							))
 					.setHeadingConstraint(Math.toDegrees(5))
-					.setTranslationalConstraint(4)
+					.setTValueConstraint(0.99)
 					.build();
 			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
 		} else {
@@ -298,7 +298,7 @@ public abstract class ModularAuto extends OpMode {
 									)
 							))
 					.setHeadingConstraint(Math.toDegrees(5))
-					.setTranslationalConstraint(4)
+					.setTValueConstraint(0.99)
 					.build();
 			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
 		}
@@ -314,7 +314,7 @@ public abstract class ModularAuto extends OpMode {
 
 		SequentialCommandGroup command = new SequentialCommandGroup(
 				//new ParallelCommandGroup(
-						new FollowPathCommand(follower, toSpike),
+						new FollowPathCommand(follower, toSpike).interruptOn(()-> follower.getCurrentTValue() >= 0.9),
 						new SequentialCommandGroup(
 								transfer.TransferIn(),
 								intake.In(),
