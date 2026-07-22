@@ -165,11 +165,15 @@ public abstract class ModularAuto extends OpMode {
 	private Command getCommandForStep(RouteStep step) {
 		Team team = getTeam();
 		Pose shootPose = PoseDatabase.getShootPose(team);
+		Pose curvePose = (getTeam() ==  Team.BLUE) ? PoseDatabase.BLUE_SHOOT_CURVE : PoseDatabase.RED_SHOOT_CURVE;
 
 		switch (step) {
 			case SHOOT_PRELOAD:
 				PathChain preloadPath = follower.pathBuilder()
-						.addPath(new BezierLine(currentExpectedPose, shootPose))
+						.addPath(new BezierCurve(
+								currentExpectedPose,
+								curvePose,
+								shootPose))
 						.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), shootPose.getHeading(),0.1)
 						.build();
 				currentExpectedPose = shootPose;
@@ -457,11 +461,13 @@ public abstract class ModularAuto extends OpMode {
 //							))
 //					.build();
 			toShoot = follower.pathBuilder().addPath(
-							new BezierLine(currentExpectedPose.getPose(), new Pose(PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getX() - 4, PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getY())))
+					new BezierCurve(
+							new Pose(24.000, 83.870),
+							new Pose(54.035, 71.458),
+							new Pose(59.440, 17.328)
+					))
 					.setBrakingStrength(1)
 					.setBrakingStart(0.7)
-					.setConstantHeadingInterpolation(PoseDatabase.BLUE_SPIKE_3_COLLECT.getHeading())
-					.addPath(new BezierLine(new Pose(PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getX() - 4, PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getY()), shootPose))
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 							new HeadingInterpolator.PiecewiseNode(
@@ -479,10 +485,12 @@ public abstract class ModularAuto extends OpMode {
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
 			toShoot = follower.pathBuilder().addPath(
-							new BezierLine(currentExpectedPose.getPose(), new Pose(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getX() + 4, PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getY())))
+					new BezierCurve(
+							new Pose(24.000, 83.870).mirror(),
+							new Pose(54.035, 71.458).mirror(),
+							new Pose(59.440, 17.328).mirror()
+					))
 					.setBrakingStrength(1)
-					.setConstantHeadingInterpolation(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getHeading())
-					.addPath(new BezierLine(new Pose(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getX() + 4, PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getY()), shootPose))
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
@@ -655,12 +663,12 @@ public abstract class ModularAuto extends OpMode {
 									new HeadingInterpolator.PiecewiseNode(
 											0,
 											.1,
-											HeadingInterpolator.constant(PoseDatabase.BLUE_SPIKE_3_COLLECT.getHeading())
+											HeadingInterpolator.constant(currentExpectedPose.getHeading())
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.1,
 											.5,
-											HeadingInterpolator.tangent
+											HeadingInterpolator.tangent.reverse()
 									),
 									new HeadingInterpolator.PiecewiseNode(
 											.5,

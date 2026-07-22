@@ -9,6 +9,8 @@ public class PoseDatabase {
 	// BLUE POSES  — source of truth for the entire alliance pair.
 	// Every RED_* pose below is PoseUtils.mirror(BLUE_*, FIELD_LENGTH) where FIELD_LENGTH = 141.5".
 	public static final Pose BLUE_START = new Pose(61.25, 9.9375, Math.toRadians(270));
+
+	public static final Pose BLUE_SHOOT_CURVE = new Pose(61.112, 17.093);
 	public static final Pose BLUE_SHOOT = new Pose(59.440, 17.328, Math.toRadians(294.935));
 
 	public static final Pose BLUE_AUDIENCE_SHOOT = new Pose(91.328, 17.417, Math.toRadians(-56.535));
@@ -23,8 +25,8 @@ public class PoseDatabase {
 	public static final Pose BLUE_SPIKE_3_INTERMEDIATE = new Pose(46.000, 83.87, Math.toRadians(180));
 	public static final Pose BLUE_SPIKE_3_COLLECT = new Pose(24.000, 83.87, Math.toRadians(180));
 
-	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 10.5, Math.toRadians(180));
-	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 10.5, Math.toRadians(180));
+	public static final Pose BLUE_HUMAN_PLAYER_INTERMEDIATE = new Pose(44.8, 10, Math.toRadians(180));
+	public static final Pose BLUE_HUMAN_PLAYER_COLLECT = new Pose(17.00, 10, Math.toRadians(180));
 
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(44.00, 35.5, Math.toRadians(180));
 
@@ -38,6 +40,8 @@ public class PoseDatabase {
 	public static final double FIELD_LENGTH = 141.5;
 
 	public static final Pose RED_START = PoseUtils.mirror(BLUE_START, FIELD_LENGTH);
+
+	public static final Pose RED_SHOOT_CURVE = PoseUtils.mirror(BLUE_SHOOT_CURVE,FIELD_LENGTH);
 	public static final Pose RED_SHOOT = PoseUtils.mirror(BLUE_SHOOT, FIELD_LENGTH);
 
 	public static final Pose RED_AUDIENCE_SHOOT = PoseUtils.mirror(BLUE_AUDIENCE_SHOOT, FIELD_LENGTH);
