@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 public class PoseDatabase {
 	// BLUE POSES  — source of truth for the entire alliance pair.
 	// Every RED_* pose below is PoseUtils.mirror(BLUE_*, FIELD_LENGTH) where FIELD_LENGTH = 141.5".
-	public static final Pose BLUE_START = new Pose(63.000, 9, Math.toRadians(270));
+	public static final Pose BLUE_START = new Pose(61.25, 9.9375, Math.toRadians(270));
 	public static final Pose BLUE_SHOOT = new Pose(59.440, 17.328, Math.toRadians(294.935));
 
 	public static final Pose BLUE_AUDIENCE_SHOOT = new Pose(91.328, 17.417, Math.toRadians(-56.535));

@@ -13,7 +13,7 @@ public class RedGoalTeleOp extends MainTeleOp {
 	@Override
 	protected Pose getStartingPose() {
 		// Mirrored X for Red Alliance, Goal side
-		return new Pose(144 - 63.450, 135, Math.toRadians(90));
+		return new Pose(80.25, 135, Math.toRadians(90));
 	}
 
 	@Override
