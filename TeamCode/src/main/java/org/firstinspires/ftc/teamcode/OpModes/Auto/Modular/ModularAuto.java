@@ -32,6 +32,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Intake;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.Drive;
+import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
 import org.firstinspires.ftc.teamcode.Utils.ShootArtifacts;
@@ -275,7 +276,7 @@ public abstract class ModularAuto extends OpMode {
 					.setTranslationalConstraint(4)
 					.build();
 			toSpike.setDecelerationType(PathChain.DecelerationType.NONE);
-		}else{
+		} else {
 			toSpike = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, intermediate))
 					.setLinearHeadingInterpolation(currentExpectedPose.getHeading(), intermediate.getHeading(),0.2).setHeadingInterpolation(
@@ -724,6 +725,9 @@ public abstract class ModularAuto extends OpMode {
 		if (RobotConfig.COMPETITION) return;
 
 		panelsTelemetry.addData("Current Step", currentStepName);
+		panelsTelemetry.addData("Location", follower.getPose().toString());
+		Drawing.drawRobot(follower.getPose());
+		Drawing.sendPacket();
 
 		panelsTelemetry.addLine("=== SHOOTER ===");
 		panelsTelemetry.addData("Upper RPM", shooter.upperRPM);
