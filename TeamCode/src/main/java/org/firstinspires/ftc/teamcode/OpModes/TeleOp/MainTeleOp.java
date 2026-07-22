@@ -29,7 +29,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
 import org.firstinspires.ftc.teamcode.Subsystem.Conveyor;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
 import org.firstinspires.ftc.teamcode.Subsystem.Intake;
-import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
+//import org.firstinspires.ftc.teamcode.Subsystem.Limelight;
 import org.firstinspires.ftc.teamcode.Subsystem.RGBIndicator;
 import org.firstinspires.ftc.teamcode.Subsystem.Shooter;
 import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
@@ -49,7 +49,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Intake intake;
 	protected Transfer transfer;
 	protected Conveyor conveyor;
-	protected Limelight limelight;
+//	protected Limelight limelight;
 	protected Gate gate;
 	protected BeamBreaker beamBreaker;
 	protected RGBIndicator rgbIndicator;
@@ -137,7 +137,7 @@ public abstract class MainTeleOp extends OpMode {
 		conveyor = new Conveyor(hardwareMap);
 		beamBreaker = new BeamBreaker(hardwareMap);
 		gate = new Gate(hardwareMap);
-		limelight = new Limelight(hardwareMap, follower);
+//		limelight = new Limelight(hardwareMap, follower);
 		transfer.setShooter(shooter);
 
 		headinglocktimer = new Timer();
@@ -291,31 +291,35 @@ public abstract class MainTeleOp extends OpMode {
 				headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
 				correctionspeed = -headingPIDController.run();
 				headingDeadzone = 7;
-		} else {
-				if (limelight.goalsFound(getTeam())) {
-					headinglocktimer.resetTimer();
+			}
 
-					currentHeading = limelight.AngleFrom(getTeam());
-					targetHeading = 0;
-					limelightPIDController.setPIDF(P, I, D, F);
-					headingDeadzone = 1;
-					correctionspeed = -limelightPIDController.calculate(currentHeading, targetHeading);
-
-				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
-					currentHeading = follower.getHeading();
-					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
-					targetHeading = 0;
-
-					if (Math.abs(Math.toDegrees(tar - currentHeading)) > 70) {
-						correctionspeed = -headingPIDController.run();
-					} else {
-						correctionspeed = MathFunctions.clamp(-headingPIDController.run(), -0.5, 0.5);
-					}
-					headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
-					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
-					headingPIDController.updateFeedForwardInput(1);
-					headingDeadzone = 7;
-				}
+//		} else {
+//				if (limelight.goalsFound(getTeam())) {
+//					headinglocktimer.resetTimer();
+//
+//					currentHeading = limelight.AngleFrom(getTeam());
+//					targetHeading = 0;
+//					limelightPIDController.setPIDF(P, I, D, F);
+//					headingDeadzone = 1;
+//					correctionspeed = -limelightPIDController.calculate(currentHeading, targetHeading);
+//
+//				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
+//					currentHeading = follower.getHeading();
+//					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
+//					targetHeading = 0;
+//
+//					if (Math.abs(Math.toDegrees(tar - currentHeading)) > 70) {
+//						correctionspeed = -headingPIDController.run();
+//					} else {
+//						correctionspeed = MathFunctions.clamp(-headingPIDController.run(), -0.5, 0.5);
+//					}
+//					headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
+//					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
+//					headingPIDController.updateFeedForwardInput(1);
+//					headingDeadzone = 7;
+//				}
+//
+//			}
 
 
 				headingLock = gamepad1.right_trigger > 0;
@@ -342,7 +346,6 @@ public abstract class MainTeleOp extends OpMode {
 					headingLockRumbleSent = false;
 					writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
 				}
-			}
 		}
 	}
 
@@ -482,7 +485,7 @@ public abstract class MainTeleOp extends OpMode {
 
 		panelsTelemetry.update();
 
-		limelight.Telemetry(telemetry);
+		//limelight.Telemetry(telemetry);
 		//telemetry.addData("ballcount", ballCount);
 		//telemetry.addData("prespin Tiriggered?",prespinTriggered);
 		telemetry.addLine(follower.getPose().toString());

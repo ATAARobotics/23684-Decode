@@ -31,6 +31,12 @@ package org.firstinspires.ftc.teamcode.OpModes.Test;
 
 import android.util.Size;
 
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.ftc.InvertedFTCCoordinates;
+import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.geometry.CoordinateSystem;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -39,6 +45,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDir
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -99,7 +106,7 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
     private Position cameraPosition = new Position(DistanceUnit.INCH,
             0, 0, 16, 0);
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
-            0, -90, 0, 0);
+            180, -75, 0, 0);
 
     /**
      * The variable to store our instance of the AprilTag processor.
@@ -240,12 +247,24 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
                             detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),
                             detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES),
                             detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
-                }
+
+              }
             } else {
                 telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
                 telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
             }
         }   // end for() loop
+
+        // code to try to convert it to somthing pedropathing can use
+        Pose vispose = PoseConverter.pose2DToPose(new Pose2D(
+                DistanceUnit.INCH,
+                aprilTag.getDetections().get(0).robotPose.getPosition().x,
+                aprilTag.getDetections().get(0).robotPose.getPosition().y,
+                AngleUnit.DEGREES,
+                aprilTag.getDetections().get(0).robotPose.getOrientation().getYaw(AngleUnit.DEGREES)
+                ), InvertedFTCCoordinates.INSTANCE);
+
+        telemetry.addData("pose guess", vispose.getAsCoordinateSystem(PedroCoordinates.INSTANCE).toString());
 
         // Add "key" information to telemetry
         telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
