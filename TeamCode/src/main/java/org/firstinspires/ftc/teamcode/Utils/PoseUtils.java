@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Utils;
 
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 
 /**
  * Utility helpers for working with {@link Pose} objects.
@@ -24,7 +25,7 @@ public class PoseUtils {
 		return new Pose(
 				fieldLength - pose.getX(),
 				pose.getY(),
-				-pose.getHeading()
+				MathFunctions.normalizeAngle(Math.PI - pose.getHeading())
 		);
 	}
 }
