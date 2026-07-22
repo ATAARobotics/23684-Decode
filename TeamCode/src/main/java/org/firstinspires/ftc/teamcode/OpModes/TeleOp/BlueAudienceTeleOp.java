@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 public class BlueAudienceTeleOp extends MainTeleOp {
 	@Override
 	protected Pose getStartingPose() {
-		return new Pose(63.450, 9, Math.toRadians(270));
+		return new Pose(61.25, 9.9375, Math.toRadians(270));
 	}
 
 	@Override

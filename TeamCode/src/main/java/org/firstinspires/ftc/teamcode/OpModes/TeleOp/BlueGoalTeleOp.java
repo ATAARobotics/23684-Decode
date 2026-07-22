@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.Utils.Team;
 public class BlueGoalTeleOp extends MainTeleOp {
 	@Override
 	protected Pose getStartingPose() {
-		return new Pose(63.450, 135, Math.toRadians(90));
+		return new Pose(61.25, 135, Math.toRadians(90));
 	}
 
 	@Override
