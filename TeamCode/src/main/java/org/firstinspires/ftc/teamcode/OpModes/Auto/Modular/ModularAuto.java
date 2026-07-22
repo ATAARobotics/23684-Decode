@@ -457,11 +457,11 @@ public abstract class ModularAuto extends OpMode {
 //							))
 //					.build();
 			toShoot = follower.pathBuilder().addPath(
-							new BezierLine(currentExpectedPose.getPose(), new Pose(28.000, 94.000)))
+							new BezierLine(currentExpectedPose.getPose(), new Pose(PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getX() - 4, PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getY())))
 					.setBrakingStrength(1)
 					.setBrakingStart(0.7)
 					.setConstantHeadingInterpolation(PoseDatabase.BLUE_SPIKE_3_COLLECT.getHeading())
-					.addPath(new BezierLine(new Pose(28.000, 94.000), shootPose))
+					.addPath(new BezierLine(new Pose(PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getX() - 4, PoseDatabase.BLUE_SPIKE_3_INTERMEDIATE.getY()), shootPose))
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 							new HeadingInterpolator.PiecewiseNode(
@@ -479,10 +479,10 @@ public abstract class ModularAuto extends OpMode {
 			prespinWaitMs += 400;
 		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
 			toShoot = follower.pathBuilder().addPath(
-							new BezierLine(currentExpectedPose.getPose(), new Pose(115, 82.000)))
+							new BezierLine(currentExpectedPose.getPose(), new Pose(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getX() + 4, PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getY())))
 					.setBrakingStrength(1)
 					.setConstantHeadingInterpolation(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getHeading())
-					.addPath(new BezierLine(new Pose(115.000, 82.000), shootPose))
+					.addPath(new BezierLine(new Pose(PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getX() + 4, PoseDatabase.RED_SPIKE_3_INTERMEDIATE.getY()), shootPose))
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
