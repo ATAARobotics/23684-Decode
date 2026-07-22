@@ -56,6 +56,8 @@ public abstract class MainTeleOp extends OpMode {
 	protected int ballCount = 0;
 	protected boolean lastIntakeIn = true;
 	protected boolean prespinTriggered = false;
+	protected boolean prespinTriggeredAtTwo = false;
+	protected boolean prespinTriggeredByAlign = false;
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	protected boolean leftTriggerPressed = false;
 	protected boolean rightTriggerPressed = false;
@@ -70,7 +72,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean wasPathBusy = false;
 	protected boolean warnedEndGame = false;
 	protected boolean headingLockRumbleSent = false;
-	protected boolean wasBeamAtThree = false;
+	protected boolean wasBeamAtTwo = false;
 	ElapsedTime timer = new ElapsedTime();
 	// Drive-input cache. Joystick values drift by ~0.001 per loop even when the
 	// driver is holding still. Each call to TeleopDrive writes 4 hardware power
@@ -225,7 +227,14 @@ public abstract class MainTeleOp extends OpMode {
 
 		if (ballCount >= 3 && !prespinTriggered) {
 			prespinTriggered = true;
-		} else if (ballCount < 3 && prespinTriggered) {
+		} else if (ballCount >= 2 && !prespinTriggeredAtTwo && !prespinTriggered) {
+			prespinTriggered = true;
+			prespinTriggeredAtTwo = true;
+		} else if (ballCount < 2) {
+			prespinTriggered = false;
+			prespinTriggeredAtTwo = false;
+		} else if (ballCount < 3 && prespinTriggeredAtTwo) {
+			// Allow retrigger on 3 if we previously triggered on 2
 			prespinTriggered = false;
 		}
 
@@ -385,7 +394,9 @@ public abstract class MainTeleOp extends OpMode {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
 				prespinTriggered = false;
-				wasBeamAtThree = false;
+				prespinTriggeredAtTwo = false;
+				prespinTriggeredByAlign = false;
+				wasBeamAtTwo = false;
 			}
 			scheduler.schedule(
 					new SequentialCommandGroup(
@@ -405,7 +416,9 @@ public abstract class MainTeleOp extends OpMode {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
 				prespinTriggered = false;
-				wasBeamAtThree = false;
+				prespinTriggeredAtTwo = false;
+				prespinTriggeredByAlign = false;
+				wasBeamAtTwo = false;
 			}
 			openGate = false;
 			rightTriggerPressed = false;
@@ -415,15 +428,26 @@ public abstract class MainTeleOp extends OpMode {
 			beamBreaker.resetBallCount();
 			ballCount = 0;
 			prespinTriggered = false;
-			wasBeamAtThree = false;
+			prespinTriggeredAtTwo = false;
+			prespinTriggeredByAlign = false;
+			wasBeamAtTwo = false;
 			gamepad2AWasPressed = true;
 		} else if (!gamepad2.a && gamepad2AWasPressed) {
 			gamepad2AWasPressed = false;
 		}
 
-		if (gamepad2.yWasPressed() || (ballCount >= 3 && prespinTriggered)) {
+		boolean alignPressed = gamepad1.right_trigger > 0.5 || gamepad1.left_trigger > 0.5;
+
+		if (gamepad2.yWasPressed()
+				|| (ballCount >= 2 && prespinTriggered)
+				|| (alignPressed && ballCount > 0 && !prespinTriggeredByAlign)) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
 			prespinTriggered = false;
+			if (alignPressed) {
+				prespinTriggeredByAlign = true;
+			}
+		} else if (!alignPressed && prespinTriggeredByAlign) {
+			prespinTriggeredByAlign = false;
 		}
 
 		if (gamepad2.x && !xButtonPressed) {
@@ -513,9 +537,9 @@ public abstract class MainTeleOp extends OpMode {
 		}
 		wasShooterAtTarget = transfer.reachedAverageTarget;
 
-		if (ballCount >= 3 && !wasBeamAtThree) {
+		if (ballCount >= 2 && !wasBeamAtTwo) {
 			gamepad2.rumble(250);
 		}
-		wasBeamAtThree = ballCount >= 3;
+		wasBeamAtTwo = ballCount >= 2;
 	}
 }
