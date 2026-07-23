@@ -185,7 +185,7 @@ public abstract class ModularAuto extends OpMode {
 
 						),
 						transfer.IntakeDoorOut(),
-						getShootSequence(10700)
+						getShootSequence(700)
 				);
 
 			case COLLECT_SPIKE_1:
