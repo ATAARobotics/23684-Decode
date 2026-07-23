@@ -25,14 +25,14 @@ import java.util.Objects;
  * shooter that fails to reach target cannot hang the entire auto.
  */
 public class ShootArtifacts extends SequentialCommandGroup {
-	private static final long GATE_OPEN_TIMEOUT_MS = 2500L;
+	private static final long GATE_OPEN_TIMEOUT_MS = 250000L;
 
 	public ShootArtifacts(Shooter shooter, Conveyor conveyor, Transfer transfer, Intake intake, Gate gate, Follower follower, Team team, int waitTime) {
-		Objects.requireNonNull(follower, "follower");
-		Objects.requireNonNull(team, "team");
-		if (team == Team.UNKNOWN) {
-			throw new IllegalArgumentException("team must be RED or BLUE");
-		}
+//		Objects.requireNonNull(follower, "follower");
+//		Objects.requireNonNull(team, "team");
+//		if (team == Team.UNKNOWN) {
+//			throw new IllegalArgumentException("team must be RED or BLUE");
+//		}
 
 		addCommands(
 				shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER),
@@ -40,12 +40,14 @@ public class ShootArtifacts extends SequentialCommandGroup {
 						intake.Stop(),
 						new SequentialCommandGroup(
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8
-									&& isInShootingZone(follower, team))
-									.withTimeout(GATE_OPEN_TIMEOUT_MS),
+//									&& isInShootingZone(follower, team)),
+							),
+
 							gate.openGate()
 						),
-				shooter.WaitForTarget().withTimeout(GATE_OPEN_TIMEOUT_MS)
-				).withTimeout(GATE_OPEN_TIMEOUT_MS + 500L),
+				shooter.WaitForTarget()
+//				).withTimeout(GATE_OPEN_TIMEOUT_MS + 500L),
+				),
 				new WaitCommand(waitTime),
 				transfer.TransferOut(),
 				conveyor.In()
@@ -54,9 +56,9 @@ public class ShootArtifacts extends SequentialCommandGroup {
 		addRequirements(shooter, conveyor, transfer, intake, gate);
 	}
 
-	private static boolean isInShootingZone(Follower follower, Team team) {
-		return team == Team.RED
-				? ShootingZone.isAnyCornerInRedZone(follower.getPose())
-				: ShootingZone.isAnyCornerInBlueZone(follower.getPose());
-	}
+//	private static boolean isInShootingZone(Follower follower, Team team) {
+//		return team == Team.RED
+//				? ShootingZone.isAnyCornerInRedZone(follower.getPose())
+//				: ShootingZone.isAnyCornerInBlueZone(follower.getPose());
+//	}
 }

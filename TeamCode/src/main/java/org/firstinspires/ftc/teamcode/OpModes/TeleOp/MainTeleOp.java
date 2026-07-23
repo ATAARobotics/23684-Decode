@@ -132,14 +132,6 @@ public abstract class MainTeleOp extends OpMode {
 	 */
 	public static double SHOOT_ZONE_INSIDE_MARGIN_IN = 1.0;
 	ElapsedTime timer = new ElapsedTime();
-	// Drive-input cache. Joystick values drift by ~0.001 per loop even when the
-	// driver is holding still. Each call to TeleopDrive writes 4 hardware power
-	// values; skip the call entirely when (x, y, h) inputs haven't changed
-	// beyond DRIVE_SNAP_THRESHOLD, saving a hardware-write cluster per loop.
-	private static final double DRIVE_SNAP_THRESHOLD = 0.005;
-	private double prevDriveX = Double.NaN;
-	private double prevDriveY = Double.NaN;
-	private double prevDriveH = Double.NaN;
 	private Supplier<PathChain> pathAudienceShoot;
 	private Supplier<PathChain> pathGoalShoot;
 	private Supplier<PathChain> pathDriveToZone;
@@ -303,20 +295,26 @@ public abstract class MainTeleOp extends OpMode {
 		scheduler.run();
 		// If a TeleOp-triggered path was cancelled by the driver (A / B / right
 		// bumper release) OR completed naturally with holdEnd, keep the follower
-		// fully disengaged every loop. follower.update() would otherwise re-apply
-		// holdEnd position-hold corrections on the next loop, which beat
-		// writeDriveIfChanged's snap-threshold optimization and snap the robot
-		// back to its last pose the moment the driver holds the joystick steady.
+		// fully disengaged. follower.update() can re-apply holdEnd corrections
+		// on the next loop and breakFollowing() does not always restore the
+		// drive motor modes Pedro changes while following, so we also reset
+		// the motor modes to RUN_USING_ENCODER so setPower() in TeleopDrive
+		// is not overridden by leftover velocity/PID setpoints.
 		boolean wantManual = brokeFollowing
 				|| (autoPathActive && !follower.isBusy());
 		if (wantManual && !driveToZoneActive) {
 			follower.breakFollowing();
+			drive.resetMotorModes();
 			if (autoPathActive && !follower.isBusy()) {
 				autoPathActive = false;
 				brokeFollowing = true;
 			}
 		}
 		follower.update();
+		if (brokeFollowing && !driveToZoneActive) {
+			follower.breakFollowing();
+			drive.resetMotorModes();
+		}
 		handleDriveInput();
 		handleOperatorInput();
 		handleRumbleFeedback();
@@ -557,21 +555,15 @@ public abstract class MainTeleOp extends OpMode {
 	}
 
 	/**
-	 * Writes driver power to the drivetrain only when the input snapshot has
-	 * changed beyond {@link #DRIVE_SNAP_THRESHOLD}. Avoids four redundant
-	 * motor-power hardware writes per loop while the driver is holding steady.
+	 * Writes driver power to the drivetrain every call. A previous version
+	 * skipped writes when the joystick snapshot hadn't changed beyond a small
+	 * threshold; that interacted badly with the follower (whose
+	 * {@code update()} runs every loop) because the follower's holdEnd
+	 * corrections would snap the robot back to its pose the moment the driver
+	 * held the stick steady.
 	 */
 	private void writeDriveIfChanged(double x, double y, double h) {
-		if (!Double.isNaN(prevDriveX)
-				&& Math.abs(x - prevDriveX) < DRIVE_SNAP_THRESHOLD
-				&& Math.abs(y - prevDriveY) < DRIVE_SNAP_THRESHOLD
-				&& Math.abs(h - prevDriveH) < DRIVE_SNAP_THRESHOLD) {
-			return;
-		}
 		drive.TeleopDrive(follower, x, y, h);
-		prevDriveX = x;
-		prevDriveY = y;
-		prevDriveH = h;
 	}
 
 	protected void handleOperatorInput() {
@@ -779,6 +771,15 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Shooter Upper Target", shooter.upperTarget);
 
 		beamBreaker.telemetry(panelsTelemetry);
+
+		// Drive diagnostics: confirm follower state and that TeleopDrive writes
+		// are actually landing on the motor controllers (not being overridden
+		// by leftover velocity/PID setpoints from Pedro).
+		panelsTelemetry.addData("Follower Busy", follower.isBusy());
+		panelsTelemetry.addData("Broke Following", brokeFollowing);
+		panelsTelemetry.addData("Auto Path Active", autoPathActive);
+		panelsTelemetry.addData("Drive To Zone Active", driveToZoneActive);
+		drive.telemetry(panelsTelemetry);
 
 		panelsTelemetry.update();
 

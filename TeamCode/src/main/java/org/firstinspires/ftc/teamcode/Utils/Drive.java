@@ -69,6 +69,21 @@ public class Drive {
 	}
 
 
+	/**
+	 * Resets all four drive motors to {@link DcMotor.RunMode#RUN_USING_ENCODER}.
+	 * Pedro's follower changes motor modes while following and does not always
+	 * restore them after {@code breakFollowing()}; a motor left in velocity
+	 * mode ignores {@code setPower(0)} and continues applying PID corrections,
+	 * which makes the drivetrain fight manual stick input. Call this whenever
+	 * the follower is disengaged and the driver is back in manual control.
+	 */
+	public void resetMotorModes() {
+		frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+	}
+
 	public void TeleopDrive(Follower follower, double xDir, double yDir, double hDir) {
 
 		double y = -yDir; // Remember, Y stick value is reversed
@@ -94,6 +109,19 @@ public class Drive {
 		frontRightMotor.setPower(frontRightPower);
 		backRightMotor.setPower(backRightPower);
 
+	}
+
+	/**
+	 * Pushes drive-motor power and run-mode diagnostics onto the supplied
+	 * Panels telemetry wrapper. Used by TeleOp to confirm {@link #TeleopDrive}
+	 * writes are actually taking effect on the motor controllers (i.e. not
+	 * being overridden by leftover velocity/PID setpoints from Pedro).
+	 */
+	public void telemetry(com.bylazar.telemetry.TelemetryManager.TelemetryWrapper t) {
+		t.addData("FL", "pwr=" + frontLeftMotor.getPower() + " mode=" + frontLeftMotor.getMode());
+		t.addData("FR", "pwr=" + frontRightMotor.getPower() + " mode=" + frontRightMotor.getMode());
+		t.addData("BL", "pwr=" + backLeftMotor.getPower() + " mode=" + backLeftMotor.getMode());
+		t.addData("BR", "pwr=" + backRightMotor.getPower() + " mode=" + backRightMotor.getMode());
 	}
 
 }
