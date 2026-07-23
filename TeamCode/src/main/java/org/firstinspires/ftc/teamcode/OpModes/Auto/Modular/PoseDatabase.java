@@ -10,8 +10,11 @@ public class PoseDatabase {
 	// Every RED_* pose below is PoseUtils.mirror(BLUE_*, FIELD_LENGTH) where FIELD_LENGTH = 141.5".
 	public static final Pose BLUE_START = new Pose(61.25, 9.9375, Math.toRadians(270));
 
-	public static final Pose BLUE_SHOOT_CURVE = new Pose(61.112, 17.093);
-	public static final Pose BLUE_SHOOT = new Pose(59.440, 17.328, Math.toRadians(294.935));
+	// BLUE_SHOOT aimed at the BLUE audience goal near (0, 141.5). Heading =
+	// atan2(141.5 - 17, 0 - 56) + π ≈ 294.27°, the +π term flips the robot so
+	// the back-mounted shooter faces the goal. RED_SHOOT is the field-mirror.
+	public static final Pose BLUE_SHOOT_CURVE = new Pose(58.0, 17.0);
+	public static final Pose BLUE_SHOOT = new Pose(56.0, 17.0, Math.toRadians(294.27));
 
 	public static final Pose BLUE_AUDIENCE_SHOOT = new Pose(91.328, 17.417, Math.toRadians(-56.535));
 	public static final Pose BLUE_GOAL_SHOOT = new Pose(120.4, 95.7, Math.toRadians(340.7));

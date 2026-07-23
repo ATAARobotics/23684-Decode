@@ -81,7 +81,6 @@ public class Limelight extends SubsystemBase {
 		yLowPassFilter = new LowPassFilter(0.4);
 		poiLowPassFilter = new LowPassFilter(0.4);
 		this.follower = follower;
-		this.follower.setStartingPose(new Pose(63.450, 9, Math.toRadians(270)));
 
 		headingPIDController = new PIDFController(new PIDFCoefficients(P, I, D, F));
 

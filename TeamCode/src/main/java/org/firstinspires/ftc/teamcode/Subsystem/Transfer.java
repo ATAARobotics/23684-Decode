@@ -10,7 +10,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 @Configurable
 public class Transfer extends SubsystemBase {
-	public static double SHOOTER_RPM_TOLERANCE = 150;
+	public static double SHOOTER_RPM_TOLERANCE = 155;
 
 	public final CRServo transferLeft;
 	public final CRServo transferRight;

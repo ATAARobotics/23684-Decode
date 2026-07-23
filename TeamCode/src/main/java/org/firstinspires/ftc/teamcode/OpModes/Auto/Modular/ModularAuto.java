@@ -440,61 +440,20 @@ public abstract class ModularAuto extends OpMode {
 
 		// Special handling for Spike 3 return path
 		if (currentExpectedPose.equals(PoseDatabase.BLUE_SPIKE_3_COLLECT) && team == Team.BLUE) {
-//			toShoot = follower.pathBuilder().addPath(
-//							new BezierCurve(
-//									new Pose(15.000, 89.000),
-//									new Pose(54.810, 88.063),
-//									shootPose))
-//					.setBrakingStrength(1)
-//					.setHeadingInterpolation(
-//							HeadingInterpolator.piecewise(
-//									new HeadingInterpolator.PiecewiseNode(
-//											0,
-//											.8,
-//											HeadingInterpolator.tangent.reverse()
-//									),
-//									new HeadingInterpolator.PiecewiseNode(
-//											.8,
-//											1,
-//											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
-//									)
-//							))
-//					.build();
-			toShoot = follower.pathBuilder().addPath(
-					new BezierCurve(
-							new Pose(24.000, 83.870),
-							new Pose(54.035, 71.458),
-							new Pose(59.440, 17.328)
-					))
+			// Optimized: straight BezierLine from spike 3 to the shoot pose. The
+			// previous BezierCurve routed through (54.035, 71.458), a control point
+			// pulled ~12" off the straight line — the curve swept the robot up before
+			// it could head down to the shoot pose. The line is the shortest possible
+			// path; with tangent heading interp that constant tangent matches the
+			// path direction so heading transitions stay smooth.
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
 					.setBrakingStrength(1)
 					.setBrakingStart(0.7)
 					.setHeadingInterpolation(
 							HeadingInterpolator.piecewise(
-							new HeadingInterpolator.PiecewiseNode(
-									.0,
-									.8,
-									HeadingInterpolator.tangent
-							),
-							new HeadingInterpolator.PiecewiseNode(
-									.8,
-									1,
-									HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
-							)
-					))
-					.build();
-			prespinWaitMs += 400;
-		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
-			toShoot = follower.pathBuilder().addPath(
-					new BezierCurve(
-							new Pose(24.000, 83.870).mirror(),
-							new Pose(54.035, 71.458).mirror(),
-							new Pose(59.440, 17.328).mirror()
-					))
-					.setBrakingStrength(1)
-					.setHeadingInterpolation(
-							HeadingInterpolator.piecewise(
 									new HeadingInterpolator.PiecewiseNode(
-											.0,
+											0,
 											.8,
 											HeadingInterpolator.tangent
 									),
@@ -505,7 +464,25 @@ public abstract class ModularAuto extends OpMode {
 									)
 							))
 					.build();
-			prespinWaitMs += 400;
+		} else if (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_3_COLLECT) && team == Team.RED) {
+			toShoot = follower.pathBuilder()
+					.addPath(new BezierLine(currentExpectedPose, shootPose))
+					.setBrakingStrength(1)
+					.setBrakingStart(0.7)
+					.setHeadingInterpolation(
+							HeadingInterpolator.piecewise(
+									new HeadingInterpolator.PiecewiseNode(
+											0,
+											.8,
+											HeadingInterpolator.tangent
+									),
+									new HeadingInterpolator.PiecewiseNode(
+											.8,
+											1,
+											HeadingInterpolator.linear(follower.getPose().getHeading(), shootPose.getHeading(),0.1)
+									)
+							))
+					.build();
 		}else if  (currentExpectedPose.equals(PoseDatabase.RED_SPIKE_1_COLLECT) || currentExpectedPose.equals(PoseDatabase.BLUE_SPIKE_1_COLLECT)){
 			toShoot = follower.pathBuilder()
 					.addPath(new BezierLine(currentExpectedPose, shootPose))
@@ -710,7 +687,7 @@ public abstract class ModularAuto extends OpMode {
 
 	private Command getShootSequence(int waitTime) {
 		return new SequentialCommandGroup(
-				new ShootArtifacts(shooter, conveyor, transfer, intake, gate, waitTime),
+				new ShootArtifacts(shooter, conveyor, transfer, intake, gate, follower, getTeam(), waitTime),
 				shooter.SetTarget(0, 0),
 				gate.closeGate(),
 				conveyor.Stop(),

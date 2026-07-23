@@ -36,6 +36,7 @@ import org.firstinspires.ftc.teamcode.Subsystem.Transfer;
 import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.teamcode.Utils.RobotConfig;
 import org.firstinspires.ftc.teamcode.Utils.RobotPosition;
+import org.firstinspires.ftc.teamcode.Utils.ShootingZone;
 import org.firstinspires.ftc.teamcode.Utils.Team;
 import org.firstinspires.ftc.teamcode.Utils.Drive;
 
@@ -61,9 +62,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 	protected boolean leftTriggerPressed = false;
 	protected boolean rightTriggerPressed = false;
-	protected boolean xButtonPressed = false;
 	protected boolean aButtonPressed = false;
-	protected boolean gamepad2AWasPressed = false;
 	protected boolean gamepad1BWasPressed = false;
 	protected boolean gamepad2BWasPressed = false;
 	protected boolean leftJoystickDeadzone = true;
@@ -73,6 +72,65 @@ public abstract class MainTeleOp extends OpMode {
 	protected boolean warnedEndGame = false;
 	protected boolean headingLockRumbleSent = false;
 	protected boolean wasBeamAtTwo = false;
+	/**
+	 * True after the operator pressed gamepad2 Y ("stop prespin"). While true,
+	 * the ball-count and align-triggered auto-prespin paths are suppressed.
+	 * Cleared by the next shot (gamepad2 right trigger pressed) or the next
+	 * manual prespin (gamepad2 left bumper pressed).
+	 */
+	protected boolean prespinStoppedByUser = false;
+	/**
+	 * True while gamepad1 Y is held. While held, drivetrain commands are
+	 * zeroed so the robot holds its current pose.
+	 */
+	protected boolean positionHold = false;
+	/**
+	 * Edge-tracking for gamepad1 right bumper (drive-to-nearest-zone). The
+	 * path runs at full power while the bumper is held; releasing it
+	 * cancels the path. When the path completes naturally the shooter
+	 * prespins automatically.
+	 */
+	protected boolean driveToZoneActive = false;
+	/**
+	 * True when the drive-to-zone path finished (or the robot was already
+	 * inside a zone when the bumper was pressed). Cleared once the bumper
+	 * is released. Used so the path doesn't re-trigger the moment the
+	 * follower reports idle.
+	 */
+	protected boolean driveToZoneArrived = false;
+	/**
+	 * True after one of our TeleOp-triggered paths (audience shoot A, goal
+	 * shoot B, drive-to-zone bumper) was started. Used to detect the
+	 * "path completed naturally" case where {@code follower.isBusy()}
+	 * returns false but the follower is still in holdEnd position-hold and
+	 * will fight manual stick input until {@code breakFollowing()} runs.
+	 */
+	protected boolean autoPathActive = false;
+	/**
+	 * True while gamepad2 right bumper is held and the robot satisfies the
+	 * shoot-when-positioned gates. Latches once so we don't repeatedly
+	 * schedule the shoot sequence while the bumper stays held.
+	 */
+	protected boolean shootWhenHeldActive = false;
+	/**
+	 * True while the shoot-when-held feeder (transfer + conveyor) is running.
+	 * Tracks whether the gate is currently feeding so that when the gates
+	 * momentarily fail and then re-pass, we can restart the feeder without
+	 * waiting on the full SequentialCommandGroup to re-fire.
+	 */
+	protected boolean shootFeederRunning = false;
+	/**
+	 * Aim tolerance for the gamepad2-right-bumper shoot gate. Tuned as 5°
+	 * (loose enough to feel snappy, tight enough to keep balls landing in
+	 * the goal). Read fresh each frame so dashboard edits take effect.
+	 */
+	public static double SHOOT_AIM_TOLERANCE_DEG = 5.0;
+	/**
+	 * Signed-distance margin (inches) the robot center must be INSIDE a
+	 * shooting zone before the shoot-when-held gate fires. The "≥ 1 in
+	 * inside" requirement from the driver.
+	 */
+	public static double SHOOT_ZONE_INSIDE_MARGIN_IN = 1.0;
 	ElapsedTime timer = new ElapsedTime();
 	// Drive-input cache. Joystick values drift by ~0.001 per loop even when the
 	// driver is holding still. Each call to TeleopDrive writes 4 hardware power
@@ -84,6 +142,7 @@ public abstract class MainTeleOp extends OpMode {
 	private double prevDriveH = Double.NaN;
 	private Supplier<PathChain> pathAudienceShoot;
 	private Supplier<PathChain> pathGoalShoot;
+	private Supplier<PathChain> pathDriveToZone;
 	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
 	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
     PIDFController headingPIDController;
@@ -148,6 +207,7 @@ public abstract class MainTeleOp extends OpMode {
 		rgbIndicator.setTransfer(transfer);
 		rgbIndicator.setBeamBreaker(beamBreaker);
 		rgbIndicator.setFollower(follower);
+		rgbIndicator.setTeam(getTeam());
 
 		// Repoint at the post-reset scheduler singleton so scheduler.run() drives
 		// the subsystems registered above on the new instance.
@@ -165,6 +225,52 @@ public abstract class MainTeleOp extends OpMode {
 
 		pathAudienceShoot = () -> buildShootPath(new Pose(33.098, 43.424), Math.toRadians(180));
 		pathGoalShoot = () -> buildShootPath(PoseDatabase.getGoalShootPose(getTeam()), Math.toRadians(340.7));
+		pathDriveToZone = () -> buildDriveToZonePath();
+	}
+
+	/**
+	 * True when the robot center is already inside either alliance shooting
+	 * zone triangle. Used to short-circuit {@link #buildDriveToZonePath()}
+	 * when there is nothing to drive to.
+	 */
+	private boolean isAlreadyInZone() {
+		Team team = getTeam();
+		Pose pose = follower.getPose();
+		double signed = (team == Team.RED)
+				? ShootingZone.signedDistanceIntoRedZone(pose)
+				: ShootingZone.signedDistanceIntoBlueZone(pose);
+		return signed >= 0.0;
+	}
+
+	/**
+	 * Builds a BezierLine from the current pose to the closest point on either
+	 * BLUE/RED shooting-zone triangle (whichever is nearer). Endpoint heading
+	 * is set to the aim heading for the alliance-specific goal so the robot
+	 * arrives already pointed at the goal — on arrival, the driver only has to
+	 * release the bumper to stop and the shooter is already spinning.
+	 * <p>
+	 * Returns {@code null} when the robot center is already inside a zone,
+	 * since {@code BezierLine(current, current)} is degenerate and Pedro's
+	 * closest-point math divides by the segment length.
+	 */
+	private PathChain buildDriveToZonePath() {
+		if (isAlreadyInZone()) {
+			return null;
+		}
+		Team team = getTeam();
+		double goalX = (team == Team.RED) ? 141.5 : 0.0;
+		double goalY = 141.5;
+		Pose current = follower.getPose();
+		Pose entry = (team == Team.RED)
+				? ShootingZone.nearestEntryInRedZone(current)
+				: ShootingZone.nearestEntryInBlueZone(current);
+		double endHeadingRad = ShootingZone.calculateAimHeading(
+				entry.getX(), entry.getY(), goalX, goalY);
+		return follower.pathBuilder()
+				.addPath(new BezierLine(current, entry))
+				.setLinearHeadingInterpolation(current.getHeading(), endHeadingRad, 0.8)
+				.setNoDeceleration()
+				.build();
 	}
 
 	private PathChain buildShootPath(Pose endPose, double endHeadingDeg) {
@@ -195,6 +301,21 @@ public abstract class MainTeleOp extends OpMode {
 		rgbIndicator.setShooterTriggered(shooterTriggered);
 
 		scheduler.run();
+		// If a TeleOp-triggered path was cancelled by the driver (A / B / right
+		// bumper release) OR completed naturally with holdEnd, keep the follower
+		// fully disengaged every loop. follower.update() would otherwise re-apply
+		// holdEnd position-hold corrections on the next loop, which beat
+		// writeDriveIfChanged's snap-threshold optimization and snap the robot
+		// back to its last pose the moment the driver holds the joystick steady.
+		boolean wantManual = brokeFollowing
+				|| (autoPathActive && !follower.isBusy());
+		if (wantManual && !driveToZoneActive) {
+			follower.breakFollowing();
+			if (autoPathActive && !follower.isBusy()) {
+				autoPathActive = false;
+				brokeFollowing = true;
+			}
+		}
 		follower.update();
 		handleDriveInput();
 		handleOperatorInput();
@@ -267,21 +388,98 @@ public abstract class MainTeleOp extends OpMode {
 			brokeFollowing = false;
 			follower.followPath(pathAudienceShoot.get(), true);
 			aButtonPressed = true;
+			autoPathActive = true;
 		} else if (!gamepad1.a && aButtonPressed) {
 			aButtonPressed = false;
+			follower.breakFollowing();
+			autoPathActive = false;
+			brokeFollowing = true;
 		} else if (gamepad1.b && !gamepad1BWasPressed) {
 			brokeFollowing = false;
 			follower.followPath(pathGoalShoot.get(), true);
 			gamepad1BWasPressed = true;
+			autoPathActive = true;
 		} else if (!gamepad1.b && gamepad1BWasPressed) {
 			gamepad1BWasPressed = false;
+			follower.breakFollowing();
+			autoPathActive = false;
+			brokeFollowing = true;
 		}
 
-		if (!gamepad1.b && !gamepad1.a) {
+		// gamepad1 right bumper (held) = drive at full power to the closest
+		// shooting-zone entry, ending already aimed at the alliance goal. On
+		// arrival the shooter prespins automatically. Releasing the bumper
+		// cancels the path. The path itself sets maxPower=1 so the driver
+		// doesn't need to also press the heading-lock triggers.
+		if (gamepad1.right_bumper) {
+			if (!driveToZoneActive) {
+				// Edge: start the path. Re-evaluate entry each press so a
+				// driver who backs up and re-presses gets a fresh path.
+				driveToZoneActive = true;
+				driveToZoneArrived = false;
+				brokeFollowing = false;
+				aButtonPressed = false;
+				gamepad1BWasPressed = false;
+				PathChain toZone = pathDriveToZone.get();
+				if (toZone == null) {
+					// Robot is already inside a zone — skip path scheduling
+					// (BezierLine degenerate) and treat as immediately arrived.
+					driveToZoneArrived = true;
+					scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+					prespinStoppedByUser = false;
+					writeDriveIfChanged(0, 0, 0);
+				} else {
+					follower.followPath(toZone, true);
+					follower.setMaxPower(1.0);
+					// Prespin immediately so the shooter is at speed by the time
+					// we arrive at the zone. The stop-prespin latch (Y) can
+					// still cancel this later.
+					scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+					prespinStoppedByUser = false;
+				}
+			} else if (!follower.isBusy() && !driveToZoneArrived) {
+				driveToZoneArrived = true;
+				// Path finished (or we were already in the zone). Prespin
+				// idempotently in case the SetTarget above lost the race.
+				scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+				prespinStoppedByUser = false;
+				writeDriveIfChanged(0, 0, 0);
+			} else if (follower.isBusy()) {
+				// Still driving to zone — don't overwrite the follower's
+				// motor commands with stick input.
+				return;
+			} else {
+				writeDriveIfChanged(0, 0, 0);
+			}
+		} else if (driveToZoneActive) {
+			// Bumper was released. Cancel the path and reset the latches so
+			// the next press starts fresh from the current pose. Always break,
+			// not just when isBusy(): a completed holdEnd path leaves the
+			// follower in position hold with isBusy()==false, and we still
+			// need to stop its corrections.
+			follower.breakFollowing();
+			driveToZoneActive = false;
+			driveToZoneArrived = false;
+			brokeFollowing = true;
+		}
+
+		if (!gamepad1.b && !gamepad1.a && !driveToZoneActive) {
 
 			if (!brokeFollowing && follower.isBusy()) {
 				follower.breakFollowing();
 				brokeFollowing = true;
+			}
+
+			// gamepad1 Y (held) = position hold. Zeroes the drivetrain and parks
+			// the follower so the robot keeps its current pose. Y is only read
+			// when neither audience-shoot (A) nor goal-shoot (B) is engaged.
+			positionHold = gamepad1.y;
+			if (positionHold) {
+				if (follower.isBusy()) {
+					follower.breakFollowing();
+				}
+				writeDriveIfChanged(0, 0, 0);
+				return;
 			}
 
 			if (getTeam() == Team.RED) {
@@ -390,6 +588,9 @@ public abstract class MainTeleOp extends OpMode {
 		}
 
 		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
+			// Operator pulled the shot trigger — clear the user-stopped-prespin
+			// latch so the next auto-prespin cycle can run again.
+			prespinStoppedByUser = false;
 			if (ballCount > 0) {
 				beamBreaker.resetBallCount();
 				ballCount = 0;
@@ -424,23 +625,31 @@ public abstract class MainTeleOp extends OpMode {
 			rightTriggerPressed = false;
 		}
 
-		if (gamepad2.a && !gamepad2AWasPressed) {
-			beamBreaker.resetBallCount();
-			ballCount = 0;
-			prespinTriggered = false;
-			prespinTriggeredAtTwo = false;
-			prespinTriggeredByAlign = false;
-			wasBeamAtTwo = false;
-			gamepad2AWasPressed = true;
-		} else if (!gamepad2.a && gamepad2AWasPressed) {
-			gamepad2AWasPressed = false;
-		}
-
 		boolean alignPressed = gamepad1.right_trigger > 0.5 || gamepad1.left_trigger > 0.5;
 
-		if (gamepad2.yWasPressed()
-				|| (ballCount >= 2 && prespinTriggered)
-				|| (alignPressed && ballCount > 0 && !prespinTriggeredByAlign)) {
+		// Manual prespin: gamepad2 left bumper (edge-triggered). Always allowed,
+		// even when the operator previously hit Y to stop prespin — pressing the
+		// bumper is the explicit "I want the shooter spinning again" intent and
+		// also clears the stop latch.
+		if (gamepad2.leftBumperWasPressed()) {
+			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+			prespinStoppedByUser = false;
+		}
+
+		// Stop prespin: gamepad2 Y (edge-triggered). Spins the shooter down and
+		// latches prespinStoppedByUser so the ball-count and align auto-prespin
+		// paths stay suppressed until the next shot or manual prespin.
+		if (gamepad2.yWasPressed()) {
+			scheduler.schedule(shooter.SetTarget(0, 0));
+			prespinStoppedByUser = true;
+		}
+
+		// Auto prespin: ballCount threshold or align-trigger, but ONLY when the
+		// operator hasn't latched a stop. Manual prespin (above) bypasses this
+		// gate by virtue of running on left_bumper, not these conditions.
+		if (!prespinStoppedByUser
+				&& ((ballCount >= 2 && prespinTriggered)
+					|| (alignPressed && ballCount > 0 && !prespinTriggeredByAlign))) {
 			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
 			prespinTriggered = false;
 			if (alignPressed) {
@@ -448,14 +657,6 @@ public abstract class MainTeleOp extends OpMode {
 			}
 		} else if (!alignPressed && prespinTriggeredByAlign) {
 			prespinTriggeredByAlign = false;
-		}
-
-		if (gamepad2.x && !xButtonPressed) {
-			scheduler.schedule(transfer.TransferOut());
-			xButtonPressed = true;
-		} else if (!gamepad2.x && xButtonPressed && !rightTriggerPressed) {
-			scheduler.schedule(transfer.TransferStop());
-			xButtonPressed = false;
 		}
 
 		if (gamepad2.b && !gamepad2BWasPressed) {
@@ -489,6 +690,78 @@ public abstract class MainTeleOp extends OpMode {
 				scheduler.schedule(transfer.IntakeDoorIn());
 			}
 		}
+
+		// Shoot-when-held: gamepad2 right bumper, gated on the robot being
+		// well-inside a shooting zone AND aimed at the alliance goal. While
+		// held, run the same sequence as the right-trigger shot (prespin,
+		// open gate at target, transfer + conveyor). On release, stop
+		// everything and close the gate. The first time the gates pass we
+		// schedule the sequence; while the bumper stays held we keep the
+		// gate open and the feeder running via the openGate latch.
+		if (gamepad2.right_bumper) {
+			if (!shootWhenHeldActive && shootWhenHeldReady()) {
+				shootWhenHeldActive = true;
+				shootFeederRunning = false;
+				prespinStoppedByUser = false;
+				scheduler.schedule(
+						new SequentialCommandGroup(
+								shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
+								new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8
+										&& shootWhenHeldReady()),
+								new InstantCommand(() -> openGate = true),
+								shooter.WaitForTarget().withTimeout(2500),
+								transfer.TransferOut(),
+								conveyor.In()
+						));
+				// Mark feeder as running on the next loop so we don't race
+				// the SequentialCommandGroup's terminal TransferOut/In.
+				shootFeederRunning = true;
+			} else if (shootWhenHeldActive && shootWhenHeldReady()) {
+				// Keep the gate open + transfer/conveyor on while held.
+				if (!openGate) {
+					openGate = true;
+				}
+				// If the gates were lost and the feeder was stopped while
+				// the bumper stayed held, restart it now that the gates
+				// pass again.
+				if (!shootFeederRunning) {
+					scheduler.schedule(transfer.TransferOut());
+					scheduler.schedule(conveyor.In());
+					shootFeederRunning = true;
+				}
+			} else if (shootWhenHeldActive && !shootWhenHeldReady()) {
+				// Lost the gates while the bumper was still held — close
+				// the gate and stop the feeder so we don't dribble.
+				openGate = false;
+				scheduler.schedule(transfer.TransferStop());
+				scheduler.schedule(conveyor.Stop());
+				shootFeederRunning = false;
+			}
+		} else if (shootWhenHeldActive) {
+			// Bumper released — stop everything and reset the latch.
+			shootWhenHeldActive = false;
+			openGate = false;
+			shootFeederRunning = false;
+			scheduler.schedule(shooter.SetTarget(0, 0));
+			scheduler.schedule(transfer.TransferStop());
+			scheduler.schedule(conveyor.Stop());
+		}
+	}
+
+	/**
+	 * Combined gate check for the gamepad2 right-bumper shoot-when-held path.
+	 * Requires the robot footprint to overlap an alliance shooting zone and the
+	 * back-mounted shooter to be aimed within the configured goal tolerance.
+	 */
+	private boolean shootWhenHeldReady() {
+		Team team = getTeam();
+		Pose pose = follower.getPose();
+		boolean inZone = (team == Team.RED)
+				? ShootingZone.isAnyCornerInRedZone(pose)
+				: ShootingZone.isAnyCornerInBlueZone(pose);
+		double goalX = (team == Team.RED) ? 141.5 : 0.0;
+		return inZone && ShootingZone.isAimedAtGoal(
+				pose, goalX, 141.5, Math.toRadians(SHOOT_AIM_TOLERANCE_DEG));
 	}
 
 	protected void displayTelemetry() {
