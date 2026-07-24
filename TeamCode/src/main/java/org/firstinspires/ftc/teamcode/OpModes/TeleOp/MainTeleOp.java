@@ -508,10 +508,15 @@ public abstract class MainTeleOp extends OpMode {
 
 					currentHeading = arduCam.angleFrom(getTeam());
 					targetHeading = 0;
-					limelightPIDController.setPIDF(P, I, D, F);
-					headingDeadzone = 1;
-					correctionspeed = limelightPIDController.calculate(currentHeading, targetHeading);
+					headingDeadzone = 0.3;
 
+					if (Math.abs(currentHeading) < 5) {
+						limelightPIDController.setPIDF(P/2, I, D/2, F);
+						correctionspeed = limelightPIDController.calculate(currentHeading, targetHeading);
+					} else {
+						limelightPIDController.setPIDF(P, I, D, F);
+						correctionspeed = limelightPIDController.calculate(currentHeading, targetHeading);
+					}
 				} else if (!arduCam.GoalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
 					currentHeading = follower.getHeading();
 					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
@@ -795,8 +800,6 @@ public abstract class MainTeleOp extends OpMode {
 		telemetry.addLine(follower.getPose().toString());
 		telemetry.addData("error",Math.toDegrees(tar - follower.getHeading()));
 		telemetry.update();
-
-
 	}
 
 	private void handleRumbleFeedback() {
