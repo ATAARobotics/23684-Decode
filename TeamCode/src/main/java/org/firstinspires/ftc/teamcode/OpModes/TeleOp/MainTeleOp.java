@@ -25,6 +25,7 @@ import com.seattlesolvers.solverslib.controller.SquIDFController;
 
 import org.firstinspires.ftc.teamcode.OpModes.Auto.Modular.PoseDatabase;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.Subsystem.ArduCam;
 import org.firstinspires.ftc.teamcode.Subsystem.BeamBreaker;
 import org.firstinspires.ftc.teamcode.Subsystem.Conveyor;
 import org.firstinspires.ftc.teamcode.Subsystem.Gate;
@@ -51,6 +52,7 @@ public abstract class MainTeleOp extends OpMode {
 	protected Transfer transfer;
 	protected Conveyor conveyor;
 //	protected Limelight limelight;
+	protected ArduCam arduCam;
 	protected Gate gate;
 	protected BeamBreaker beamBreaker;
 	protected RGBIndicator rgbIndicator;
@@ -164,7 +166,7 @@ public abstract class MainTeleOp extends OpMode {
 	Timer headinglocktimer;
 	double goalX = 0;
 	boolean openGate = false;
-	public static double P = 0.06, I, D = 0.002, F = 0.0001;
+	public static double P = 0.065, I, D = 0.00005, F = 0.0001;
 
 	private  double P2 = 0.03, I2, D2 = 0.0003, F2 = 0.001;
 
@@ -191,6 +193,7 @@ public abstract class MainTeleOp extends OpMode {
 		beamBreaker = new BeamBreaker(hardwareMap);
 		gate = new Gate(hardwareMap);
 //		limelight = new Limelight(hardwareMap, follower);
+		arduCam = new ArduCam(hardwareMap);
 		transfer.setShooter(shooter);
 
 		headinglocktimer = new Timer();
@@ -291,6 +294,7 @@ public abstract class MainTeleOp extends OpMode {
 	public void loop() {
 		boolean shooterTriggered = gamepad2.right_trigger > 0.5;
 		rgbIndicator.setShooterTriggered(shooterTriggered);
+
 
 		scheduler.run();
 		// If a TeleOp-triggered path was cancelled by the driver (A / B / right
@@ -496,35 +500,35 @@ public abstract class MainTeleOp extends OpMode {
 				headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
 				correctionspeed = -headingPIDController.run();
 				headingDeadzone = 7;
-			}
 
-//		} else {
-//				if (limelight.goalsFound(getTeam())) {
-//					headinglocktimer.resetTimer();
-//
-//					currentHeading = limelight.AngleFrom(getTeam());
-//					targetHeading = 0;
-//					limelightPIDController.setPIDF(P, I, D, F);
-//					headingDeadzone = 1;
-//					correctionspeed = -limelightPIDController.calculate(currentHeading, targetHeading);
-//
-//				} else if (!limelight.goalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
-//					currentHeading = follower.getHeading();
-//					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
-//					targetHeading = 0;
-//
+
+		    } else {
+				if (arduCam.GoalsFound(getTeam())) {
+					headinglocktimer.resetTimer();
+
+					currentHeading = arduCam.angleFrom(getTeam());
+					targetHeading = 0;
+					limelightPIDController.setPIDF(P, I, D, F);
+					headingDeadzone = 1;
+					correctionspeed = limelightPIDController.calculate(currentHeading, targetHeading);
+
+				} else if (!arduCam.GoalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
+					currentHeading = follower.getHeading();
+					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
+					targetHeading = 0;
+
 //					if (Math.abs(Math.toDegrees(tar - currentHeading)) > 70) {
-//						correctionspeed = -headingPIDController.run();
+						correctionspeed = -headingPIDController.run();
 //					} else {
 //						correctionspeed = MathFunctions.clamp(-headingPIDController.run(), -0.5, 0.5);
 //					}
-//					headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
-//					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
-//					headingPIDController.updateFeedForwardInput(1);
-//					headingDeadzone = 7;
-//				}
-//
-//			}
+					headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
+					headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
+					headingPIDController.updateFeedForwardInput(1);
+					headingDeadzone = 7;
+				}
+
+			}
 
 
 				headingLock = gamepad1.right_trigger > 0;
@@ -579,7 +583,7 @@ public abstract class MainTeleOp extends OpMode {
 			leftTriggerPressed = false;
 		}
 
-		if (gamepad2.right_trigger > 0.5 && !rightTriggerPressed) {
+		if (gamepad2.right_bumper && !rightTriggerPressed) {
 			// Operator pulled the shot trigger — clear the user-stopped-prespin
 			// latch so the next auto-prespin cycle can run again.
 			prespinStoppedByUser = false;
@@ -601,7 +605,7 @@ public abstract class MainTeleOp extends OpMode {
 							conveyor.In()
 					));
 			rightTriggerPressed = true;
-		} else if (gamepad2.right_trigger <= 0.5 && rightTriggerPressed) {
+		} else if (!gamepad2.right_bumper && rightTriggerPressed) {
 			scheduler.schedule(shooter.SetTarget(0, 0));
 			scheduler.schedule(transfer.TransferStop());
 			scheduler.schedule(conveyor.Stop());
@@ -690,7 +694,7 @@ public abstract class MainTeleOp extends OpMode {
 		// everything and close the gate. The first time the gates pass we
 		// schedule the sequence; while the bumper stays held we keep the
 		// gate open and the feeder running via the openGate latch.
-		if (gamepad2.right_bumper) {
+		if (gamepad2.right_trigger > 0) {
 			if (!shootWhenHeldActive && shootWhenHeldReady()) {
 				shootWhenHeldActive = true;
 				shootFeederRunning = false;
@@ -780,6 +784,8 @@ public abstract class MainTeleOp extends OpMode {
 		panelsTelemetry.addData("Auto Path Active", autoPathActive);
 		panelsTelemetry.addData("Drive To Zone Active", driveToZoneActive);
 		drive.telemetry(panelsTelemetry);
+
+		arduCam.ArduCamTelemetry(telemetry);
 
 		panelsTelemetry.update();
 

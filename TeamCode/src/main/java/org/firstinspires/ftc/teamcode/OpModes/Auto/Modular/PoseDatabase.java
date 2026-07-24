@@ -34,7 +34,7 @@ public class PoseDatabase {
 	public static final Pose BLUE_HUMAN_PLAYER_COLLECT_FARSIDE = new Pose(44.00, 35.5, Math.toRadians(180));
 
 	public static final Pose BLUE_PARK = new Pose(38.5, 33, Math.toRadians(180));
-	public static final Pose BLUE_RESET_POSE = new Pose(142.720, 7.368, 0);
+	public static final Pose BLUE_RESET_POSE = new Pose(135.5, 10.7, 0);
 
 	// RED POSES  — every entry below is exactly PoseUtils.mirror(BLUE_*, 141.5).
 	// Field: 141.5" x 141.5" (custom). Mirror rule: (x, y, θ) → (141.5 − x, y, −θ).

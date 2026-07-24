@@ -200,7 +200,7 @@ public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
                 double  yawError        = desiredTag.ftcPose.yaw;
 
                 // Use the speed and turn "gains" to calculate how we want the robot to move.
-                drive  = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                drive  = 0; //Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
                 turn   = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
                 strafe = Range.clip(-yawError * STRAFE_GAIN, -MAX_AUTO_STRAFE, MAX_AUTO_STRAFE);
 
@@ -264,7 +264,7 @@ public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
     private void initAprilTag() {
         // Create the AprilTag processor by using a builder.
         aprilTag = new AprilTagProcessor.Builder()
-                .setLensIntrinsics(648.371, 648.371, 266.993, 392.548)
+                 .setLensIntrinsics(908.683f, 908.683f, 706.785f, 337.571f)
                 .build();
 
         // Adjust Image Decimation to trade-off detection-range for detection-rate.
@@ -281,8 +281,8 @@ public class RobotAutoDriveToAprilTagOmni extends LinearOpMode
             visionPortal = new VisionPortal.Builder()
                     .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                     .addProcessor(aprilTag)
-                    .setCameraResolution(new Size(960, 600))
-                    .setStreamFormat(VisionPortal.StreamFormat.YUY2)
+                    .setCameraResolution(new Size(1280,720))
+                    .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
                     .build();
         } else {
             visionPortal = new VisionPortal.Builder()

@@ -35,12 +35,12 @@ public class CameraCaptureTest2 extends LinearOpMode{
             @Override
             public void onOpened()
             {
-                frontCamera.startStreaming(1920, 1200, OpenCvCameraRotation.UPRIGHT);
+                frontCamera.startStreaming(1280,720, OpenCvCameraRotation.UPRIGHT, OpenCvWebcam.StreamFormat.MJPEG);
                 frontCamera.getWhiteBalanceControl().setMode(WhiteBalanceControl.Mode.MANUAL);
                 frontCamera.getWhiteBalanceControl().setWhiteBalanceTemperature(3000);// 3000
                 frontCamera.getExposureControl().setMode(ExposureControl.Mode.Manual);
                 frontCamera.getExposureControl().setExposure(5, TimeUnit.MILLISECONDS); // 20
-                frontCamera.getGainControl().setGain(90); // 20
+                frontCamera.getGainControl().setGain(1000); // 20
             }
             @Override
             public void onError(int errorCode) {}
@@ -58,7 +58,7 @@ public class CameraCaptureTest2 extends LinearOpMode{
             if (cameraPipeline.has_result() && cameraPipeline.getLatestDetections() != null){
                 for (int i = 0; i < cameraPipeline.getLatestDetections().size(); i++) {
                     telemetry.addLine("Tag ID: " + cameraPipeline.getLatestDetections().get(i).id);
-                    telemetry.addLine("Tag pose: " + cameraPipeline.getLatestDetections().get(i).pose);
+                    telemetry.addLine("Tag pose: " + cameraPipeline.getLatestDetections().get(i).center);
                 }
             }
             telemetry.addData("fps",frontCamera.getFps());

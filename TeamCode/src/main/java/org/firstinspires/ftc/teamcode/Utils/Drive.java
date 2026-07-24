@@ -14,10 +14,10 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 import org.firstinspires.ftc.teamcode.PedroPathing.Constants;
 
 public class Drive {
-	DcMotorEx frontLeftMotor;
-	DcMotorEx backLeftMotor;
-	DcMotorEx frontRightMotor;
-	DcMotorEx backRightMotor;
+	DcMotor frontLeftMotor;
+	DcMotor backLeftMotor;
+	DcMotor frontRightMotor;
+	DcMotor backRightMotor;
 
 	protected static double FULL_POWER_VELOCITY = 2400;
 
@@ -45,20 +45,20 @@ public class Drive {
 	}
 
 	public Drive(HardwareMap hardwareMap) {
-		frontLeftMotor = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.leftFrontMotorName);
-		backLeftMotor = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.leftRearMotorName);
-		frontRightMotor = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.rightFrontMotorName);
-		backRightMotor = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.rightRearMotorName);
+		frontLeftMotor = hardwareMap.get(DcMotor.class, Constants.driveConstants.leftFrontMotorName);
+		backLeftMotor = hardwareMap.get(DcMotor.class, Constants.driveConstants.leftRearMotorName);
+		frontRightMotor = hardwareMap.get(DcMotor.class, Constants.driveConstants.rightFrontMotorName);
+		backRightMotor = hardwareMap.get(DcMotor.class, Constants.driveConstants.rightRearMotorName);
 
 		frontLeftMotor.setDirection(Constants.driveConstants.leftFrontMotorDirection);
 		backLeftMotor.setDirection(Constants.driveConstants.leftRearMotorDirection);
 		frontRightMotor.setDirection(Constants.driveConstants.rightFrontMotorDirection);
 		backRightMotor.setDirection(Constants.driveConstants.rightRearMotorDirection);
 
-		frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 		headingPIDController = new PIDFController(coefficientsHeadingPIDF);
 	}
@@ -78,10 +78,10 @@ public class Drive {
 	 * the follower is disengaged and the driver is back in manual control.
 	 */
 	public void resetMotorModes() {
-		frontLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		frontRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		backLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-		backRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+		frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 	}
 
 	public void TeleopDrive(Follower follower, double xDir, double yDir, double hDir) {

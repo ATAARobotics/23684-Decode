@@ -31,6 +31,8 @@ package org.firstinspires.ftc.teamcode.OpModes.Test;
 
 import android.util.Size;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.ftc.InvertedFTCCoordinates;
 import com.pedropathing.ftc.PoseConverter;
@@ -43,16 +45,24 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.Utils.Drawing;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
+import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /*
  * This OpMode illustrates the basics of AprilTag based localization.
@@ -74,8 +84,9 @@ import java.util.List;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list.
  */
 @TeleOp(name = "Concept: AprilTag Localization", group = "Test")
-@Disabled
 public class ConceptAprilTagLocalization extends LinearOpMode {
+
+    protected TelemetryManager.TelemetryWrapper panelsTelemetry;
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
@@ -120,6 +131,8 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+
+        panelsTelemetry = PanelsTelemetry.INSTANCE.getFtcTelemetry();
 
         initAprilTag();
 
@@ -172,7 +185,8 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
                 // == CAMERA CALIBRATION ==
                 // If you do not manually specify calibration parameters, the SDK will attempt
                 // to load a predefined calibration for your camera.
-                //.setLensIntrinsics(578.272, 578.272, 402.145, 221.506)
+                .setLensIntrinsics(908.683f, 908.683f, 706.785f, 337.571f) //TODO: properlty callibrate this
+
                 // ... these parameters are fx, fy, cx, cy.
 
                 .build();
@@ -191,9 +205,11 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
 
         // Set the camera (webcam vs. built-in RC phone camera).
         if (USE_WEBCAM) {
+            setManualExposure(1,60);
             builder
                     .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-                    .setCameraResolution(new Size(960,600))
+                    .setCameraResolution(new Size(1280,720))
+                    .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
                     .addProcessor(aprilTag);
 
         } else {
@@ -207,8 +223,6 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
         builder.enableLiveView(true);
 
         // Set the stream format; MJPEG uses less bandwidth than default YUY2.
-        builder.setStreamFormat(VisionPortal.StreamFormat.YUY2);
-
         // Choose whether or not LiveView stops if no processors are enabled.
         // If set "true", monitor shows solid orange screen if no processors enabled.
         // If set "false", monitor shows camera view without annotations.
@@ -248,28 +262,76 @@ public class ConceptAprilTagLocalization extends LinearOpMode {
                             detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES),
                             detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
 
+//                    Pose vispose = PoseConverter.pose2DToPose(new Pose2D(
+//                            DistanceUnit.INCH,
+//                            detection.robotPose.getPosition().x,
+//                            detection.robotPose.getPosition().y,
+//                            AngleUnit.DEGREES,
+//                            detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)
+//                    ), InvertedFTCCoordinates.INSTANCE);
+
+                    Pose vispose = new Pose(detection.robotPose.getPosition().x,detection.robotPose.getPosition().y,detection.robotPose.getOrientation().getYaw(AngleUnit.RADIANS));
+
+                    Drawing.drawRobot(vispose);
+                    Drawing.sendPacket();
+
+                    telemetry.addData("pose guess", vispose.getAsCoordinateSystem(PedroCoordinates.INSTANCE).toString());
+
               }
+
+                // code to try to convert it to somthing pedropathing can use
+
+
+
+                // Add "key" information to telemetry
+
+
             } else {
                 telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
                 telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
             }
+            panelsTelemetry.update();
         }   // end for() loop
 
-        // code to try to convert it to somthing pedropathing can use
-        Pose vispose = PoseConverter.pose2DToPose(new Pose2D(
-                DistanceUnit.INCH,
-                aprilTag.getDetections().get(0).robotPose.getPosition().x,
-                aprilTag.getDetections().get(0).robotPose.getPosition().y,
-                AngleUnit.DEGREES,
-                aprilTag.getDetections().get(0).robotPose.getOrientation().getYaw(AngleUnit.DEGREES)
-                ), InvertedFTCCoordinates.INSTANCE);
 
-        telemetry.addData("pose guess", vispose.getAsCoordinateSystem(PedroCoordinates.INSTANCE).toString());
 
-        // Add "key" information to telemetry
+
         telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
         telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
 
-    }   // end method telemetryAprilTag()
+    }
+
+    private void    setManualExposure(int exposureMS, int gain) {
+        // Wait for the camera to be open, then use the controls
+
+        if (visionPortal == null) {
+            return;
+        }
+
+        // Make sure camera is streaming before we try to set the exposure controls
+        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+            telemetry.addData("Camera", "Waiting");
+            telemetry.update();
+            while (!isStopRequested() && (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+                sleep(20);
+            }
+            telemetry.addData("Camera", "Ready");
+            telemetry.update();
+        }
+
+        // Set camera controls unless we are stopping.
+        if (!isStopRequested()) {
+            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
+            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
+                exposureControl.setMode(ExposureControl.Mode.Manual);
+                sleep(50);
+            }
+            exposureControl.setExposure((long) exposureMS, TimeUnit.MILLISECONDS);
+            sleep(20);
+            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
+            gainControl.setGain(gain);
+            sleep(20);
+        }
+    }
 
 }   // end class

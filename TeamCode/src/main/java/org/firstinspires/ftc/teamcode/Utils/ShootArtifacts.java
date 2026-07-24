@@ -20,7 +20,7 @@ import java.util.Objects;
  * transfer + conveyor out, then close.
  * <p>
  * The gate-open is gated on the shooting-zone check (same triangles used by
- * {@link RGBIndicator}) so we never feed the shooter while still in transit.
+ * { RGBIndicator}) so we never feed the shooter while still in transit.
  * Both wait conditions carry a 2.5s timeout so a stale follower pose or
  * shooter that fails to reach target cannot hang the entire auto.
  */
