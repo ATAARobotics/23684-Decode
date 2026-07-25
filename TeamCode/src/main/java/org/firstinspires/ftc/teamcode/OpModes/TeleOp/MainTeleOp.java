@@ -588,6 +588,16 @@ public abstract class MainTeleOp extends OpMode {
 			leftTriggerPressed = false;
 		}
 
+		if (gamepad2.aWasPressed()) {
+			scheduler.schedule(intake.Out());
+			scheduler.schedule(transfer.IntakeDoorOut());
+			scheduler.schedule(conveyor.In());
+		} else if (!gamepad2.a) {
+			scheduler.schedule(intake.Stop());
+			scheduler.schedule(transfer.IntakeDoorStop());
+			scheduler.schedule(conveyor.Stop());
+		}
+
 		if (gamepad2.right_bumper && !rightTriggerPressed) {
 			// Operator pulled the shot trigger — clear the user-stopped-prespin
 			// latch so the next auto-prespin cycle can run again.
@@ -709,8 +719,8 @@ public abstract class MainTeleOp extends OpMode {
 								shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
 								new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8
 										&& shootWhenHeldReady()),
-								new InstantCommand(() -> openGate = true),
 								shooter.WaitForTarget().withTimeout(2500),
+								new InstantCommand(() -> openGate = true),
 								transfer.TransferOut(),
 								conveyor.In()
 						));
@@ -763,6 +773,10 @@ public abstract class MainTeleOp extends OpMode {
 		double goalX = (team == Team.RED) ? 141.5 : 0.0;
 		return inZone && ShootingZone.isAimedAtGoal(
 				pose, goalX, 141.5, Math.toRadians(SHOOT_AIM_TOLERANCE_DEG));
+
+		//return Math.abs(headingError) < Math.toRadians(headingDeadzone)
+
+
 	}
 
 	protected void displayTelemetry() {

@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 
 public class ArduCam {
 
-    private Position cameraPosition = new Position(DistanceUnit.INCH,
-            0, 0, 16, 0); //TODO: Check for actual position
+    private Position cameraPosition = new Position(DistanceUnit.MM,
+            0, -16.5, 390, 0); //TODO: Check for actual position
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
             180, -75, 0, 0);
 
@@ -60,7 +60,7 @@ public class ArduCam {
         aprilTag.setDecimation(2);
 
         builder
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .setCamera(hardwareMap.get(WebcamName.class, "0xC45"))
                 .setCameraResolution(new Size(1280, 800 ))
                 .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
                 .addProcessor(aprilTag);
