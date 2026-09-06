@@ -73,7 +73,14 @@ public class ShooterDistanceTuning extends OpMode {
 		handleDriveInput();
 
 		shooter.updatePIDCoefficients();
-		scheduler.schedule(shooter.SetTarget(upperMotorRPM, lowerMotorRPM));
+
+		if(gamepad2.left_trigger_pressed) {
+			scheduler.schedule(shooter.SetTarget(upperMotorRPM, lowerMotorRPM));
+			scheduler.schedule(transfer.TransferOut());
+		}else if(gamepad1.left_trigger <0.5 ){
+			scheduler.schedule(shooter.SetTarget(0,0));
+			scheduler.schedule(transfer.TransferStop());
+		}
 		scheduler.schedule(conveyor.DirectPower(gamepad2.left_stick_y * spindexerSpeed));
 
 		if (gamepad2.xWasPressed()) {

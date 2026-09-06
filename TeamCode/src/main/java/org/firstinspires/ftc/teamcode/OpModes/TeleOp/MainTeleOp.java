@@ -137,18 +137,21 @@ public abstract class MainTeleOp extends OpMode {
 	private Supplier<PathChain> pathAudienceShoot;
 	private Supplier<PathChain> pathGoalShoot;
 	private Supplier<PathChain> pathDriveToZone;
-	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
-	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
+	double upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER_LO;
+	double lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER_LO;
     PIDFController headingPIDController;
 	SquIDFController limelightPIDController;
 	Drive drive;
 	boolean headingLock = true;
 	double currentHeading;
 	double headingDeadzone;
-	double targetHeading = Math.toRadians(180);
+	double targetHeading;
 
 	double tar;
 	double headingCorrection;
+
+	double offset = 0;
+	double multiplier = 1;
 
 	double correctionspeed;
 	double humanPlayerHeading = 0;
@@ -365,6 +368,7 @@ public abstract class MainTeleOp extends OpMode {
 
 		if (gamepad1.xWasPressed()) {
 			gamepad1.rumble(300);
+			offset = 0;
 			follower.setPose(PoseDatabase.getResetPose(getTeam()));
 		}
 	}
@@ -382,8 +386,25 @@ public abstract class MainTeleOp extends OpMode {
 			upperShooterSpeed = Shooter.GOAL_RPM_UPPER;
 			lowerShooterSpeed = Shooter.GOAL_RPM_LOWER;
 		} else {
-			upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER;
-			lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER;
+			if(Math.abs(gamepad2.left_stick_y) > 0.5){
+				upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER_HI;
+				lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER_HI;
+			}else {
+				upperShooterSpeed = Shooter.AUDIENCE_RPM_UPPER_LO;
+				lowerShooterSpeed = Shooter.AUDIENCE_RPM_LOWER_LO;
+			}
+		}
+
+		if (gamepad2.dpadLeftWasPressed()){
+			offset += 2;
+		} else if (gamepad2.dpadRightWasPressed()){
+			offset -= 2;
+		}
+
+		if (gamepad1.left_bumper){
+			multiplier = 0.4;
+		}else {
+			multiplier = 1;
 		}
 
 		if (gamepad1.a && !aButtonPressed) {
@@ -413,57 +434,57 @@ public abstract class MainTeleOp extends OpMode {
 		// arrival the shooter prespins automatically. Releasing the bumper
 		// cancels the path. The path itself sets maxPower=1 so the driver
 		// doesn't need to also press the heading-lock triggers.
-		if (gamepad1.right_bumper) {
-			if (!driveToZoneActive) {
-				// Edge: start the path. Re-evaluate entry each press so a
-				// driver who backs up and re-presses gets a fresh path.
-				driveToZoneActive = true;
-				driveToZoneArrived = false;
-				brokeFollowing = false;
-				aButtonPressed = false;
-				gamepad1BWasPressed = false;
-				PathChain toZone = pathDriveToZone.get();
-				if (toZone == null) {
-					// Robot is already inside a zone — skip path scheduling
-					// (BezierLine degenerate) and treat as immediately arrived.
-					driveToZoneArrived = true;
-					scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
-					prespinStoppedByUser = false;
-					writeDriveIfChanged(0, 0, 0);
-				} else {
-					follower.followPath(toZone, true);
-					follower.setMaxPower(1.0);
-					// Prespin immediately so the shooter is at speed by the time
-					// we arrive at the zone. The stop-prespin latch (Y) can
-					// still cancel this later.
-					scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
-					prespinStoppedByUser = false;
-				}
-			} else if (!follower.isBusy() && !driveToZoneArrived) {
-				driveToZoneArrived = true;
-				// Path finished (or we were already in the zone). Prespin
-				// idempotently in case the SetTarget above lost the race.
-				scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
-				prespinStoppedByUser = false;
-				writeDriveIfChanged(0, 0, 0);
-			} else if (follower.isBusy()) {
-				// Still driving to zone — don't overwrite the follower's
-				// motor commands with stick input.
-				return;
-			} else {
-				writeDriveIfChanged(0, 0, 0);
-			}
-		} else if (driveToZoneActive) {
-			// Bumper was released. Cancel the path and reset the latches so
-			// the next press starts fresh from the current pose. Always break,
-			// not just when isBusy(): a completed holdEnd path leaves the
-			// follower in position hold with isBusy()==false, and we still
-			// need to stop its corrections.
-			follower.breakFollowing();
-			driveToZoneActive = false;
-			driveToZoneArrived = false;
-			brokeFollowing = true;
-		}
+//		if (gamepad1.right_bumper) {
+//			if (!driveToZoneActive) {
+//				// Edge: start the path. Re-evaluate entry each press so a
+//				// driver who backs up and re-presses gets a fresh path.
+//				driveToZoneActive = true;
+//				driveToZoneArrived = false;
+//				brokeFollowing = false;
+//				aButtonPressed = false;
+//				gamepad1BWasPressed = false;
+//				PathChain toZone = pathDriveToZone.get();
+//				if (toZone == null) {
+//					// Robot is already inside a zone — skip path scheduling
+//					// (BezierLine degenerate) and treat as immediately arrived.
+//					driveToZoneArrived = true;
+//					scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+//					prespinStoppedByUser = false;
+//					writeDriveIfChanged(0, 0, 0);
+//				} else {
+//					follower.followPath(toZone, true);
+//					follower.setMaxPower(1.0);
+//					// Prespin immediately so the shooter is at speed by the time
+//					// we arrive at the zone. The stop-prespin latch (Y) can
+//					// still cancel this later.
+//					scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+//					prespinStoppedByUser = false;
+//				}
+//			} else if (!follower.isBusy() && !driveToZoneArrived) {
+//				driveToZoneArrived = true;
+//				// Path finished (or we were already in the zone). Prespin
+//				// idempotently in case the SetTarget above lost the race.
+//				scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+//				prespinStoppedByUser = false;
+//				writeDriveIfChanged(0, 0, 0);
+//			} else if (follower.isBusy()) {
+//				// Still driving to zone — don't overwrite the follower's
+//				// motor commands with stick input.
+//				return;
+//			} else {
+//				writeDriveIfChanged(0, 0, 0);
+//			}
+//		} else if (driveToZoneActive) {
+//			// Bumper was released. Cancel the path and reset the latches so
+//			// the next press starts fresh from the current pose. Always break,
+//			// not just when isBusy(): a completed holdEnd path leaves the
+//			// follower in position hold with isBusy()==false, and we still
+//			// need to stop its corrections.
+//			follower.breakFollowing();
+//			driveToZoneActive = false;
+//			driveToZoneArrived = false;
+//			brokeFollowing = true;
+//		}
 
 		if (!gamepad1.b && !gamepad1.a && !driveToZoneActive) {
 
@@ -494,8 +515,8 @@ public abstract class MainTeleOp extends OpMode {
 
 			if (gamepad1.left_trigger > 0) {
 				currentHeading = follower.getHeading();
-				tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
-				targetHeading = 0;
+				tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5) + Math.toRadians(offset);
+				targetHeading = offset;
 				headingPIDController.setCoefficients(Drive.coefficientsHeadingPIDF);
 				headingPIDController.updateError(anglewrap(Math.toDegrees(tar - currentHeading)));
 				correctionspeed = -headingPIDController.run();
@@ -507,7 +528,7 @@ public abstract class MainTeleOp extends OpMode {
 					headinglocktimer.resetTimer();
 
 					currentHeading = arduCam.angleFrom(getTeam());
-					targetHeading = 0;
+					targetHeading = offset;
 					headingDeadzone = 0.3;
 
 					if (Math.abs(currentHeading) < 5) {
@@ -520,7 +541,7 @@ public abstract class MainTeleOp extends OpMode {
 				} else if (!arduCam.GoalsFound(getTeam()) && headinglocktimer.getElapsedTime() >= 300) {
 					currentHeading = follower.getHeading();
 					tar = drive.calculateShotAngle(follower.getPose().getX(), follower.getPose().getY(), goalX, 141.5);
-					targetHeading = 0;
+					targetHeading = offset;
 
 //					if (Math.abs(Math.toDegrees(tar - currentHeading)) > 70) {
 						correctionspeed = -headingPIDController.run();
@@ -555,10 +576,10 @@ public abstract class MainTeleOp extends OpMode {
 						headingCorrection = correctionspeed;
 					}
 
-					writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, headingCorrection);
+					writeDriveIfChanged(gamepad1.left_stick_x , gamepad1.left_stick_y, headingCorrection);
 				} else {
 					headingLockRumbleSent = false;
-					writeDriveIfChanged(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+					writeDriveIfChanged(gamepad1.left_stick_x * multiplier, gamepad1.left_stick_y * multiplier, gamepad1.right_stick_x * multiplier);
 				}
 		}
 	}
@@ -588,17 +609,17 @@ public abstract class MainTeleOp extends OpMode {
 			leftTriggerPressed = false;
 		}
 
-		if (gamepad2.aWasPressed()) {
-			scheduler.schedule(intake.Out());
-			scheduler.schedule(transfer.IntakeDoorOut());
-			scheduler.schedule(conveyor.In());
-		} else if (!gamepad2.a) {
-			scheduler.schedule(intake.Stop());
-			scheduler.schedule(transfer.IntakeDoorStop());
-			scheduler.schedule(conveyor.Stop());
-		}
+//		if (gamepad2.aWasPressed()) {
+//			scheduler.schedule(intake.Out());
+//			scheduler.schedule(transfer.IntakeDoorOut());
+//			scheduler.schedule(conveyor.In());
+//		} else if (!gamepad2.a) {
+//			scheduler.schedule(intake.Stop());
+//			scheduler.schedule(transfer.IntakeDoorStop());
+//			scheduler.schedule(conveyor.Stop());
+//		}
 
-		if (gamepad2.right_bumper && !rightTriggerPressed) {
+		if (gamepad2.right_bumper || gamepad2.right_trigger >0.5 && !rightTriggerPressed) {
 			// Operator pulled the shot trigger — clear the user-stopped-prespin
 			// latch so the next auto-prespin cycle can run again.
 			prespinStoppedByUser = false;
@@ -610,9 +631,10 @@ public abstract class MainTeleOp extends OpMode {
 				prespinTriggeredByAlign = false;
 				wasBeamAtTwo = false;
 			}
+			scheduler.schedule(new PerpetualCommand(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed).interruptOn(() ->
+					!gamepad2.right_bumper && gamepad2.right_trigger < 0.5 && rightTriggerPressed)));
 			scheduler.schedule(
 					new SequentialCommandGroup(
-							shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
 							new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8),
 							new InstantCommand(() -> openGate = true),
 							shooter.WaitForTarget().withTimeout(2500),
@@ -620,7 +642,7 @@ public abstract class MainTeleOp extends OpMode {
 							conveyor.In()
 					));
 			rightTriggerPressed = true;
-		} else if (!gamepad2.right_bumper && rightTriggerPressed) {
+		} else if (!gamepad2.right_bumper && gamepad2.right_trigger < 0.5 && rightTriggerPressed) {
 			scheduler.schedule(shooter.SetTarget(0, 0));
 			scheduler.schedule(transfer.TransferStop());
 			scheduler.schedule(conveyor.Stop());
@@ -642,10 +664,10 @@ public abstract class MainTeleOp extends OpMode {
 		// even when the operator previously hit Y to stop prespin — pressing the
 		// bumper is the explicit "I want the shooter spinning again" intent and
 		// also clears the stop latch.
-		if (gamepad2.leftBumperWasPressed()) {
-			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
-			prespinStoppedByUser = false;
-		}
+//		if (gamepad2.leftBumperWasPressed()) {
+//			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+//			prespinStoppedByUser = false;
+//		}
 
 		// Stop prespin: gamepad2 Y (edge-triggered). Spins the shooter down and
 		// latches prespinStoppedByUser so the ball-count and align auto-prespin
@@ -661,7 +683,8 @@ public abstract class MainTeleOp extends OpMode {
 		if (!prespinStoppedByUser
 				&& ((ballCount >= 2 && prespinTriggered)
 					|| (alignPressed && ballCount > 0 && !prespinTriggeredByAlign))) {
-			scheduler.schedule(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed));
+			scheduler.schedule(new PerpetualCommand(shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed).interruptOn(() ->
+					!gamepad2.right_bumper && gamepad2.right_trigger < 0.5 && rightTriggerPressed)));
 			prespinTriggered = false;
 			if (alignPressed) {
 				prespinTriggeredByAlign = true;
@@ -682,8 +705,8 @@ public abstract class MainTeleOp extends OpMode {
 			gamepad2BWasPressed = false;
 		}
 
-		double leftJoystickY = -gamepad2.left_stick_y;
-		boolean inDeadzone = Math.abs(gamepad2.left_stick_y) < 0.2;
+		double leftJoystickY = 0; // -gamepad2.left_stick_y;
+		boolean inDeadzone =  true ;//Math.abs(gamepad2.left_stick_y) < 0.2;
 
 		if (inDeadzone) {
 			if (!leftJoystickDeadzone) {
@@ -709,54 +732,54 @@ public abstract class MainTeleOp extends OpMode {
 		// everything and close the gate. The first time the gates pass we
 		// schedule the sequence; while the bumper stays held we keep the
 		// gate open and the feeder running via the openGate latch.
-		if (gamepad2.right_trigger > 0) {
-			if (!shootWhenHeldActive && shootWhenHeldReady()) {
-				shootWhenHeldActive = true;
-				shootFeederRunning = false;
-				prespinStoppedByUser = false;
-				scheduler.schedule(
-						new SequentialCommandGroup(
-								shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
-								new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8
-										&& shootWhenHeldReady()),
-								shooter.WaitForTarget().withTimeout(2500),
-								new InstantCommand(() -> openGate = true),
-								transfer.TransferOut(),
-								conveyor.In()
-						));
-				// Mark feeder as running on the next loop so we don't race
-				// the SequentialCommandGroup's terminal TransferOut/In.
-				shootFeederRunning = true;
-			} else if (shootWhenHeldActive && shootWhenHeldReady()) {
-				// Keep the gate open + transfer/conveyor on while held.
-				if (!openGate) {
-					openGate = true;
-				}
-				// If the gates were lost and the feeder was stopped while
-				// the bumper stayed held, restart it now that the gates
-				// pass again.
-				if (!shootFeederRunning) {
-					scheduler.schedule(transfer.TransferOut());
-					scheduler.schedule(conveyor.In());
-					shootFeederRunning = true;
-				}
-			} else if (shootWhenHeldActive && !shootWhenHeldReady()) {
-				// Lost the gates while the bumper was still held — close
-				// the gate and stop the feeder so we don't dribble.
-				openGate = false;
-				scheduler.schedule(transfer.TransferStop());
-				scheduler.schedule(conveyor.Stop());
-				shootFeederRunning = false;
-			}
-		} else if (shootWhenHeldActive) {
-			// Bumper released — stop everything and reset the latch.
-			shootWhenHeldActive = false;
-			openGate = false;
-			shootFeederRunning = false;
-			scheduler.schedule(shooter.SetTarget(0, 0));
-			scheduler.schedule(transfer.TransferStop());
-			scheduler.schedule(conveyor.Stop());
-		}
+//		if (gamepad2.right_stick_y < 0.2) {
+//			if (!shootWhenHeldActive && shootWhenHeldReady()) {
+//				shootWhenHeldActive = true;
+//				shootFeederRunning = false;
+//				prespinStoppedByUser = false;
+//				scheduler.schedule(
+//						new SequentialCommandGroup(
+//								shooter.SetTarget(upperShooterSpeed, lowerShooterSpeed),
+//								new WaitUntilCommand(() -> shooter.getPercentToTarget() >= 0.8
+//										&& shootWhenHeldReady()),
+//								new InstantCommand(() -> openGate = true),
+//								shooter.WaitForTarget().withTimeout(2500),
+//								transfer.TransferOut(),
+//								conveyor.In()
+//						));
+//				// Mark feeder as running on the next loop so we don't race
+//				// the SequentialCommandGroup's terminal TransferOut/In.
+//				shootFeederRunning = true;
+//			} else if (shootWhenHeldActive && shootWhenHeldReady()) {
+//				// Keep the gate open + transfer/conveyor on while held.
+//				if (!openGate) {
+//					openGate = true;
+//				}
+//				// If the gates were lost and the feeder was stopped while
+//				// the bumper stayed held, restart it now that the gates
+//				// pass again.
+//				if (!shootFeederRunning) {
+//					scheduler.schedule(transfer.TransferOut());
+//					scheduler.schedule(conveyor.In());
+//					shootFeederRunning = true;
+//				}
+//			} else if (shootWhenHeldActive && !shootWhenHeldReady()) {
+//				// Lost the gates while the bumper was still held — close
+//				// the gate and stop the feeder so we don't dribble.
+//				openGate = false;
+//				scheduler.schedule(transfer.TransferStop());
+//				scheduler.schedule(conveyor.Stop());
+//				shootFeederRunning = false;
+//			}
+//		} else if (shootWhenHeldActive) {
+//			// Bumper released — stop everything and reset the latch.
+//			shootWhenHeldActive = false;
+//			openGate = false;
+//			shootFeederRunning = false;
+//			scheduler.schedule(shooter.SetTarget(0, 0));
+//			scheduler.schedule(transfer.TransferStop());
+//			scheduler.schedule(conveyor.Stop());
+//		}
 	}
 
 	/**
@@ -811,8 +834,9 @@ public abstract class MainTeleOp extends OpMode {
 		//limelight.Telemetry(telemetry);
 		//telemetry.addData("ballcount", ballCount);
 		//telemetry.addData("prespin Tiriggered?",prespinTriggered);
-		telemetry.addLine(follower.getPose().toString());
-		telemetry.addData("error",Math.toDegrees(tar - follower.getHeading()));
+//		telemetry.addLine(follower.getPose().toString());
+//		telemetry.addData("error",Math.toDegrees(tar - follower.getHeading()));
+		telemetry.addData("offset",offset);
 		telemetry.update();
 	}
 

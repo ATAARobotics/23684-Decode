@@ -35,7 +35,7 @@ public class ShootArtifacts extends SequentialCommandGroup {
 		}
 
 		addCommands(
-				shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER),
+				shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER_LO, Shooter.AUDIENCE_RPM_LOWER_LO),
 				new ParallelCommandGroup(
 						intake.Stop(),
 						new SequentialCommandGroup(

@@ -105,7 +105,7 @@ public class RGBIndicator extends SubsystemBase {
 			} else if (count == 2) {
 				position = SERVO_AZURE;
 			} else if (count == 3) {
-				boolean flashOn = (now % (2 * SLOW_FLASH_PERIOD_MS)) < SLOW_FLASH_PERIOD_MS;
+				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;
 				position = flashOn ? SERVO_BLUE : SERVO_GREEN;
 			} else {
 				boolean flashOn = (now % (2 * RAPID_FLASH_PERIOD_MS)) < RAPID_FLASH_PERIOD_MS;

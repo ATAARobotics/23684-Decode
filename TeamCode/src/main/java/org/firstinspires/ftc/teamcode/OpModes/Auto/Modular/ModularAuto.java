@@ -181,7 +181,7 @@ public abstract class ModularAuto extends OpMode {
 						gate.closeGate(),
 						new ParallelCommandGroup(
 								new FollowPathCommand(follower, preloadPath),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER, Shooter.AUDIENCE_RPM_LOWER)
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER_LO, Shooter.AUDIENCE_RPM_LOWER_LO)
 
 						),
 						transfer.IntakeDoorOut(),
@@ -525,7 +525,7 @@ public abstract class ModularAuto extends OpMode {
 				new ParallelCommandGroup(
 						new SequentialCommandGroup(
 								new WaitUntilCommand(()-> follower.getCurrentTValue() >= 0.6),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER_LO,Shooter.AUDIENCE_RPM_LOWER_LO),
 								intake.Stop()
 						),
 						new FollowPathCommand(follower, toShoot),
@@ -666,7 +666,7 @@ public abstract class ModularAuto extends OpMode {
 						new FollowPathCommand(follower, toShoot),
 						new SequentialCommandGroup(
 								new WaitUntilCommand(()-> follower.getCurrentTValue() >= 0.6),
-								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER,Shooter.AUDIENCE_RPM_LOWER),
+								shooter.SetTarget(Shooter.AUDIENCE_RPM_UPPER_LO,Shooter.AUDIENCE_RPM_LOWER_LO),
 								intake.Stop()
 						),
 						new InstantCommand(()-> {
